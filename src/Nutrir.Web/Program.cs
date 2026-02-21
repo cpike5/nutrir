@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.Entities;
 using Nutrir.Infrastructure;
 using Nutrir.Infrastructure.Data;
@@ -49,9 +50,12 @@ try
 
     var app = builder.Build();
 
-    // Seed roles and admin user on startup.
+    // Apply pending migrations and seed roles/admin user on startup.
     using (var scope = app.Services.CreateScope())
     {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await dbContext.Database.MigrateAsync();
+
         var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
         await seeder.SeedAsync();
     }
