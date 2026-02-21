@@ -1,0 +1,20 @@
+<div class="@CssClass" @attributes="AdditionalAttributes">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public CardVariant Variant { get; set; } = CardVariant.Default;
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass
+    {
+        get
+        {
+            var classes = new List<string> { "card" };
+            if (Variant == CardVariant.Flat) classes.Add("card-flat");
+            if (Variant == CardVariant.Elevated) classes.Add("card-elevated");
+            return string.Join(" ", classes);
+        }
+    }
+}

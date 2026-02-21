@@ -1,4 +1,5 @@
-﻿@page "/Account/ResendEmailConfirmation"
+@page "/Account/ResendEmailConfirmation"
+@layout Nutrir.Web.Components.Layout.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
@@ -16,22 +17,19 @@
 
 <h1>Resend email confirmation</h1>
 <h2>Enter your email.</h2>
-<hr />
+<hr class="divider" />
 <StatusMessage Message="@message" />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
-        </EditForm>
+
+<EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="form-error" role="alert" />
+    <div class="form-group">
+        <label for="Input.Email" class="form-label">Email</label>
+        <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" aria-required="true" placeholder="name@example.com" />
+        <ValidationMessage For="() => Input.Email" class="form-error" />
     </div>
-</div>
+    <button type="submit" class="btn btn-primary btn-lg btn-block">Resend</button>
+</EditForm>
 
 @code {
     private string? message;

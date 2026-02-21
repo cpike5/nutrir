@@ -1,0 +1,26 @@
+/* Palette: Sage (original)
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #f8f5f0;
+  --color-text:      #282828;
+  --color-primary:   #4a6741;
+  --color-secondary: #9a6c41;
+  --color-accent:    #b6b697;
+
+  --rgb-bg:        248, 245, 240;
+  --rgb-text:      40, 40, 40;
+  --rgb-primary:   74, 103, 65;
+  --rgb-secondary: 154, 108, 65;
+  --rgb-accent:    182, 182, 151;
+
+  --color-bg-alt:      #f1eee9;
+  --color-bg-footer:   #ece9e4;
+  --color-primary-hover:   #3d5736;
+  --color-secondary-hover: #885f39;
+  --color-accent-hover:    #a0a085;
+
+  --color-success:  #3d8b4f;
+  --color-warning:  #c4882f;
+  --color-error:    #c14a3d;
+  --color-info:     #4a7e8b;
+}

@@ -1,0 +1,26 @@
+<div class="cc-panel" @attributes="AdditionalAttributes">
+    <div class="cc-panel-header">
+        <div class="flex items-center gap-2">
+            <span class="cc-panel-title">@Title</span>
+            @if (Count.HasValue)
+            {
+                <span class="cc-panel-count">@Count</span>
+            }
+        </div>
+        @if (HeaderExtra != null)
+        {
+            @HeaderExtra
+        }
+    </div>
+    <div class="cc-panel-body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public int? Count { get; set; }
+    [Parameter] public RenderFragment? HeaderExtra { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

@@ -38,7 +38,7 @@ else
             </li>
             <li>
                 <p>Scan the QR Code or enter this key <kbd>@sharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</p>
-                <div class="alert alert-info">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
+                <div class="card card-flat" style="border-color: var(--color-primary); margin-bottom: var(--space-4);">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
                 <div></div>
                 <div data-url="@authenticatorUri"></div>
             </li>
@@ -47,20 +47,18 @@ else
                     Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
                     with a unique code. Enter the code in the confirmation box below.
                 </p>
-                <div class="row">
-                    <div class="col-xl-6">
-                        <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-                            <DataAnnotationsValidator />
-                            <div class="form-floating mb-3">
-                                <InputText @bind-Value="Input.Code" id="Input.Code" class="form-control" autocomplete="off" placeholder="Enter the code" />
-                                <label for="Input.Code" class="control-label form-label">Verification Code</label>
-                                <ValidationMessage For="() => Input.Code" class="text-danger" />
-                            </div>
-                            <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
-                            <ValidationSummary class="text-danger" role="alert" />
-                        </EditForm>
+                <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+                    <DataAnnotationsValidator />
+                    <div class="flex flex-col gap-4">
+                        <div class="form-group">
+                            <label for="Input.Code" class="form-label">Verification Code</label>
+                            <InputText @bind-Value="Input.Code" id="Input.Code" class="form-input" autocomplete="off" placeholder="Enter the code" />
+                            <ValidationMessage For="() => Input.Code" class="form-error" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">Verify</button>
+                        <ValidationSummary class="form-error" role="alert" />
                     </div>
-                </div>
+                </EditForm>
             </li>
         </ol>
     </div>

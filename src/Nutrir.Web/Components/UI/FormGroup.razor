@@ -1,0 +1,24 @@
+<div class="form-group" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="form-label" for="@Id">@Label</label>
+    }
+    @ChildContent
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="form-hint">@Hint</span>
+    }
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <span class="form-error">@Error</span>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

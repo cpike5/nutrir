@@ -1,0 +1,13 @@
+@if (string.IsNullOrEmpty(Text))
+{
+    <hr class="divider" @attributes="AdditionalAttributes" />
+}
+else
+{
+    <div class="divider-text" @attributes="AdditionalAttributes">@Text</div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

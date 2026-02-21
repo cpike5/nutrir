@@ -1,31 +1,19 @@
-﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
 
 @inject SignInManager<ApplicationUser> SignInManager
 
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
-    </li>
+<nav class="flex flex-col gap-1">
+    <NavLink class="btn btn-ghost" href="Account/Manage" Match="NavLinkMatch.All" style="justify-content: flex-start;">Profile</NavLink>
+    <NavLink class="btn btn-ghost" href="Account/Manage/Email" style="justify-content: flex-start;">Email</NavLink>
+    <NavLink class="btn btn-ghost" href="Account/Manage/ChangePassword" style="justify-content: flex-start;">Password</NavLink>
     @if (hasExternalLogins)
     {
-        <li class="nav-item">
-            <NavLink class="nav-link" href="Account/Manage/ExternalLogins">External logins</NavLink>
-        </li>
+        <NavLink class="btn btn-ghost" href="Account/Manage/ExternalLogins" style="justify-content: flex-start;">External logins</NavLink>
     }
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
-    </li>
-</ul>
+    <NavLink class="btn btn-ghost" href="Account/Manage/TwoFactorAuthentication" style="justify-content: flex-start;">Two-factor authentication</NavLink>
+    <NavLink class="btn btn-ghost" href="Account/Manage/PersonalData" style="justify-content: flex-start;">Personal data</NavLink>
+</nav>
 
 @code {
     private bool hasExternalLogins;
