@@ -72,6 +72,12 @@ try
     // Add additional endpoints required by the Identity /Account Razor components.
     app.MapAdditionalIdentityEndpoints();
 
+    // Dev-only endpoint to return arbitrary HTTP status codes for error page testing.
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapGet("/dev/status/{code:int}", (int code) => Results.StatusCode(code));
+    }
+
     app.Run();
 }
 catch (Exception ex)

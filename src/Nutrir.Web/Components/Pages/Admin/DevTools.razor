@@ -1,0 +1,72 @@
+@page "/admin/dev-tools"
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Dev Tools — Nutrir</PageTitle>
+
+<div class="dev-tools">
+    <h1 class="dev-tools-title">Dev Tools</h1>
+    <p class="dev-tools-subtitle">Test error pages and diagnostic routes. Development use only.</p>
+
+    <div class="dev-tools-grid">
+        <!-- Direct error page links -->
+        <div class="dev-tools-section">
+            <h2 class="dev-tools-section-title">Direct Error Pages</h2>
+            <p class="dev-tools-section-desc">Navigate directly to each styled error page.</p>
+            <div class="dev-tools-actions">
+                <a href="/error/404" class="btn btn-ghost">404 — Not Found</a>
+                <a href="/error/403" class="btn btn-ghost">403 — Forbidden</a>
+                <a href="/error/500" class="btn btn-ghost">500 — Server Error</a>
+                <a href="/error/503" class="btn btn-ghost">503 — Maintenance</a>
+            </div>
+        </div>
+
+        <!-- Simulated triggers -->
+        <div class="dev-tools-section">
+            <h2 class="dev-tools-section-title">Simulated Triggers</h2>
+            <p class="dev-tools-section-desc">Trigger error conditions the way a real user would encounter them.</p>
+            <div class="dev-tools-actions">
+                <a href="/this-page-does-not-exist" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Navigate to invalid route
+                </a>
+                <button class="btn btn-primary" @onclick="TriggerUnhandledException">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Throw unhandled exception
+                </button>
+            </div>
+        </div>
+
+        <!-- Status code via HTTP -->
+        <div class="dev-tools-section">
+            <h2 class="dev-tools-section-title">HTTP Status Codes</h2>
+            <p class="dev-tools-section-desc">
+                Hit the <code>/dev/status/{code}</code> endpoint to trigger real HTTP status codes
+                through the middleware pipeline.
+            </p>
+            <div class="dev-tools-actions">
+                <button class="btn btn-ghost" @onclick='() => NavigateToStatus(404)'>HTTP 404</button>
+                <button class="btn btn-ghost" @onclick='() => NavigateToStatus(403)'>HTTP 403</button>
+                <button class="btn btn-ghost" @onclick='() => NavigateToStatus(500)'>HTTP 500</button>
+                <button class="btn btn-ghost" @onclick='() => NavigateToStatus(503)'>HTTP 503</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void TriggerUnhandledException()
+    {
+        throw new InvalidOperationException("Dev Tools: intentional unhandled exception for error page testing.");
+    }
+
+    private async Task NavigateToStatus(int code)
+    {
+        await JSRuntime.InvokeVoidAsync("open", $"/dev/status/{code}", "_self");
+    }
+}
