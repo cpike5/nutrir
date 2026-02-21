@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/GenerateRecoveryCodes"
+@page "/Account/Manage/GenerateRecoveryCodes"
 
 @using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
@@ -16,11 +16,12 @@
 }
 else
 {
-    <h3>Generate two-factor authentication (2FA) recovery codes</h3>
-    <div class="card card-flat" role="alert" style="border-color: var(--color-warning); margin-bottom: var(--space-4);">
-        <p>
-            <strong>Put these codes in a safe place.</strong>
-        </p>
+    <div class="manage-section-header">
+        <h3>Generate two-factor authentication (2FA) recovery codes</h3>
+    </div>
+
+    <div class="alert alert-warning mb-6" role="alert">
+        <strong>Put these codes in a safe place.</strong>
         <p>
             If you lose your device and don't have the recovery codes you will lose access to your account.
         </p>
@@ -29,12 +30,11 @@ else
             used in an authenticator app you should <a href="Account/Manage/ResetAuthenticator">reset your authenticator keys.</a>
         </p>
     </div>
-    <div>
-        <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
-            <AntiforgeryToken />
-            <button class="btn btn-primary" type="submit">Generate Recovery Codes</button>
-        </form>
-    </div>
+
+    <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
+        <AntiforgeryToken />
+        <button class="btn btn-primary" type="submit">Generate Recovery Codes</button>
+    </form>
 }
 
 @code {

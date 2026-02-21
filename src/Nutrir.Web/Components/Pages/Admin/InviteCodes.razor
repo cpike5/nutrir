@@ -1,0 +1,204 @@
+@page "/admin/invite-codes"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using System.Security.Claims
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IInviteCodeService InviteCodeService
+@inject AuthenticationStateProvider AuthState
+@inject IJSRuntime JS
+
+<PageTitle>Invite Codes — Nutrir</PageTitle>
+
+<div class="invite-codes-page">
+    <div class="invite-codes-header">
+        <h1 class="invite-codes-title">Invite Codes</h1>
+        <p class="invite-codes-subtitle">Generate and manage invite codes for staff registration.</p>
+    </div>
+
+    <Card>
+        <div class="generate-section">
+            <h2 class="section-title">Generate Invite Code</h2>
+            <div class="generate-form">
+                <div class="generate-form-fields">
+                    <FormGroup Label="Target Role" Id="target-role">
+                        <FormSelect Id="target-role"
+                                    Value="@_targetRole"
+                                    ValueChanged="(string v) => _targetRole = v">
+                            <option value="Nutritionist">Nutritionist</option>
+                            <option value="Assistant">Assistant</option>
+                        </FormSelect>
+                    </FormGroup>
+                    <FormGroup Label="Expiration (days)" Id="expiration-days">
+                        <FormInput Id="expiration-days"
+                                   Type="number"
+                                   Value="@_expirationDays"
+                                   ValueChanged="(string v) => _expirationDays = v" />
+                    </FormGroup>
+                    <div class="generate-form-action">
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@_isGenerating"
+                                OnClick="GenerateCode">
+                            @(_isGenerating ? "Generating..." : "Generate Code")
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            @if (_generatedCode is not null)
+            {
+                <div class="generated-code-box">
+                    <span class="generated-code-label">Generated Code</span>
+                    <div class="generated-code-display">
+                        <span class="generated-code-value">@_generatedCode.Code</span>
+                        <Button Variant="ButtonVariant.Outline"
+                                Size="ButtonSize.Small"
+                                OnClick="CopyCodeToClipboard">
+                            @(_copied ? "Copied!" : "Copy")
+                        </Button>
+                    </div>
+                    <span class="generated-code-meta">
+                        Role: @_generatedCode.TargetRole — Expires: @_generatedCode.ExpiresAt.ToString("MMM d, yyyy")
+                    </span>
+                </div>
+            }
+
+            @if (_generateError is not null)
+            {
+                <div class="generate-error">@_generateError</div>
+            }
+        </div>
+    </Card>
+
+    <Card>
+        <div class="list-section">
+            <h2 class="section-title">Invite Codes</h2>
+
+            @if (_isLoading)
+            {
+                <p class="codes-loading">Loading invite codes...</p>
+            }
+            else if (_inviteCodes is null || _inviteCodes.Count == 0)
+            {
+                <div class="codes-empty">
+                    <p class="codes-empty-title">No invite codes found</p>
+                    <p class="codes-empty-desc">Generate your first invite code above.</p>
+                </div>
+            }
+            else
+            {
+                <table class="codes-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Target Role</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Created At</th>
+                            <th>Redeemed By</th>
+                            <th>Expires At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _inviteCodes)
+                        {
+                            <tr>
+                                <td class="codes-table-code">@item.Code</td>
+                                <td>
+                                    <Badge Variant="BadgeVariant.Primary">@item.TargetRole</Badge>
+                                </td>
+                                <td>
+                                    @{ var status = GetStatus(item); }
+                                    <Badge Variant="@status.Variant">@status.Label</Badge>
+                                </td>
+                                <td>@item.CreatedByName</td>
+                                <td class="codes-table-date">@item.CreatedAt.ToString("MMM d, yyyy")</td>
+                                <td>@(item.RedeemedByName ?? "—")</td>
+                                <td class="codes-table-date">@item.ExpiresAt.ToString("MMM d, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </Card>
+</div>
+
+@code {
+    private List<InviteCodeListItemDto>? _inviteCodes;
+    private InviteCodeListItemDto? _generatedCode;
+    private string _targetRole = "Nutritionist";
+    private string _expirationDays = "7";
+    private bool _isLoading = true;
+    private bool _isGenerating;
+    private bool _copied;
+    private string? _generateError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCodesAsync();
+    }
+
+    private async Task LoadCodesAsync()
+    {
+        _isLoading = true;
+        _inviteCodes = await InviteCodeService.GetAllAsync();
+        _isLoading = false;
+    }
+
+    private async Task GenerateCode()
+    {
+        _isGenerating = true;
+        _generateError = null;
+        _generatedCode = null;
+        _copied = false;
+
+        try
+        {
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                _generateError = "Unable to determine current user.";
+                return;
+            }
+
+            if (!int.TryParse(_expirationDays, out var days) || days < 1)
+            {
+                _generateError = "Expiration days must be a positive number.";
+                return;
+            }
+
+            _generatedCode = await InviteCodeService.GenerateAsync(userId, _targetRole, days);
+            await LoadCodesAsync();
+        }
+        catch (Exception)
+        {
+            _generateError = "An error occurred while generating the invite code.";
+        }
+        finally
+        {
+            _isGenerating = false;
+        }
+    }
+
+    private async Task CopyCodeToClipboard()
+    {
+        if (_generatedCode is not null)
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _generatedCode.Code);
+            _copied = true;
+        }
+    }
+
+    private static (string Label, BadgeVariant Variant) GetStatus(InviteCodeListItemDto code)
+    {
+        if (code.IsUsed)
+            return ("Used", BadgeVariant.Secondary);
+        if (code.ExpiresAt < DateTime.UtcNow)
+            return ("Expired", BadgeVariant.Warning);
+        return ("Active", BadgeVariant.Success);
+    }
+}

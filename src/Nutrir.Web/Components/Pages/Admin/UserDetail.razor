@@ -1,0 +1,484 @@
+@page "/admin/users/{UserId}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IUserManagementService UserManagementService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>User Detail — Nutrir</PageTitle>
+
+<div class="user-detail">
+    <a href="/admin/users" class="user-detail-back">&larr; Back to Staff Accounts</a>
+
+    @if (_isLoading)
+    {
+        <p class="user-detail-loading">Loading user...</p>
+    }
+    else if (_user is null)
+    {
+        <Card>
+            <div class="user-detail-notfound">
+                <h2>User Not Found</h2>
+                <p>The requested staff account could not be found.</p>
+                <Button Variant="ButtonVariant.Outline" OnClick="NavigateBack">Return to Staff Accounts</Button>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="user-detail-header">
+            <h1 class="user-detail-title">@_user.FirstName @_user.LastName</h1>
+            <div class="user-detail-meta">
+                <Badge Variant="GetRoleBadgeVariant(_user.Role)">@_user.Role</Badge>
+                @if (_user.IsActive)
+                {
+                    <Badge Variant="BadgeVariant.Success">Active</Badge>
+                }
+                else
+                {
+                    <Badge Variant="BadgeVariant.Error">Deactivated</Badge>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_feedbackMessage))
+        {
+            <div class="user-detail-feedback @(_feedbackIsError ? "user-detail-feedback-error" : "user-detail-feedback-success")">
+                @_feedbackMessage
+            </div>
+        }
+
+        <!-- Profile Section -->
+        <Card>
+            <h2 class="user-detail-section-title">Profile</h2>
+            <p class="user-detail-section-desc">Update the user's basic profile information.</p>
+            <Divider />
+
+            <EditForm Model="_profileModel" OnValidSubmit="SaveProfile" FormName="profile-form">
+                <DataAnnotationsValidator />
+
+                <div class="user-detail-form-grid">
+                    <FormGroup Label="First Name" Id="firstName">
+                        <FormInput Id="firstName"
+                                   Value="@_profileModel.FirstName"
+                                   ValueChanged="(val) => _profileModel.FirstName = val" />
+                    </FormGroup>
+
+                    <FormGroup Label="Last Name" Id="lastName">
+                        <FormInput Id="lastName"
+                                   Value="@_profileModel.LastName"
+                                   ValueChanged="(val) => _profileModel.LastName = val" />
+                    </FormGroup>
+
+                    <FormGroup Label="Display Name" Id="displayName">
+                        <FormInput Id="displayName"
+                                   Value="@_profileModel.DisplayName"
+                                   ValueChanged="(val) => _profileModel.DisplayName = val" />
+                    </FormGroup>
+
+                    <FormGroup Label="Email" Id="email">
+                        <FormInput Id="email"
+                                   Type="email"
+                                   Value="@_profileModel.Email"
+                                   ValueChanged="(val) => _profileModel.Email = val" />
+                    </FormGroup>
+                </div>
+
+                <div class="user-detail-form-actions">
+                    <Button Type="submit" Variant="ButtonVariant.Primary" Disabled="_isSaving">
+                        @(_isSaving ? "Saving..." : "Save Changes")
+                    </Button>
+                </div>
+            </EditForm>
+        </Card>
+
+        <!-- Role Management Section -->
+        <Card>
+            <h2 class="user-detail-section-title">Role Management</h2>
+            <p class="user-detail-section-desc">Change the user's role and permissions level.</p>
+            <Divider />
+
+            <div class="user-detail-role-current">
+                <span class="user-detail-role-label">Current Role:</span>
+                <Badge Variant="GetRoleBadgeVariant(_user.Role)">@_user.Role</Badge>
+            </div>
+
+            <div class="user-detail-role-change">
+                <FormGroup Label="New Role" Id="new-role">
+                    <FormSelect Id="new-role"
+                                Value="@_selectedRole"
+                                ValueChanged="(val) => _selectedRole = val">
+                        <option value="Admin">Admin</option>
+                        <option value="Nutritionist">Nutritionist</option>
+                        <option value="Assistant">Assistant</option>
+                    </FormSelect>
+                </FormGroup>
+                <Button Variant="ButtonVariant.Primary"
+                        OnClick="ChangeRole"
+                        Disabled="_isChangingRole || _selectedRole == _user.Role">
+                    @(_isChangingRole ? "Changing..." : "Change Role")
+                </Button>
+            </div>
+        </Card>
+
+        <!-- Account Actions Section -->
+        <Card>
+            <h2 class="user-detail-section-title">Account Actions</h2>
+            <p class="user-detail-section-desc">Manage account status, password, and security settings.</p>
+            <Divider />
+
+            <div class="user-detail-actions-grid">
+                <!-- Deactivate / Reactivate -->
+                <div class="user-detail-action-item">
+                    <div>
+                        <h3 class="user-detail-action-label">Account Status</h3>
+                        <p class="user-detail-action-desc">
+                            @if (_user.IsActive)
+                            {
+                                <text>Deactivating will prevent this user from signing in.</text>
+                            }
+                            else
+                            {
+                                <text>Reactivating will restore this user's access.</text>
+                            }
+                        </p>
+                    </div>
+
+                    @if (_showDeactivateConfirm)
+                    {
+                        <div class="user-detail-confirm">
+                            <p class="user-detail-confirm-text">Are you sure you want to deactivate this account?</p>
+                            <div class="user-detail-confirm-actions">
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Size="ButtonSize.Small"
+                                        OnClick="CancelDeactivate">Cancel</Button>
+                                <Button Variant="ButtonVariant.Primary"
+                                        Size="ButtonSize.Small"
+                                        OnClick="ConfirmDeactivate"
+                                        Disabled="_isTogglingStatus">
+                                    @(_isTogglingStatus ? "Deactivating..." : "Confirm Deactivate")
+                                </Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (_user.IsActive)
+                        {
+                            <Button Variant="ButtonVariant.Outline"
+                                    OnClick="RequestDeactivate"
+                                    Disabled="_isTogglingStatus">Deactivate Account</Button>
+                        }
+                        else
+                        {
+                            <Button Variant="ButtonVariant.Primary"
+                                    OnClick="ReactivateUser"
+                                    Disabled="_isTogglingStatus">
+                                @(_isTogglingStatus ? "Reactivating..." : "Reactivate Account")
+                            </Button>
+                        }
+                    }
+                </div>
+
+                <Divider />
+
+                <!-- Reset Password -->
+                <div class="user-detail-action-item">
+                    <div>
+                        <h3 class="user-detail-action-label">Reset Password</h3>
+                        <p class="user-detail-action-desc">Set a new password for this account.</p>
+                    </div>
+                    <div class="user-detail-password-form">
+                        <FormGroup Label="New Password" Id="new-password">
+                            <FormInput Id="new-password"
+                                       Type="password"
+                                       Value="@_newPassword"
+                                       ValueChanged="(val) => _newPassword = val"
+                                       Placeholder="Enter new password" />
+                        </FormGroup>
+                        <Button Variant="ButtonVariant.Outline"
+                                OnClick="ResetPassword"
+                                Disabled="@(_isResettingPassword || string.IsNullOrWhiteSpace(_newPassword))">
+                            @(_isResettingPassword ? "Resetting..." : "Reset Password")
+                        </Button>
+                    </div>
+                </div>
+
+                <Divider />
+
+                <!-- Force MFA -->
+                <div class="user-detail-action-item">
+                    <div>
+                        <h3 class="user-detail-action-label">Two-Factor Authentication</h3>
+                        <p class="user-detail-action-desc">
+                            Current status:
+                            @if (_user.TwoFactorEnabled)
+                            {
+                                <Badge Variant="BadgeVariant.Success">Enabled</Badge>
+                            }
+                            else
+                            {
+                                <Badge Variant="BadgeVariant.Warning">Not Enabled</Badge>
+                            }
+                        </p>
+                    </div>
+                    <Button Variant="ButtonVariant.Outline"
+                            OnClick="ForceMfa"
+                            Disabled="_isForcingMfa">
+                        @(_isForcingMfa ? "Enforcing..." : "Force MFA Setup")
+                    </Button>
+                </div>
+            </div>
+        </Card>
+
+        <!-- Account Metadata -->
+        <div class="user-detail-metadata">
+            <span>Created: @_user.CreatedDate.ToString("MMM d, yyyy")</span>
+            <span>Last Login: @(_user.LastLoginDate?.ToString("MMM d, yyyy h:mm tt") ?? "Never")</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string UserId { get; set; } = default!;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private UserDetailDto? _user;
+    private ProfileModel _profileModel = new();
+    private string? _selectedRole;
+    private string? _newPassword;
+    private string? _feedbackMessage;
+    private bool _feedbackIsError;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isChangingRole;
+    private bool _isTogglingStatus;
+    private bool _isResettingPassword;
+    private bool _isForcingMfa;
+    private bool _showDeactivateConfirm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await UserManagementService.GetUserByIdAsync(UserId);
+
+        if (_user is not null)
+        {
+            _profileModel = new ProfileModel
+            {
+                FirstName = _user.FirstName,
+                LastName = _user.LastName,
+                DisplayName = _user.DisplayName,
+                Email = _user.Email
+            };
+            _selectedRole = _user.Role;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task<string> GetCurrentUserIdAsync()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private async Task SaveProfile()
+    {
+        if (_user is null) return;
+        _isSaving = true;
+        ClearFeedback();
+
+        var success = await UserManagementService.UpdateProfileAsync(
+            _user.Id,
+            _profileModel.FirstName,
+            _profileModel.LastName,
+            _profileModel.DisplayName,
+            _profileModel.Email);
+
+        if (success)
+        {
+            ShowFeedback("Profile updated successfully.", isError: false);
+            await ReloadUser();
+        }
+        else
+        {
+            ShowFeedback("Failed to update profile. Please try again.", isError: true);
+        }
+
+        _isSaving = false;
+    }
+
+    private async Task ChangeRole()
+    {
+        if (_user is null || string.IsNullOrEmpty(_selectedRole)) return;
+        _isChangingRole = true;
+        ClearFeedback();
+
+        var currentUserId = await GetCurrentUserIdAsync();
+        var success = await UserManagementService.ChangeRoleAsync(_user.Id, _selectedRole, currentUserId);
+
+        if (success)
+        {
+            ShowFeedback($"Role changed to {_selectedRole}.", isError: false);
+            await ReloadUser();
+        }
+        else
+        {
+            ShowFeedback("Failed to change role. Please try again.", isError: true);
+        }
+
+        _isChangingRole = false;
+    }
+
+    private void RequestDeactivate()
+    {
+        _showDeactivateConfirm = true;
+    }
+
+    private void CancelDeactivate()
+    {
+        _showDeactivateConfirm = false;
+    }
+
+    private async Task ConfirmDeactivate()
+    {
+        if (_user is null) return;
+        _isTogglingStatus = true;
+        ClearFeedback();
+
+        var currentUserId = await GetCurrentUserIdAsync();
+        var success = await UserManagementService.DeactivateAsync(_user.Id, currentUserId);
+
+        if (success)
+        {
+            ShowFeedback("Account deactivated.", isError: false);
+            _showDeactivateConfirm = false;
+            await ReloadUser();
+        }
+        else
+        {
+            ShowFeedback("Failed to deactivate account. Please try again.", isError: true);
+        }
+
+        _isTogglingStatus = false;
+    }
+
+    private async Task ReactivateUser()
+    {
+        if (_user is null) return;
+        _isTogglingStatus = true;
+        ClearFeedback();
+
+        var currentUserId = await GetCurrentUserIdAsync();
+        var success = await UserManagementService.ReactivateAsync(_user.Id, currentUserId);
+
+        if (success)
+        {
+            ShowFeedback("Account reactivated.", isError: false);
+            await ReloadUser();
+        }
+        else
+        {
+            ShowFeedback("Failed to reactivate account. Please try again.", isError: true);
+        }
+
+        _isTogglingStatus = false;
+    }
+
+    private async Task ResetPassword()
+    {
+        if (_user is null || string.IsNullOrWhiteSpace(_newPassword)) return;
+        _isResettingPassword = true;
+        ClearFeedback();
+
+        var currentUserId = await GetCurrentUserIdAsync();
+        var success = await UserManagementService.ResetPasswordAsync(_user.Id, _newPassword, currentUserId);
+
+        if (success)
+        {
+            ShowFeedback("Password has been reset.", isError: false);
+            _newPassword = null;
+        }
+        else
+        {
+            ShowFeedback("Failed to reset password. Please try again.", isError: true);
+        }
+
+        _isResettingPassword = false;
+    }
+
+    private async Task ForceMfa()
+    {
+        if (_user is null) return;
+        _isForcingMfa = true;
+        ClearFeedback();
+
+        var currentUserId = await GetCurrentUserIdAsync();
+        var success = await UserManagementService.ForceMfaAsync(_user.Id, currentUserId);
+
+        if (success)
+        {
+            ShowFeedback("MFA setup has been enforced for this user.", isError: false);
+            await ReloadUser();
+        }
+        else
+        {
+            ShowFeedback("Failed to enforce MFA. Please try again.", isError: true);
+        }
+
+        _isForcingMfa = false;
+    }
+
+    private async Task ReloadUser()
+    {
+        _user = await UserManagementService.GetUserByIdAsync(UserId);
+        if (_user is not null)
+        {
+            _profileModel = new ProfileModel
+            {
+                FirstName = _user.FirstName,
+                LastName = _user.LastName,
+                DisplayName = _user.DisplayName,
+                Email = _user.Email
+            };
+            _selectedRole = _user.Role;
+        }
+    }
+
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/admin/users");
+    }
+
+    private void ShowFeedback(string message, bool isError)
+    {
+        _feedbackMessage = message;
+        _feedbackIsError = isError;
+    }
+
+    private void ClearFeedback()
+    {
+        _feedbackMessage = null;
+    }
+
+    private static BadgeVariant GetRoleBadgeVariant(string role) => role switch
+    {
+        "Admin" => BadgeVariant.Accent,
+        "Nutritionist" => BadgeVariant.Primary,
+        "Assistant" => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+
+    private class ProfileModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+}

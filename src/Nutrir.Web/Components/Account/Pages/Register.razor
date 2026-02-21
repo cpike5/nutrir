@@ -6,7 +6,9 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using Nutrir.Core.DTOs
 @using Nutrir.Core.Entities
+@using Nutrir.Core.Interfaces
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -15,46 +17,107 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IInviteCodeService InviteCodeService
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<h2>Create your account</h2>
 
 <StatusMessage Message="@Message" />
-<EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-    <DataAnnotationsValidator />
-    <h2>Create a new account.</h2>
-    <hr class="divider" />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="form-group">
-        <label for="Input.Email" class="form-label">Email</label>
-        <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-        <ValidationMessage For="() => Input.Email" class="form-error" />
-    </div>
-    <div class="form-group">
-        <label for="Input.Password" class="form-label">Password</label>
-        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
-        <ValidationMessage For="() => Input.Password" class="form-error" />
-    </div>
-    <div class="form-group">
-        <label for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
-        <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
-        <ValidationMessage For="() => Input.ConfirmPassword" class="form-error" />
-    </div>
-    <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
-</EditForm>
 
-<hr class="divider" />
+@if (!_codeValidated)
+{
+    <p class="text-sm text-muted mb-4">Enter your invite code to get started.</p>
 
-<section>
-    <h3>Use another service to register.</h3>
+    <EditForm Model="CodeInput" method="post" OnValidSubmit="ValidateInviteCode" FormName="validate-code">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        @if (_codeError is not null)
+        {
+            <div class="status-message status-message-error" role="alert">@_codeError</div>
+        }
+        <div class="flex flex-col gap-4">
+            <div class="form-group">
+                <label for="CodeInput.Code" class="form-label">Invite Code</label>
+                <InputText @bind-Value="CodeInput.Code" id="CodeInput.Code" class="form-input" autocomplete="off" aria-required="true" placeholder="ABC-1234" />
+                <ValidationMessage For="() => CodeInput.Code" class="form-error" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Validate Code</button>
+        </div>
+    </EditForm>
+
+    <div class="flex flex-col gap-2 mt-6 text-center">
+        <span class="text-sm text-muted">
+            Already have an account?
+            <a href="Account/Login">Sign in</a>
+        </span>
+    </div>
+}
+else
+{
+    <div class="flex items-center gap-2 mb-4">
+        <span class="text-sm text-muted">Registering as:</span>
+        <span class="badge badge-primary">@_targetRole</span>
+    </div>
+
+    <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+
+        <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
+
+        <div class="flex flex-col gap-4">
+            <div class="form-group">
+                <label for="Input.FirstName" class="form-label">First Name</label>
+                <InputText @bind-Value="Input.FirstName" id="Input.FirstName" class="form-input" autocomplete="given-name" aria-required="true" placeholder="First name" />
+                <ValidationMessage For="() => Input.FirstName" class="form-error" />
+            </div>
+            <div class="form-group">
+                <label for="Input.LastName" class="form-label">Last Name</label>
+                <InputText @bind-Value="Input.LastName" id="Input.LastName" class="form-input" autocomplete="family-name" aria-required="true" placeholder="Last name" />
+                <ValidationMessage For="() => Input.LastName" class="form-error" />
+            </div>
+            <div class="form-group">
+                <label for="Input.Email" class="form-label">Email</label>
+                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <ValidationMessage For="() => Input.Email" class="form-error" />
+            </div>
+            <div class="form-group">
+                <label for="Input.Password" class="form-label">Password</label>
+                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <ValidationMessage For="() => Input.Password" class="form-error" />
+            </div>
+            <div class="form-group">
+                <label for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <ValidationMessage For="() => Input.ConfirmPassword" class="form-error" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
+        </div>
+    </EditForm>
+
+    <div class="divider-text mt-6 mb-6">or continue with</div>
+
     <ExternalLoginPicker />
-</section>
+
+    <div class="flex flex-col gap-2 mt-6 text-center">
+        <span class="text-sm text-muted">
+            Already have an account?
+            <a href="Account/Login">Sign in</a>
+        </span>
+    </div>
+}
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private bool _codeValidated;
+    private string? _targetRole;
+    private string? _codeError;
 
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "validate-code")]
+    private CodeInputModel CodeInput { get; set; } = new();
+
+    [SupplyParameterFromForm(FormName = "register")]
     private InputModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
@@ -62,9 +125,44 @@
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    public async Task ValidateInviteCode(EditContext editContext)
+    {
+        _codeError = null;
+
+        var result = await InviteCodeService.ValidateAsync(CodeInput.Code);
+
+        if (!result.IsValid)
+        {
+            _codeError = result.Status switch
+            {
+                InviteCodeValidationStatus.NotFound => "Invite code not found. Please check the code and try again.",
+                InviteCodeValidationStatus.Expired => "This invite code has expired. Please request a new one.",
+                InviteCodeValidationStatus.AlreadyUsed => "This invite code has already been used.",
+                _ => "Invalid invite code."
+            };
+            return;
+        }
+
+        _codeValidated = true;
+        _targetRole = result.TargetRole;
+        Input.InviteCode = CodeInput.Code;
+    }
+
     public async Task RegisterUser(EditContext editContext)
     {
+        // Re-validate the invite code to prevent tampering
+        var codeResult = await InviteCodeService.ValidateAsync(Input.InviteCode);
+        if (!codeResult.IsValid)
+        {
+            identityErrors = new[] { new IdentityError { Description = "The invite code is no longer valid." } };
+            _codeValidated = false;
+            return;
+        }
+
         var user = CreateUser();
+        user.FirstName = Input.FirstName;
+        user.LastName = Input.LastName;
+        user.DisplayName = $"{Input.FirstName} {Input.LastName}";
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
@@ -74,12 +172,24 @@
         if (!result.Succeeded)
         {
             identityErrors = result.Errors;
+            _codeValidated = true;
+            _targetRole = codeResult.TargetRole;
             return;
         }
 
-        Logger.LogInformation("User created a new account with password.");
+        Logger.LogInformation("User {UserId} created a new account with invite code", user.Id);
 
         var userId = await UserManager.GetUserIdAsync(user);
+
+        // Assign role from invite code
+        if (!string.IsNullOrEmpty(codeResult.TargetRole))
+        {
+            await UserManager.AddToRoleAsync(user, codeResult.TargetRole);
+        }
+
+        // Redeem the invite code
+        await InviteCodeService.RedeemAsync(Input.InviteCode, userId);
+
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         var callbackUrl = NavigationManager.GetUriWithQueryParameters(
@@ -121,8 +231,23 @@
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
+    private sealed class CodeInputModel
+    {
+        [Required(ErrorMessage = "An invite code is required to register.")]
+        [Display(Name = "Invite Code")]
+        public string Code { get; set; } = "";
+    }
+
     private sealed class InputModel
     {
+        [Required]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
@@ -138,5 +263,7 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
+
+        public string InviteCode { get; set; } = "";
     }
 }

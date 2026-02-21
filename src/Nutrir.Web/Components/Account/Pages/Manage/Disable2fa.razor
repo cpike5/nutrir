@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/Disable2fa"
+@page "/Account/Manage/Disable2fa"
 
 @using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
@@ -10,25 +10,24 @@
 
 <PageTitle>Disable two-factor authentication (2FA)</PageTitle>
 
-<StatusMessage />
-<h3>Disable two-factor authentication (2FA)</h3>
+<div class="manage-section-header">
+    <h3>Disable two-factor authentication (2FA)</h3>
+</div>
 
-<div class="card card-flat" role="alert" style="border-color: var(--color-warning); margin-bottom: var(--space-4);">
-    <p>
-        <strong>This action only disables 2FA.</strong>
-    </p>
+<StatusMessage />
+
+<div class="alert alert-warning mb-6" role="alert">
+    <strong>This action only disables 2FA.</strong>
     <p>
         Disabling 2FA does not change the keys used in authenticator apps. If you wish to change the key
         used in an authenticator app you should <a href="Account/Manage/ResetAuthenticator">reset your authenticator keys.</a>
     </p>
 </div>
 
-<div>
-    <form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
-        <AntiforgeryToken />
-        <button class="btn btn-primary" type="submit">Disable 2FA</button>
-    </form>
-</div>
+<form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken />
+    <button class="btn btn-danger" type="submit">Disable 2FA</button>
+</form>
 
 @code {
     private ApplicationUser user = default!;

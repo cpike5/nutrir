@@ -1,0 +1,72 @@
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 480px;
+    padding: var(--space-6);
+}
+
+.auth-brand {
+    font-size: var(--text-3xl);
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.auth-card {
+    padding: var(--space-8);
+}
+
+/* Auth page headings */
+.auth-card ::deep h2 {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.auth-card ::deep h3 {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-2) 0;
+}
+
+/* Remove default h1 styling inside card — pages use h2 as visual title */
+.auth-card ::deep h1 {
+    display: none;
+}
+
+/* Auth page links */
+.auth-card ::deep a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: var(--text-sm);
+}
+
+.auth-card ::deep a:hover {
+    text-decoration: underline;
+}
+
+/* Status page content */
+.auth-card ::deep .auth-status-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-3) 0;
+    display: block;
+}
+
+.auth-card ::deep .auth-status-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.6;
+}

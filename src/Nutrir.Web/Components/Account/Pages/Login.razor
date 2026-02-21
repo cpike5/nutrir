@@ -13,15 +13,14 @@
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Log in</h1>
+<h2>Sign in to your account</h2>
 
-<section>
-    <StatusMessage Message="@errorMessage" />
-    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-        <DataAnnotationsValidator />
-        <h2>Use a local account to log in.</h2>
-        <hr class="divider" />
-        <ValidationSummary class="form-error" role="alert" />
+<StatusMessage Message="@errorMessage" />
+
+<EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="form-error" role="alert" />
+    <div class="flex flex-col gap-4">
         <div class="form-group">
             <label for="Input.Email" class="form-label">Email</label>
             <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
@@ -32,35 +31,28 @@
             <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="current-password" aria-required="true" placeholder="password" />
             <ValidationMessage For="() => Input.Password" class="form-error" />
         </div>
-        <div class="form-checkbox">
-            <label class="form-label">
-                <InputCheckbox @bind-Value="Input.RememberMe" />
-                Remember me
-            </label>
+        <div class="flex justify-between items-center">
+            <div class="form-checkbox">
+                <InputCheckbox @bind-Value="Input.RememberMe" id="Input.RememberMe" />
+                <label for="Input.RememberMe">Remember me</label>
+            </div>
+            <a href="Account/ForgotPassword">Forgot password?</a>
         </div>
-        <div>
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
-        </div>
-        <div>
-            <p>
-                <a href="Account/ForgotPassword">Forgot your password?</a>
-            </p>
-            <p>
-                <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
-            </p>
-            <p>
-                <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
-            </p>
-        </div>
-    </EditForm>
-</section>
+        <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Log in</button>
+    </div>
+</EditForm>
 
-<hr class="divider" />
+<div class="divider-text mt-6 mb-6">or continue with</div>
 
-<section>
-    <h3>Use another service to log in.</h3>
-    <ExternalLoginPicker />
-</section>
+<ExternalLoginPicker />
+
+<div class="flex flex-col gap-2 mt-6 text-center">
+    <span class="text-sm text-muted">
+        Don't have an account?
+        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register</a>
+    </span>
+    <a href="Account/ResendEmailConfirmation" class="text-sm text-muted">Resend email confirmation</a>
+</div>
 
 @code {
     private string? errorMessage;

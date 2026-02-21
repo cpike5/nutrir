@@ -1,7 +1,7 @@
 @if (!string.IsNullOrEmpty(DisplayMessage))
 {
     var isError = DisplayMessage.StartsWith("Error");
-    <div class="badge @(isError ? "badge-error" : "badge-success")" role="alert" style="display: flex; padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm);">
+    <div class="status-message @(isError ? "status-message-error" : "status-message-success")" role="alert">
         @DisplayMessage
     </div>
 }

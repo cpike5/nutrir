@@ -12,24 +12,30 @@
 
 <PageTitle>Recovery code verification</PageTitle>
 
-<h1>Recovery code verification</h1>
-<hr class="divider" />
+<h2>Recovery code verification</h2>
+
 <StatusMessage Message="@message" />
-<p>
-    You have requested to log in with a recovery code. This login will not be remembered until you provide
-    an authenticator app code at log in or disable 2FA and log in again.
+<p class="text-sm text-muted mb-4">
+    Enter one of your recovery codes to sign in. This login will not be remembered until you provide
+    an authenticator app code at sign in or disable 2FA.
 </p>
 
 <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
     <ValidationSummary class="form-error" role="alert" />
-    <div class="form-group">
-        <label for="Input.RecoveryCode" class="form-label">Recovery Code</label>
-        <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-input" autocomplete="off" placeholder="RecoveryCode" />
-        <ValidationMessage For="() => Input.RecoveryCode" class="form-error" />
+    <div class="flex flex-col gap-4">
+        <div class="form-group">
+            <label for="Input.RecoveryCode" class="form-label">Recovery Code</label>
+            <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-input" autocomplete="off" placeholder="XXXXX-XXXXX" />
+            <ValidationMessage For="() => Input.RecoveryCode" class="form-error" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
     </div>
-    <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
 </EditForm>
+
+<div class="text-center mt-6">
+    <a href="Account/LoginWith2fa" class="text-sm">Back to authenticator code</a>
+</div>
 
 @code {
     private string? message;
