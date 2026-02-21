@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/Nutrir.Web/Dockerfile
+    ports:
+      - "7100:8080"
+    depends_on:
+      - db
+      - seq
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-nutrir};Username=${POSTGRES_USER:-nutrir};Password=${POSTGRES_PASSWORD:-nutrir_dev}
+      - Seq__ServerUrl=http://seq:5341
+
+  db:
+    image: postgres:17
+    ports:
+      - "7103:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nutrir}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nutrir_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-nutrir}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - "7102:5341"
+      - "7101:80"
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-SeqDev123!}
+
+volumes:
+  pgdata:

@@ -1,4 +1,4 @@
-# Elisa MTZ Nutrition
+# Nutrir
 
 A CRM-style application for a solo nutritionist/dietician, focused on client tracking, scheduling, and meal planning.
 
@@ -62,4 +62,49 @@ English (en-CA) only for v1. Application structure supports future localization 
 
 ## Getting Started
 
-_TODO: Setup instructions once project is scaffolded._
+### Prerequisites
+
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+
+### Setup
+
+1. **Start dependencies** (PostgreSQL + Seq):
+
+   ```bash
+   docker compose up -d db seq
+   ```
+
+2. **Apply database migrations**:
+
+   ```bash
+   dotnet ef database update -s src/Nutrir.Web -p src/Nutrir.Infrastructure
+   ```
+
+3. **Run the application**:
+
+   ```bash
+   dotnet run --project src/Nutrir.Web
+   ```
+
+4. **Access the app** at `https://localhost:5001` and **Seq logs** at `http://localhost:7101` (admin / `SeqDev123!`).
+
+### Full Docker Setup
+
+To run everything in Docker (app + PostgreSQL + Seq):
+
+```bash
+cp .env.example .env   # edit with your values if needed
+docker compose up -d
+```
+
+The app will be available at `http://localhost:7100`.
+
+### Port Reference
+
+| Port | Service |
+|------|---------|
+| `7100` | App (Docker) |
+| `7101` | Seq UI |
+| `7102` | Seq ingestion |
+| `7103` | PostgreSQL |

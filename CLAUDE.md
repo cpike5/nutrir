@@ -1,4 +1,4 @@
-# Elisa MTZ Nutrition — Project Instructions
+# Nutrir — Project Instructions
 
 ## Project Overview
 
@@ -30,6 +30,7 @@ Three-layer architecture:
 - Docker Compose includes: app, PostgreSQL, Seq
 - Elastic cluster is external and out of scope for Docker setup — assume it exists when configuring production logging
 - Seq is the primary dev logging sink; optionally used in prod alongside Elastic
+- **Dev ports**: App `7100`, Seq UI `7101`, Seq ingestion `7102`, PostgreSQL `7103`
 
 ### DI & Configuration
 - Use `IServiceCollection` extension methods for DI registration
