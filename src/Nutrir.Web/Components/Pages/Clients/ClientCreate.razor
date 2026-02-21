@@ -65,12 +65,7 @@
                                    ValueChanged="@(v => _model.DateOfBirth = v)" />
                     </FormGroup>
 
-                    <FormGroup Label="Primary Nutritionist ID" Id="nutritionistId">
-                        <FormInput Id="nutritionistId"
-                                   Value="@_model.PrimaryNutritionistId"
-                                   ValueChanged="@(v => _model.PrimaryNutritionistId = v)"
-                                   Placeholder="User ID of the nutritionist" />
-                    </FormGroup>
+                    @* PrimaryNutritionistId is auto-assigned to the current user *@
                 </div>
 
                 <FormGroup Label="Notes" Id="notes">
@@ -151,7 +146,7 @@
                 Email: string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
                 Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : _model.Phone,
                 DateOfBirth: dob,
-                PrimaryNutritionistId: _model.PrimaryNutritionistId ?? string.Empty,
+                PrimaryNutritionistId: userId,
                 ConsentGiven: _model.ConsentGiven,
                 ConsentTimestamp: _model.ConsentGiven ? DateTime.UtcNow : null,
                 ConsentPolicyVersion: _model.ConsentGiven ? "1.0" : null,
@@ -196,8 +191,6 @@
         public string? Phone { get; set; }
 
         public string? DateOfBirth { get; set; }
-
-        public string? PrimaryNutritionistId { get; set; }
 
         public bool ConsentGiven { get; set; }
 
