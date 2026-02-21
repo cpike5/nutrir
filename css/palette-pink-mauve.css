@@ -1,0 +1,29 @@
+/* Palette: Warm Mauve
+   Elegant, muted — sophisticated neutral-pink with plum undertones
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #f6f2f3;
+  --color-text:      #2a2830;
+  --color-primary:   #b0687d;
+  --color-secondary: #5c4d59;
+  --color-accent:    #a59e9d;
+
+  --rgb-bg:        246, 242, 243;
+  --rgb-text:      42, 40, 48;
+  --rgb-primary:   176, 104, 125;
+  --rgb-secondary: 92, 77, 89;
+  --rgb-accent:    165, 158, 157;
+
+  --color-bg-alt:      #edeaeb;
+  --color-bg-footer:   #e8e4e5;
+  --color-primary-hover:   #9a5a6d;
+  --color-secondary-hover: #4d3f4b;
+  --color-accent-hover:    #918a89;
+
+  --color-text-muted:    #6e6670;
+
+  --color-success:  #5a9e6b;
+  --color-warning:  #c4882f;
+  --color-error:    #b05c5c;
+  --color-info:     #7a8fa0;
+}

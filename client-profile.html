@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCRM – Maria Garcia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" id="palette" href="css/palette-pink-mauve.css">
+  <link rel="stylesheet" href="css/dashboard-v3.css">
+  <link rel="stylesheet" href="css/client-profile.css">
+  <link rel="stylesheet" href="css/palette-switcher.css">
+</head>
+<body>
+
+  <div class="cc-layout">
+
+    <!-- ── Icon Rail ──────────────────────────────────────── -->
+    <aside class="icon-rail">
+      <div class="rail-brand">
+        <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+          <path d="M18 6C18 6 10 14 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14 18 6 18 6Z"
+                fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 14V22M15 19H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <nav class="rail-nav">
+        <div class="rail-item" title="Dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div class="rail-item active" title="Clients">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+
+        <div class="rail-sep"></div>
+
+        <div class="rail-item" title="Meal Plans">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Progress">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Notes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+      </nav>
+
+      <div class="rail-footer">
+        <div class="rail-item" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </div>
+        <div class="rail-avatar" title="Elisa Martinez">EM</div>
+      </div>
+    </aside>
+
+    <!-- ── Main Area ──────────────────────────────────────── -->
+    <div class="cc-main">
+
+      <!-- Top Bar -->
+      <div class="cc-topbar">
+        <div class="cc-topbar-left">
+          <div class="cc-breadcrumb">
+            <a href="dashboard-v3.html" style="color: var(--color-text-muted); text-decoration: none;">Clients</a>
+            <span class="cc-breadcrumb-sep">/</span>
+            <strong>Maria Garcia</strong>
+          </div>
+          <div class="cc-search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search clients, plans...">
+          </div>
+        </div>
+        <div class="cc-topbar-right">
+          <button class="cc-topbar-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            2
+          </button>
+          <button class="cc-topbar-btn primary">+ New Client</button>
+        </div>
+      </div>
+
+      <!-- Profile Body -->
+      <div class="cc-body">
+
+        <!-- Client Header -->
+        <div class="client-header">
+          <div class="client-avatar-lg">MG</div>
+          <div class="client-header-body">
+            <div class="client-name-row">
+              <h2>Maria Garcia</h2>
+              <span class="badge badge-success" style="font-size: 0.625rem;">Active</span>
+              <span class="badge badge-accent" style="font-size: 0.625rem;">Vegetarian</span>
+            </div>
+            <div class="client-meta">
+              <span class="client-meta-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                maria.garcia@email.com
+              </span>
+              <span class="client-meta-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                (416) 555-0142
+              </span>
+              <span class="client-meta-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Toronto, ON
+              </span>
+            </div>
+          </div>
+          <div class="client-actions">
+            <button class="cc-topbar-btn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Schedule Appt
+            </button>
+            <button class="cc-topbar-btn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              New Note
+            </button>
+            <button class="cc-topbar-btn primary">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <!-- 2-column Profile Grid -->
+        <div class="profile-grid">
+
+          <!-- Left Column -->
+          <div class="profile-col">
+
+            <!-- Appointments Panel -->
+            <div class="cc-panel">
+              <div class="cc-panel-header">
+                <span class="cc-panel-title">Appointments</span>
+                <span class="cc-panel-count">3 upcoming</span>
+              </div>
+              <div class="cc-panel-body">
+                <div class="panel-section-label">Upcoming</div>
+
+                <div class="cc-list-item">
+                  <span class="cc-list-time">Feb 24</span>
+                  <div class="cc-list-indicator type-review"></div>
+                  <div class="cc-list-content">
+                    <div class="cc-list-primary">Plan Review</div>
+                    <div class="cc-list-secondary">45 min &middot; In-person</div>
+                  </div>
+                  <span class="badge badge-success" style="font-size: 0.5625rem;">Confirmed</span>
+                </div>
+
+                <div class="cc-list-item">
+                  <span class="cc-list-time">Mar 10</span>
+                  <div class="cc-list-indicator type-followup"></div>
+                  <div class="cc-list-content">
+                    <div class="cc-list-primary">Follow-up</div>
+                    <div class="cc-list-secondary">30 min &middot; Virtual</div>
+                  </div>
+                  <span class="badge badge-warning" style="font-size: 0.5625rem;">Pending</span>
+                </div>
+
+                <div class="cc-list-item">
+                  <span class="cc-list-time">Mar 24</span>
+                  <div class="cc-list-indicator type-check"></div>
+                  <div class="cc-list-content">
+                    <div class="cc-list-primary">Check-in</div>
+                    <div class="cc-list-secondary">15 min &middot; Virtual</div>
+                  </div>
+                  <span class="badge badge-accent" style="font-size: 0.5625rem;">Scheduled</span>
+                </div>
+
+                <hr class="panel-divider">
+                <div class="panel-section-label">Recent</div>
+
+                <div class="cc-list-item" style="opacity: 0.65;">
+                  <span class="cc-list-time">Feb 10</span>
+                  <div class="cc-list-indicator type-followup"></div>
+                  <div class="cc-list-content">
+                    <div class="cc-list-primary">Follow-up</div>
+                    <div class="cc-list-secondary">30 min &middot; In-person</div>
+                  </div>
+                  <span class="badge badge-primary" style="font-size: 0.5625rem;">Completed</span>
+                </div>
+
+                <div class="cc-list-item" style="opacity: 0.65;">
+                  <span class="cc-list-time">Jan 27</span>
+                  <div class="cc-list-indicator type-initial"></div>
+                  <div class="cc-list-content">
+                    <div class="cc-list-primary">Initial Consultation</div>
+                    <div class="cc-list-secondary">60 min &middot; In-person</div>
+                  </div>
+                  <span class="badge badge-primary" style="font-size: 0.5625rem;">Completed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session Notes Panel -->
+            <div class="cc-panel">
+              <div class="cc-panel-header">
+                <span class="cc-panel-title">Session Notes</span>
+                <span class="cc-panel-count">4 notes</span>
+              </div>
+              <div class="cc-panel-body">
+
+                <div class="note-item">
+                  <div class="note-header">
+                    <span class="note-date">Feb 10, 2026</span>
+                    <div class="note-tags">
+                      <span class="note-tag">Follow-up</span>
+                      <span class="note-tag">Progress</span>
+                    </div>
+                  </div>
+                  <div class="note-summary">
+                    Maria reports improved energy levels since switching to the vegetarian meal plan. Weight is down 1.2 kg from baseline. Discussed adding more iron-rich foods and B12 supplementation. Compliance with meal plan at approximately 85%.
+                  </div>
+                </div>
+
+                <div class="note-item">
+                  <div class="note-header">
+                    <span class="note-date">Jan 27, 2026</span>
+                    <div class="note-tags">
+                      <span class="note-tag">Initial</span>
+                      <span class="note-tag">Assessment</span>
+                    </div>
+                  </div>
+                  <div class="note-summary">
+                    Initial consultation completed. Client goals: weight management, improved energy, transition to plant-based diet. No known allergies. Currently sedentary lifestyle, willing to add light exercise. Family history of type 2 diabetes.
+                  </div>
+                </div>
+
+                <div class="note-item">
+                  <div class="note-header">
+                    <span class="note-date">Feb 3, 2026</span>
+                    <div class="note-tags">
+                      <span class="note-tag">Plan</span>
+                    </div>
+                  </div>
+                  <div class="note-summary">
+                    Meal plan created and reviewed with client. Emphasis on whole grains, legumes, and leafy greens. Caloric target set at 1,800 kcal/day. Client expressed enthusiasm about new recipes provided.
+                  </div>
+                </div>
+
+                <div class="note-item">
+                  <div class="note-header">
+                    <span class="note-date">Feb 17, 2026</span>
+                    <div class="note-tags">
+                      <span class="note-tag">Check-in</span>
+                    </div>
+                  </div>
+                  <div class="note-summary">
+                    Brief phone check-in. Maria mentioned difficulty with weekday lunches due to work schedule. Suggested meal prep strategies and provided batch cooking guide. Will reassess at next in-person visit.
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column -->
+          <div class="profile-col">
+
+            <!-- Current Meal Plan -->
+            <div class="cc-panel">
+              <div class="cc-panel-header">
+                <span class="cc-panel-title">Current Meal Plan</span>
+                <span class="badge badge-success" style="font-size: 0.5625rem;">Active</span>
+              </div>
+              <div class="cc-panel-body">
+                <div class="meal-plan-info">
+                  <div class="meal-plan-name">Vegetarian Transition Plan</div>
+                  <div class="meal-plan-dates">Feb 3 – Mar 3, 2026 &middot; Week 3 of 4</div>
+                  <div class="macro-grid">
+                    <div class="macro-item">
+                      <div class="macro-value">1,800</div>
+                      <div class="macro-label">kcal</div>
+                    </div>
+                    <div class="macro-item">
+                      <div class="macro-value">65g</div>
+                      <div class="macro-label">Protein</div>
+                    </div>
+                    <div class="macro-item">
+                      <div class="macro-value">245g</div>
+                      <div class="macro-label">Carbs</div>
+                    </div>
+                    <div class="macro-item">
+                      <div class="macro-value">60g</div>
+                      <div class="macro-label">Fat</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="meal-plan-footer">
+                  <span class="badge badge-primary" style="font-size: 0.5625rem;">85% compliance</span>
+                  <span class="meal-plan-link">View full plan &rarr;</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress & Goals -->
+            <div class="cc-panel">
+              <div class="cc-panel-header">
+                <span class="cc-panel-title">Progress &amp; Goals</span>
+                <span class="cc-panel-count">3 active</span>
+              </div>
+              <div class="cc-panel-body">
+                <div class="progress-section">
+                  <div class="progress-metric">
+                    <div class="progress-metric-header">
+                      <span class="progress-metric-label">Weight</span>
+                      <span class="progress-metric-value">73.8 kg &rarr; 70 kg</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width: 32%;"></div>
+                    </div>
+                  </div>
+
+                  <div class="progress-metric">
+                    <div class="progress-metric-header">
+                      <span class="progress-metric-label">Meal Plan Adherence</span>
+                      <span class="progress-metric-value">85%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill success" style="width: 85%;"></div>
+                    </div>
+                  </div>
+
+                  <div class="progress-metric">
+                    <div class="progress-metric-header">
+                      <span class="progress-metric-label">Weekly Exercise</span>
+                      <span class="progress-metric-value">2 / 3 sessions</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill warning" style="width: 66%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="goal-badges">
+                  <span class="badge badge-success" style="font-size: 0.5625rem;">Energy: Improved</span>
+                  <span class="badge badge-warning" style="font-size: 0.5625rem;">Sleep: Needs work</span>
+                  <span class="badge badge-primary" style="font-size: 0.5625rem;">Diet: On track</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Client Details -->
+            <div class="cc-panel">
+              <div class="cc-panel-header">
+                <span class="cc-panel-title">Client Details</span>
+              </div>
+              <div class="cc-panel-body">
+                <div class="detail-list">
+                  <div class="detail-row">
+                    <span class="detail-label">Start Date</span>
+                    <span class="detail-value">Jan 27, 2026</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Date of Birth</span>
+                    <span class="detail-value">Mar 15, 1990</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Referral</span>
+                    <span class="detail-value">Dr. Sarah Chen</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Allergies</span>
+                    <span class="detail-value">None reported</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Restrictions</span>
+                    <span class="detail-value">Vegetarian (transitioning)</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Emergency</span>
+                    <span class="detail-value">Carlos Garcia &middot; (416) 555-0198</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="cc-status-bar">
+        <div class="cc-status-left">
+          <div class="cc-status-indicator">
+            <div class="cc-status-dot"></div>
+            <span>All systems online</span>
+          </div>
+          <span>24 clients &middot; 18 active plans</span>
+          <span>Last sync: 2 min ago</span>
+        </div>
+        <div class="cc-status-right">
+          <span><span class="cc-kbd">Ctrl</span> + <span class="cc-kbd">K</span> Search</span>
+          <span><span class="cc-kbd">Ctrl</span> + <span class="cc-kbd">N</span> New</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Palette Switcher -->
+  <div class="design-switcher">
+    <div class="switcher-group">
+      <span class="switcher-label">Theme</span>
+      <button class="palette-swatch-btn" data-palette="sage" title="Sage" style="background: linear-gradient(135deg, #4a6741, #9a6c41);"></button>
+      <button class="palette-swatch-btn" data-palette="pink" title="Pink Neutral" style="background: linear-gradient(135deg, #c47a8a, #b64c4f);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-soft" title="Soft Rose" style="background: linear-gradient(135deg, #d4919a, #bfccb9);"></button>
+      <button class="palette-swatch-btn active" data-palette="pink-mauve" title="Warm Mauve" style="background: linear-gradient(135deg, #b0687d, #5c4d59);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-deep" title="Deep Rose" style="background: linear-gradient(135deg, #a85d6e, #b2aaa0);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-lilac" title="Rose & Lilac" style="background: linear-gradient(135deg, #b0687d, #c69ec5);"></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-palette]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('palette').href = `css/palette-${btn.dataset.palette}.css`;
+        document.querySelectorAll('.palette-swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

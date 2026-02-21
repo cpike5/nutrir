@@ -1,0 +1,545 @@
+/* ============================================================
+   Landing / Login Page
+   Aesthetic: Quiet luxury — restrained, precise, atmospheric
+   Depends on: design-system.css
+   ============================================================ */
+
+
+/* ── Entrance Animation ─────────────────────────────────────── */
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes revealFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.7; }
+}
+
+@keyframes drawLine {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+
+/* ── Split Layout ───────────────────────────────────────────── */
+
+.landing-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  min-height: 100vh;
+}
+
+
+/* ── Hero (Left Panel) ──────────────────────────────────────── */
+
+.landing-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-16) var(--space-16) var(--space-16) clamp(3rem, 6vw, 6rem);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+/* Atmospheric radial wash */
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(
+    ellipse at 30% 40%,
+    rgba(var(--rgb-primary), 0.06) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: breathe 8s ease-in-out infinite;
+}
+
+/* Subtle bottom-right warm glow */
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -15%;
+  right: -5%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse at 70% 70%,
+    rgba(var(--rgb-accent), 0.07) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+}
+
+
+/* ── Brand ──────────────────────────────────────────────────── */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-16);
+  color: var(--color-primary);
+  animation: revealUp 700ms var(--ease-default) both;
+  animation-delay: 100ms;
+}
+
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+
+/* ── Decorative mark between brand and headline ─────────────── */
+
+.brand-mark {
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--color-primary);
+  margin-bottom: var(--space-10);
+  transform-origin: left center;
+  animation: drawLine 600ms var(--ease-default) both;
+  animation-delay: 400ms;
+}
+
+
+/* ── Headline ───────────────────────────────────────────────── */
+
+.landing-headline {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 600;
+  line-height: 1.18;
+  margin-bottom: var(--space-6);
+  color: var(--color-text);
+  letter-spacing: -0.025em;
+  animation: revealUp 700ms var(--ease-default) both;
+  animation-delay: 250ms;
+}
+
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-subtext {
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: var(--color-text-muted);
+  max-width: 400px;
+  margin-bottom: var(--space-12);
+  animation: revealUp 700ms var(--ease-default) both;
+  animation-delay: 400ms;
+}
+
+
+/* ── Trust Strip ────────────────────────────────────────────── */
+
+.trust-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: revealUp 700ms var(--ease-default) both;
+  animation-delay: 550ms;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.trust-item svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+
+/* ── Botanical Decoration ───────────────────────────────────── */
+
+.hero-decoration {
+  position: absolute;
+  right: -30px;
+  bottom: -40px;
+  width: 280px;
+  height: 400px;
+  color: var(--color-primary);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: revealFade 1.2s var(--ease-default) both;
+  animation-delay: 800ms;
+}
+
+.botanical-svg {
+  width: 100%;
+  height: 100%;
+}
+
+
+/* ── Form Panel (Right) ─────────────────────────────────────── */
+
+.landing-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12) clamp(2rem, 4vw, 4rem);
+  background: var(--color-bg-card);
+  border-left: 1px solid var(--color-border);
+  position: relative;
+}
+
+/* Subtle top-edge shadow for depth */
+.landing-form-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--rgb-primary), 0.08) 50%,
+    transparent
+  );
+}
+
+.landing-form-wrapper {
+  width: 100%;
+  max-width: 360px;
+  animation: slideInRight 600ms var(--ease-default) both;
+  animation-delay: 300ms;
+}
+
+
+/* ── Form Header ────────────────────────────────────────────── */
+
+.form-header {
+  margin-bottom: var(--space-10);
+}
+
+.form-header h2 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.01em;
+}
+
+.form-header p {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.005em;
+}
+
+
+/* ── Login Form ─────────────────────────────────────────────── */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Taller, refined inputs */
+.login-form .form-input {
+  padding: 0.875rem var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-bg);
+  border-color: rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition:
+    border-color var(--duration-normal) var(--ease-default),
+    box-shadow var(--duration-normal) var(--ease-default),
+    background var(--duration-normal) var(--ease-default);
+}
+
+.login-form .form-input::placeholder {
+  color: var(--color-accent);
+  font-weight: 400;
+}
+
+.login-form .form-input:focus {
+  background: var(--color-bg-card);
+  border-color: var(--color-primary);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.02),
+    0 0 0 3px rgba(var(--rgb-primary), 0.08);
+}
+
+.login-form .form-checkbox {
+  margin-top: calc(-1 * var(--space-2));
+  color: var(--color-text-muted);
+}
+
+/* Sign in button */
+.login-form .btn-block {
+  margin-top: var(--space-1);
+  padding: 0.875rem var(--space-8);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-lg);
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-normal) var(--ease-default),
+    transform var(--duration-fast) var(--ease-default);
+}
+
+.login-form .btn-block:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 12px rgba(var(--rgb-primary), 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.login-form .btn-block:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(var(--rgb-primary), 0.12);
+}
+
+
+/* ── Form Link ──────────────────────────────────────────────── */
+
+.form-link {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  font-weight: 500;
+  position: relative;
+}
+
+.form-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform var(--duration-normal) var(--ease-default);
+}
+
+.form-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: none;
+}
+
+.form-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+
+/* ── Divider ────────────────────────────────────────────────── */
+
+.landing-form-wrapper .divider-text {
+  margin: var(--space-6) 0;
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+
+/* ── Google Button ──────────────────────────────────────────── */
+
+.landing-form-wrapper .btn-outline.btn-lg {
+  padding: 0.8rem var(--space-8);
+  border-radius: var(--radius-lg);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-normal) var(--ease-default);
+}
+
+.landing-form-wrapper .btn-outline.btn-lg:hover {
+  background: var(--color-bg);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+
+/* ── Footer Text ────────────────────────────────────────────── */
+
+.form-footer {
+  text-align: center;
+  margin-top: var(--space-8);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.form-footer a {
+  font-weight: 500;
+  color: var(--color-primary);
+  position: relative;
+}
+
+.form-footer a::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--color-primary);
+  opacity: 0.3;
+}
+
+.form-footer a:hover {
+  color: var(--color-primary-hover);
+}
+
+.form-footer a:hover::after {
+  opacity: 0.6;
+}
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .landing-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .landing-hero {
+    padding: var(--space-12) var(--space-8);
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero {
+    padding: var(--space-10) var(--space-6);
+    min-height: auto;
+  }
+
+  .landing-headline {
+    font-size: var(--text-3xl);
+  }
+
+  .brand {
+    margin-bottom: var(--space-10);
+  }
+
+  .brand-mark {
+    margin-bottom: var(--space-8);
+  }
+
+  .hero-decoration {
+    display: none;
+  }
+
+  .landing-form-panel {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-10) var(--space-6);
+  }
+
+  .landing-form-wrapper {
+    max-width: 420px;
+  }
+
+  /* Reduce animation delay on mobile for snappier feel */
+  .brand,
+  .landing-headline,
+  .landing-subtext,
+  .trust-strip,
+  .landing-form-wrapper {
+    animation-delay: 0ms !important;
+    animation-duration: 400ms !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-hero {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .landing-form-panel {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .trust-strip {
+    gap: var(--space-3);
+  }
+
+  .brand {
+    margin-bottom: var(--space-8);
+  }
+
+  .brand-mark {
+    margin-bottom: var(--space-6);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

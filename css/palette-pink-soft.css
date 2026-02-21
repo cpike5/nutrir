@@ -1,0 +1,29 @@
+/* Palette: Soft Rose
+   Lightest, airiest pink — with a hint of sage in the accent
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #faf7f5;
+  --color-text:      #2c2828;
+  --color-primary:   #d4919a;
+  --color-secondary: #a25c63;
+  --color-accent:    #bfccb9;
+
+  --rgb-bg:        250, 247, 245;
+  --rgb-text:      44, 40, 40;
+  --rgb-primary:   212, 145, 154;
+  --rgb-secondary: 162, 92, 99;
+  --rgb-accent:    191, 204, 185;
+
+  --color-bg-alt:      #f3f0ed;
+  --color-bg-footer:   #edeae7;
+  --color-primary-hover:   #c17e87;
+  --color-secondary-hover: #8e4f55;
+  --color-accent-hover:    #a8b8a2;
+
+  --color-text-muted:    #787070;
+
+  --color-success:  #5a9e6b;
+  --color-warning:  #c4882f;
+  --color-error:    #a25c63;
+  --color-info:     #7a8fa0;
+}

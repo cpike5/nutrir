@@ -1,0 +1,29 @@
+/* Palette: Pink Neutral
+   Warm neutrals with dusty rose / berry pink accents
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #f6f3f0;
+  --color-text:      #242022;
+  --color-primary:   #c47a8a;
+  --color-secondary: #b64c4f;
+  --color-accent:    #d7a5a5;
+
+  --rgb-bg:        246, 243, 240;
+  --rgb-text:      36, 32, 34;
+  --rgb-primary:   196, 122, 138;
+  --rgb-secondary: 182, 76, 79;
+  --rgb-accent:    215, 165, 165;
+
+  --color-bg-alt:      #edeae7;
+  --color-bg-footer:   #e8e5e0;
+  --color-primary-hover:   #ac6b79;
+  --color-secondary-hover: #a04346;
+  --color-accent-hover:    #c49191;
+
+  --color-text-muted:    #6b6568;
+
+  --color-success:  #5a9e6b;
+  --color-warning:  #c4882f;
+  --color-error:    #b64c4f;
+  --color-info:     #7a8fa0;
+}

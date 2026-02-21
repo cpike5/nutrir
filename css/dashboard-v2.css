@@ -1,0 +1,574 @@
+/* ============================================================
+   Dashboard V2 — "The Journal"
+   Full-width top nav, editorial/magazine layout, asymmetric.
+   Depends on: design-system.css, palette-*.css
+   ============================================================ */
+
+/* ── Entrance Animations ───────────────────────────────────── */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes drawLine {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ── Top Navigation ────────────────────────────────────────── */
+
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  animation: slideDown 400ms var(--ease-default) both;
+}
+
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-primary);
+}
+
+.topnav-brand-name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.topnav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.topnav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 450;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+  text-decoration: none;
+}
+
+.topnav-link:hover {
+  background: var(--color-primary-muted);
+  color: var(--color-primary);
+}
+
+.topnav-link.active {
+  background: var(--color-primary-muted);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.topnav-link svg {
+  opacity: 0.6;
+}
+
+.topnav-link.active svg,
+.topnav-link:hover svg {
+  opacity: 1;
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topnav-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer;
+}
+
+
+/* ── Page Container ────────────────────────────────────────── */
+
+.journal-page {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-8);
+}
+
+
+/* ── Hero Greeting ─────────────────────────────────────────── */
+
+.journal-hero {
+  margin-bottom: var(--space-12);
+  position: relative;
+  animation: fadeUp 600ms var(--ease-default) both;
+  animation-delay: 100ms;
+}
+
+.journal-date {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  margin-bottom: var(--space-3);
+}
+
+.journal-greeting {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: var(--space-3);
+}
+
+.journal-subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.journal-rule {
+  width: 48px;
+  height: 2px;
+  background: var(--color-primary);
+  margin-top: var(--space-6);
+  transform-origin: left;
+  animation: drawLine 500ms var(--ease-default) both;
+  animation-delay: 500ms;
+}
+
+
+/* ── Metrics Strip ─────────────────────────────────────────── */
+
+.metrics-strip {
+  display: flex;
+  gap: var(--space-8);
+  padding: var(--space-6) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-10);
+  animation: fadeUp 500ms var(--ease-default) both;
+  animation-delay: 200ms;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.metric-item-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.metric-item-value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.metric-item-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+
+/* ── Editorial Grid ────────────────────────────────────────── */
+
+.editorial-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: var(--space-8);
+  margin-bottom: var(--space-10);
+}
+
+.editorial-grid .column-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.editorial-grid .column-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+
+/* ── Section Blocks ────────────────────────────────────────── */
+
+.journal-section {
+  animation: fadeUp 500ms var(--ease-default) both;
+}
+
+.journal-section:nth-child(1) { animation-delay: 300ms; }
+.journal-section:nth-child(2) { animation-delay: 400ms; }
+
+.column-right .journal-section:nth-child(1) { animation-delay: 350ms; }
+.column-right .journal-section:nth-child(2) { animation-delay: 450ms; }
+
+.journal-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.journal-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text);
+}
+
+.journal-section-count {
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+
+/* ── Schedule Timeline ─────────────────────────────────────── */
+
+.schedule-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.timeline-item:hover {
+  border-color: rgba(var(--rgb-primary), 0.2);
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-time {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding-top: 2px;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.timeline-client {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.timeline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timeline-dot.type-initial { background: var(--color-primary); }
+.timeline-dot.type-followup { background: var(--color-secondary); }
+.timeline-dot.type-review { background: var(--color-accent); }
+.timeline-dot.type-check { background: var(--color-success); }
+
+.timeline-now {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  position: relative;
+}
+
+.timeline-now::before {
+  content: '';
+  position: absolute;
+  left: var(--space-5);
+  right: var(--space-5);
+  top: 50%;
+  height: 1px;
+  background: var(--color-primary);
+  opacity: 0.2;
+}
+
+.timeline-now span {
+  position: relative;
+  background: var(--color-bg);
+  padding-right: var(--space-3);
+}
+
+
+/* ── Client Cards (small, editorial) ───────────────────────── */
+
+.client-card-small {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  transition: background var(--duration-fast) var(--ease-default);
+  cursor: pointer;
+}
+
+.client-card-small:hover {
+  background: rgba(var(--rgb-primary), 0.04);
+}
+
+.client-small-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-secondary);
+  flex-shrink: 0;
+}
+
+.client-small-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-small-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.client-small-detail {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+
+/* ── Activity List (journal style) ─────────────────────────── */
+
+.journal-activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.journal-activity-item {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.journal-activity-item:hover {
+  border-color: rgba(var(--rgb-primary), 0.15);
+}
+
+.journal-activity-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-1);
+}
+
+.journal-activity-text strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.journal-activity-time {
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+}
+
+
+/* ── Quick Actions (inline) ────────────────────────────────── */
+
+.journal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  animation: fadeUp 500ms var(--ease-default) both;
+  animation-delay: 500ms;
+}
+
+.journal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 450;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.journal-action-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-muted);
+}
+
+.journal-action-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.journal-action-btn:hover svg {
+  opacity: 1;
+}
+
+/* Search in topnav */
+.topnav-search {
+  position: relative;
+}
+
+.topnav-search svg {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-accent);
+  pointer-events: none;
+}
+
+.topnav-search input {
+  padding: var(--space-2) var(--space-4) var(--space-2) 2.25rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  width: 220px;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.topnav-search input::placeholder {
+  color: var(--color-accent);
+}
+
+.topnav-search input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--rgb-primary), 0.08);
+  width: 280px;
+}
+
+
+/* ── Responsive ────────────────────────────────────────────── */
+
+@media (max-width: 1000px) {
+  .editorial-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-strip {
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+}
+
+@media (max-width: 768px) {
+  .topnav {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .topnav-links {
+    display: none;
+  }
+
+  .journal-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .metrics-strip {
+    gap: var(--space-4);
+  }
+
+  .metric-item {
+    min-width: calc(50% - var(--space-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

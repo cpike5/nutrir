@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCRM – Design System Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" id="palette" href="css/palette-pink-mauve.css">
+  <link rel="stylesheet" href="css/palette-switcher.css">
+  <style>
+    body { padding: var(--space-12) 0; }
+
+    .showcase-section {
+      max-width: var(--container-lg);
+      margin: 0 auto var(--space-16);
+      padding: 0 var(--space-6);
+    }
+
+    .showcase-section h2 {
+      margin-bottom: var(--space-2);
+    }
+
+    .showcase-section > p {
+      margin-bottom: var(--space-8);
+    }
+
+    /* Color swatches */
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .swatch {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+
+    .swatch-color {
+      height: 100px;
+    }
+
+    .swatch-info {
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-bg-card);
+    }
+
+    .swatch-name {
+      font-weight: 600;
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-1);
+    }
+
+    .swatch-hex {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      font-family: monospace;
+    }
+
+    /* Typography specimen */
+    .type-specimen {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    .type-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-8);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .type-label {
+      flex-shrink: 0;
+      width: 80px;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      font-family: monospace;
+    }
+
+    /* Component gallery */
+    .component-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .input-demo {
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-6);
+    }
+
+    .card-grid .card h5 { margin-bottom: var(--space-2); }
+    .card-grid .card p { margin-bottom: var(--space-4); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="showcase-section" style="margin-bottom: var(--space-8);">
+    <p class="text-uppercase" style="color: var(--color-secondary); margin-bottom: var(--space-2);">Design System</p>
+    <h1 style="margin-bottom: var(--space-3);">NutriCRM</h1>
+    <p style="max-width: 540px; font-size: var(--text-lg);">
+      A clean, warm palette for a nutrition practice CRM.
+      Professional enough to inspire trust, organic enough to feel human.
+    </p>
+  </div>
+
+  <!-- Colors -->
+  <section class="showcase-section">
+    <h2>Color Palette</h2>
+    <p>Five base colors — swap them in <code>design-system.css</code> to re-skin everything.</p>
+
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-bg);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Background</div>
+          <div class="swatch-hex">#f8f5f0</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-text);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Text</div>
+          <div class="swatch-hex">#282828</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-primary);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Primary (Sage)</div>
+          <div class="swatch-hex">#4a6741</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-secondary);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Secondary (Terracotta)</div>
+          <div class="swatch-hex">#9a6c41</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-accent);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Accent (Olive mist)</div>
+          <div class="swatch-hex">#b6b697</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derived surfaces -->
+    <h4 style="margin-top: var(--space-10); margin-bottom: var(--space-4);">Derived Surfaces</h4>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-bg-alt);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Background Alt</div>
+          <div class="swatch-hex">#f1eee9</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-bg-card); border-bottom: 1px solid var(--color-border);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Card</div>
+          <div class="swatch-hex">#ffffff</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-bg-footer);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Footer</div>
+          <div class="swatch-hex">#ece9e4</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-primary-hover);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Primary Hover</div>
+          <div class="swatch-hex">#3d5736</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--color-secondary-hover);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Secondary Hover</div>
+          <div class="swatch-hex">#885f39</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Typography -->
+  <section class="showcase-section">
+    <h2>Typography</h2>
+    <p>Outfit for headings, Inter for body. Clean and readable.</p>
+
+    <div class="type-specimen">
+      <div class="type-row">
+        <span class="type-label">5xl / 3rem</span>
+        <h1 style="margin:0;">Nourish your practice</h1>
+      </div>
+      <div class="type-row">
+        <span class="type-label">4xl / 2.25rem</span>
+        <h2 style="margin:0;">Client management</h2>
+      </div>
+      <div class="type-row">
+        <span class="type-label">3xl / 1.875rem</span>
+        <h3 style="margin:0;">Meal plan overview</h3>
+      </div>
+      <div class="type-row">
+        <span class="type-label">2xl / 1.5rem</span>
+        <h4 style="margin:0;">Progress tracking</h4>
+      </div>
+      <div class="type-row">
+        <span class="type-label">base / 1rem</span>
+        <p style="margin:0; color: var(--color-text);">
+          Body text looks like this. It should be easy to read at any length,
+          with comfortable line-height and a warm neutral tone.
+        </p>
+      </div>
+      <div class="type-row">
+        <span class="type-label">sm / 0.875rem</span>
+        <small style="color: var(--color-text-muted);">Secondary information, hints, and metadata</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- Buttons -->
+  <section class="showcase-section">
+    <h2>Buttons</h2>
+    <p>Primary, secondary, outline, and ghost variants in two sizes.</p>
+
+    <div class="component-row">
+      <button class="btn btn-primary btn-lg">Get Started</button>
+      <button class="btn btn-secondary btn-lg">Learn More</button>
+      <button class="btn btn-outline btn-lg">View Plans</button>
+      <button class="btn btn-ghost btn-lg">Cancel</button>
+    </div>
+    <div class="component-row">
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-outline">Outline</button>
+      <button class="btn btn-ghost">Ghost</button>
+    </div>
+    <div class="component-row">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-secondary btn-sm">Small</button>
+      <button class="btn btn-outline btn-sm">Small</button>
+      <button class="btn btn-ghost btn-sm">Small</button>
+    </div>
+  </section>
+
+  <!-- Badges -->
+  <section class="showcase-section">
+    <h2>Badges</h2>
+    <p>Status indicators for clients, appointments, and tasks.</p>
+
+    <div class="component-row">
+      <span class="badge badge-primary">Active Client</span>
+      <span class="badge badge-secondary">Follow-up</span>
+      <span class="badge badge-accent">Pending</span>
+      <span class="badge badge-success">On Track</span>
+      <span class="badge badge-warning">Needs Review</span>
+      <span class="badge badge-error">Missed Appointment</span>
+    </div>
+  </section>
+
+  <!-- Form Controls -->
+  <section class="showcase-section">
+    <h2>Form Controls</h2>
+    <p>Inputs, labels, and states.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6);">
+      <div class="form-group">
+        <label class="form-label">Client Name</label>
+        <input type="text" class="form-input" placeholder="e.g. Maria Garcia">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" placeholder="maria@example.com">
+        <span class="form-hint">We'll use this to send appointment reminders.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dietary Preference</label>
+        <select class="form-select">
+          <option>No restrictions</option>
+          <option>Vegetarian</option>
+          <option>Vegan</option>
+          <option>Gluten-free</option>
+          <option>Keto</option>
+        </select>
+      </div>
+      <div class="form-group" style="justify-content: flex-end;">
+        <label class="form-checkbox">
+          <input type="checkbox" checked>
+          Send appointment reminders
+        </label>
+        <label class="form-checkbox">
+          <input type="checkbox">
+          Include in weekly meal plan email
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cards -->
+  <section class="showcase-section">
+    <h2>Cards</h2>
+    <p>Content containers for clients, plans, and dashboard widgets.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h5>Maria Garcia</h5>
+        <p>Next appointment: Feb 24, 2026. Currently on a balanced macro plan.</p>
+        <div class="component-row" style="margin-bottom: 0;">
+          <span class="badge badge-success">On Track</span>
+          <span class="badge badge-primary">Active</span>
+        </div>
+      </div>
+      <div class="card">
+        <h5>Weekly Overview</h5>
+        <p>12 clients seen &middot; 3 new assessments &middot; 2 follow-ups pending</p>
+        <button class="btn btn-outline btn-sm" style="margin-top: var(--space-2);">View Details</button>
+      </div>
+      <div class="card card-flat" style="background: var(--color-bg-alt);">
+        <h5>Quick Note</h5>
+        <p>Flat card variant for secondary content or inline widgets.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dividers -->
+  <section class="showcase-section">
+    <h2>Dividers</h2>
+    <hr class="divider">
+    <div class="divider-text">or continue with</div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="background: var(--color-bg-footer); padding: var(--space-12) var(--space-6); margin-top: var(--space-16);">
+    <div style="max-width: var(--container-lg); margin: 0 auto; text-align: center;">
+      <p class="text-sm text-muted">
+        NutriCRM Design System &middot; Palette generated via Huemint API &middot;
+        Swap the 5 base colors in <code>css/design-system.css</code> to re-skin
+      </p>
+    </div>
+  </footer>
+
+  <!-- Palette Switcher -->
+  <div class="design-switcher">
+    <div class="switcher-group">
+      <span class="switcher-label">Theme</span>
+      <button class="palette-swatch-btn" data-palette="sage" title="Sage" style="background: linear-gradient(135deg, #4a6741, #9a6c41);"></button>
+      <button class="palette-swatch-btn" data-palette="pink" title="Pink Neutral" style="background: linear-gradient(135deg, #c47a8a, #b64c4f);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-soft" title="Soft Rose" style="background: linear-gradient(135deg, #d4919a, #bfccb9);"></button>
+      <button class="palette-swatch-btn active" data-palette="pink-mauve" title="Warm Mauve" style="background: linear-gradient(135deg, #b0687d, #5c4d59);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-deep" title="Deep Rose" style="background: linear-gradient(135deg, #a85d6e, #b2aaa0);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-lilac" title="Rose & Lilac" style="background: linear-gradient(135deg, #b0687d, #c69ec5);"></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-palette]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('palette').href = `css/palette-${btn.dataset.palette}.css`;
+        document.querySelectorAll('.palette-swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

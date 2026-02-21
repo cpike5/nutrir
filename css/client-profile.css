@@ -1,0 +1,401 @@
+/* ============================================================
+   Client Profile Page
+   Profile-specific styles. Reuses V3 shell components.
+   Depends on: design-system.css, palette-*.css, dashboard-v3.css
+   ============================================================ */
+
+
+/* ── Client Header ────────────────────────────────────────── */
+
+.client-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  animation: fadeUp 400ms var(--ease-default) both;
+  animation-delay: 100ms;
+}
+
+.client-avatar-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.client-header-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+
+.client-name-row h2 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.client-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.client-meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.client-meta-item svg {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.client-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+
+/* ── Profile Grid ─────────────────────────────────────────── */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.65fr;
+  gap: var(--space-4);
+}
+
+
+/* ── Panel Animation Delays (profile-specific) ───────────── */
+
+.profile-grid .cc-panel:nth-child(1) { animation-delay: 200ms; }
+.profile-grid .cc-panel:nth-child(2) { animation-delay: 250ms; }
+.profile-grid .cc-panel:nth-child(3) { animation-delay: 300ms; }
+
+.profile-col .cc-panel + .cc-panel {
+  margin-top: var(--space-4);
+}
+
+.profile-col .cc-panel:nth-child(1) { animation-delay: 200ms; }
+.profile-col .cc-panel:nth-child(2) { animation-delay: 280ms; }
+.profile-col .cc-panel:nth-child(3) { animation-delay: 360ms; }
+
+
+/* ── Section Divider (within a panel) ─────────────────────── */
+
+.panel-divider {
+  border: none;
+  border-top: 1px solid rgba(var(--rgb-accent), 0.12);
+  margin: 0;
+}
+
+.panel-section-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-4) var(--space-1);
+}
+
+
+/* ── Appointment Items ────────────────────────────────────── */
+
+.appt-status {
+  font-size: 0.625rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+
+/* ── Note Items ───────────────────────────────────────────── */
+
+.note-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid rgba(var(--rgb-accent), 0.08);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-default);
+}
+
+.note-item:last-child {
+  border-bottom: none;
+}
+
+.note-item:hover {
+  background: rgba(var(--rgb-primary), 0.03);
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.note-date {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--color-primary);
+}
+
+.note-tags {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.note-tag {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--rgb-accent), 0.12);
+  color: var(--color-text-muted);
+}
+
+.note-summary {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ── Meal Plan Card ───────────────────────────────────────── */
+
+.meal-plan-info {
+  padding: var(--space-3) var(--space-4);
+}
+
+.meal-plan-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.meal-plan-dates {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.macro-item {
+  text-align: center;
+  padding: var(--space-2);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.macro-value {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.macro-label {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.meal-plan-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+
+.meal-plan-link {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.meal-plan-link:hover {
+  color: var(--color-primary-hover);
+}
+
+
+/* ── Progress & Goals ─────────────────────────────────────── */
+
+.progress-section {
+  padding: var(--space-3) var(--space-4);
+}
+
+.progress-metric {
+  margin-bottom: var(--space-3);
+}
+
+.progress-metric:last-child {
+  margin-bottom: 0;
+}
+
+.progress-metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.progress-metric-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.progress-metric-value {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--color-primary);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--color-bg);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: width var(--duration-normal) var(--ease-default);
+}
+
+.progress-bar-fill.success {
+  background: var(--color-success);
+}
+
+.progress-bar-fill.warning {
+  background: var(--color-warning);
+}
+
+.goal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+
+
+/* ── Client Details ───────────────────────────────────────── */
+
+.detail-list {
+  padding: 0;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid rgba(var(--rgb-accent), 0.08);
+  font-size: var(--text-xs);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.detail-value {
+  color: var(--color-text);
+  text-align: right;
+  word-break: break-word;
+}
+
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .profile-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .client-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .client-header-body {
+    display: contents;
+  }
+
+  .client-name-row {
+    flex-wrap: wrap;
+  }
+
+  .client-meta {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .client-actions {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .macro-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

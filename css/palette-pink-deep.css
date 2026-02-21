@@ -1,0 +1,29 @@
+/* Palette: Deep Rose
+   Rich, grounded — deeper rose primary with warm taupe accent
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #f5f0ee;
+  --color-text:      #2a2626;
+  --color-primary:   #a85d6e;
+  --color-secondary: #625e72;
+  --color-accent:    #b2aaa0;
+
+  --rgb-bg:        245, 240, 238;
+  --rgb-text:      42, 38, 38;
+  --rgb-primary:   168, 93, 110;
+  --rgb-secondary: 98, 94, 114;
+  --rgb-accent:    178, 170, 160;
+
+  --color-bg-alt:      #ece7e5;
+  --color-bg-footer:   #e5e0de;
+  --color-primary-hover:   #934f60;
+  --color-secondary-hover: #524e62;
+  --color-accent-hover:    #9e968c;
+
+  --color-text-muted:    #6b6565;
+
+  --color-success:  #5a9e6b;
+  --color-warning:  #c4882f;
+  --color-error:    #a85d5d;
+  --color-info:     #7a8fa0;
+}

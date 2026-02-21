@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCRM – Dashboard (V2: The Journal)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" id="palette" href="css/palette-pink-mauve.css">
+  <link rel="stylesheet" href="css/dashboard-v2.css">
+  <link rel="stylesheet" href="css/palette-switcher.css">
+</head>
+<body>
+
+  <!-- ── Top Navigation ─────────────────────────────────────── -->
+  <nav class="topnav">
+    <div class="topnav-brand">
+      <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+        <path d="M18 6C18 6 10 14 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14 18 6 18 6Z"
+              fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 14V22M15 19H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="topnav-brand-name">NutriCRM</span>
+    </div>
+
+    <div class="topnav-links">
+      <a href="#" class="topnav-link active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="topnav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Clients
+      </a>
+      <a href="#" class="topnav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </a>
+      <a href="#" class="topnav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Meal Plans
+      </a>
+      <a href="#" class="topnav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Progress
+      </a>
+    </div>
+
+    <div class="topnav-right">
+      <div class="topnav-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search clients...">
+      </div>
+      <div class="topnav-avatar" title="Elisa Martinez">EM</div>
+    </div>
+  </nav>
+
+  <!-- ── Page Content ───────────────────────────────────────── -->
+  <div class="journal-page">
+
+    <!-- Hero Greeting -->
+    <div class="journal-hero">
+      <div class="journal-date">Thursday, February 20, 2026</div>
+      <h1 class="journal-greeting">Good morning, Elisa.</h1>
+      <p class="journal-subtitle">
+        You have 3 appointments today, 5 follow-ups pending, and 2 meal plans due for review this week.
+      </p>
+      <div class="journal-rule"></div>
+    </div>
+
+    <!-- Metrics Strip -->
+    <div class="metrics-strip">
+      <div class="metric-item">
+        <div class="metric-item-label">Clients This Week</div>
+        <div class="metric-item-value">12</div>
+        <div class="metric-item-note">+3 from last week</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-item-label">Today's Appointments</div>
+        <div class="metric-item-value">3</div>
+        <div class="metric-item-note">Next: 9:00 AM</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-item-label">Pending Follow-ups</div>
+        <div class="metric-item-value">5</div>
+        <div class="metric-item-note">2 overdue</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-item-label">Active Meal Plans</div>
+        <div class="metric-item-value">18</div>
+        <div class="metric-item-note">2 need updating</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="journal-actions">
+      <button class="journal-action-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        New Client
+      </button>
+      <button class="journal-action-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+        Schedule Appointment
+      </button>
+      <button class="journal-action-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Create Meal Plan
+      </button>
+      <button class="journal-action-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Write Notes
+      </button>
+    </div>
+
+    <!-- Editorial Grid -->
+    <div class="editorial-grid" style="margin-top: var(--space-10);">
+
+      <!-- Left Column -->
+      <div class="column-left">
+
+        <!-- Today's Schedule -->
+        <div class="journal-section">
+          <div class="journal-section-header">
+            <span class="journal-section-title">Today's Schedule</span>
+            <span class="journal-section-count">3 appointments</span>
+          </div>
+          <div class="schedule-timeline">
+            <div class="timeline-item">
+              <div class="timeline-time">9:00 AM</div>
+              <div class="timeline-content">
+                <div class="timeline-client">Sofia Ramirez</div>
+                <div class="timeline-meta">
+                  <span class="timeline-dot type-initial"></span>
+                  Initial Assessment &middot; 60 min &middot; In-person
+                </div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">10:30</div>
+              <div class="timeline-content">
+                <div class="timeline-client">James Chen</div>
+                <div class="timeline-meta">
+                  <span class="timeline-dot type-followup"></span>
+                  Follow-up &middot; 30 min &middot; In-person
+                </div>
+              </div>
+            </div>
+            <div class="timeline-now"><span>Now &middot; 11:15 AM</span></div>
+            <div class="timeline-item">
+              <div class="timeline-time">1:00 PM</div>
+              <div class="timeline-content">
+                <div class="timeline-client">Maria Garcia</div>
+                <div class="timeline-meta">
+                  <span class="timeline-dot type-review"></span>
+                  Plan Review &middot; 45 min &middot; In-person
+                </div>
+              </div>
+            </div>
+            <div class="timeline-item" style="opacity: 0.6;">
+              <div class="timeline-time">3:30 PM</div>
+              <div class="timeline-content">
+                <div class="timeline-client">David Thompson</div>
+                <div class="timeline-meta">
+                  <span class="timeline-dot type-check"></span>
+                  Check-in &middot; 15 min &middot; Virtual
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="journal-section">
+          <div class="journal-section-header">
+            <span class="journal-section-title">Recent Activity</span>
+            <span class="journal-section-count">This week</span>
+          </div>
+          <div class="journal-activity">
+            <div class="journal-activity-item">
+              <div class="journal-activity-text">
+                Added session notes for <strong>James Chen</strong> — discussed macro adjustments for training phase
+              </div>
+              <div class="journal-activity-time">2 hours ago</div>
+            </div>
+            <div class="journal-activity-item">
+              <div class="journal-activity-text">
+                Updated meal plan for <strong>Aisha Patel</strong> — increased protein, adjusted timing
+              </div>
+              <div class="journal-activity-time">Yesterday</div>
+            </div>
+            <div class="journal-activity-item">
+              <div class="journal-activity-text">
+                <strong>Sofia Ramirez</strong> confirmed today's initial assessment appointment
+              </div>
+              <div class="journal-activity-time">Yesterday</div>
+            </div>
+            <div class="journal-activity-item">
+              <div class="journal-activity-text">
+                New client registered: <strong>Elena Voss</strong> — referred by Dr. Nguyen
+              </div>
+              <div class="journal-activity-time">2 days ago</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="column-right">
+
+        <!-- Pending Follow-ups -->
+        <div class="journal-section">
+          <div class="journal-section-header">
+            <span class="journal-section-title">Follow-ups</span>
+            <span class="journal-section-count">5 pending</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0;">
+            <div class="client-card-small">
+              <div class="client-small-avatar" style="background: rgba(176, 92, 92, 0.1); color: var(--color-error);">CM</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Carlos Mendez</div>
+                <div class="client-small-detail" style="color: var(--color-error);">Overdue &middot; Feb 18</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar" style="background: rgba(176, 92, 92, 0.1); color: var(--color-error);">LP</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Lisa Park</div>
+                <div class="client-small-detail" style="color: var(--color-error);">Overdue &middot; Feb 17</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">AP</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Aisha Patel</div>
+                <div class="client-small-detail">Due Feb 22 &middot; Plan review</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">RK</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Rachel Kim</div>
+                <div class="client-small-detail">Due Feb 24 &middot; Weight check</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">TW</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Tom Wilson</div>
+                <div class="client-small-detail">Due Feb 25 &middot; Initial follow-up</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recently Active Clients -->
+        <div class="journal-section">
+          <div class="journal-section-header">
+            <span class="journal-section-title">Recent Clients</span>
+            <span class="journal-section-count">24 total</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0;">
+            <div class="client-card-small">
+              <div class="client-small-avatar">JC</div>
+              <div class="client-small-info">
+                <div class="client-small-name">James Chen</div>
+                <div class="client-small-detail">Seen today &middot; Balanced macro plan</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">AP</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Aisha Patel</div>
+                <div class="client-small-detail">Plan updated yesterday &middot; High protein</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">MG</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Maria Garcia</div>
+                <div class="client-small-detail">Appt today 1:00 PM &middot; Plan review</div>
+              </div>
+            </div>
+            <div class="client-card-small">
+              <div class="client-small-avatar">EV</div>
+              <div class="client-small-info">
+                <div class="client-small-name">Elena Voss</div>
+                <div class="client-small-detail">New client &middot; Intake pending</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Palette Switcher -->
+  <div class="design-switcher">
+    <div class="switcher-group">
+      <span class="switcher-label">Theme</span>
+      <button class="palette-swatch-btn" data-palette="sage" title="Sage" style="background: linear-gradient(135deg, #4a6741, #9a6c41);"></button>
+      <button class="palette-swatch-btn" data-palette="pink" title="Pink Neutral" style="background: linear-gradient(135deg, #c47a8a, #b64c4f);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-soft" title="Soft Rose" style="background: linear-gradient(135deg, #d4919a, #bfccb9);"></button>
+      <button class="palette-swatch-btn active" data-palette="pink-mauve" title="Warm Mauve" style="background: linear-gradient(135deg, #b0687d, #5c4d59);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-deep" title="Deep Rose" style="background: linear-gradient(135deg, #a85d6e, #b2aaa0);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-lilac" title="Rose & Lilac" style="background: linear-gradient(135deg, #b0687d, #c69ec5);"></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-palette]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('palette').href = `css/palette-${btn.dataset.palette}.css`;
+        document.querySelectorAll('.palette-swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

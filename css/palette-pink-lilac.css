@@ -1,0 +1,29 @@
+/* Palette: Rose & Lilac
+   Playful, feminine — mauve pink with purple and lilac accent
+   Swap by linking this file AFTER design-system.css */
+:root {
+  --color-bg:        #f6f2f3;
+  --color-text:      #2d2530;
+  --color-primary:   #b0687d;
+  --color-secondary: #714d77;
+  --color-accent:    #c69ec5;
+
+  --rgb-bg:        246, 242, 243;
+  --rgb-text:      45, 37, 48;
+  --rgb-primary:   176, 104, 125;
+  --rgb-secondary: 113, 77, 119;
+  --rgb-accent:    198, 158, 197;
+
+  --color-bg-alt:      #edeaeb;
+  --color-bg-footer:   #e8e4e5;
+  --color-primary-hover:   #9a5a6d;
+  --color-secondary-hover: #614069;
+  --color-accent-hover:    #b48bb3;
+
+  --color-text-muted:    #6a6070;
+
+  --color-success:  #5a9e6b;
+  --color-warning:  #c4882f;
+  --color-error:    #b05c5c;
+  --color-info:     #7a8fa0;
+}

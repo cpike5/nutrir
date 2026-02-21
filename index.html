@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCRM – Personalized Nutrition, Rooted in Science</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" id="palette" href="css/palette-pink-mauve.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/palette-switcher.css">
+</head>
+<body>
+
+  <div class="landing-layout">
+
+    <!-- Left: Hero / Branding -->
+    <div class="landing-hero">
+      <div class="landing-hero-content">
+
+        <!-- Logo / brand -->
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+              <path d="M18 6C18 6 10 14 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14 18 6 18 6Z"
+                    fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 14V22M15 19H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">NutriCRM</span>
+        </div>
+
+        <!-- Decorative mark -->
+        <div class="brand-mark" aria-hidden="true"></div>
+
+        <!-- Headline -->
+        <h1 class="landing-headline">
+          Personalized nutrition,<br>
+          <span class="text-gradient">rooted in science.</span>
+        </h1>
+
+        <p class="landing-subtext">
+          Manage your clients, meal plans, and practice — all in one calm,
+          focused space designed for solo practitioners.
+        </p>
+
+        <!-- Trust indicators -->
+        <div class="trust-strip">
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 1L12.5 6.5L18.5 7L14 11L15.5 17L10 14L4.5 17L6 11L1.5 7L7.5 6.5L10 1Z"
+                    stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="currentColor" opacity="0.15"/>
+            </svg>
+            <span>HIPAA-aware design</span>
+          </div>
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M2 8H18" stroke="currentColor" stroke-width="1.2"/>
+              <circle cx="5.5" cy="13" r="1" fill="currentColor"/>
+            </svg>
+            <span>Canadian & Mexican clients</span>
+          </div>
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M10 6V10L13 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <span>Built for solo practice</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decorative botanical element -->
+      <div class="hero-decoration" aria-hidden="true">
+        <svg viewBox="0 0 200 300" fill="none" class="botanical-svg">
+          <path d="M100 280V100" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+          <path d="M100 200C100 200 60 170 50 140C40 110 70 90 100 120" stroke="currentColor" stroke-width="1" opacity="0.15" fill="currentColor" fill-opacity="0.04"/>
+          <path d="M100 170C100 170 140 140 150 110C160 80 130 60 100 90" stroke="currentColor" stroke-width="1" opacity="0.15" fill="currentColor" fill-opacity="0.04"/>
+          <path d="M100 240C100 240 70 220 65 195C60 170 80 160 100 180" stroke="currentColor" stroke-width="1" opacity="0.1" fill="currentColor" fill-opacity="0.03"/>
+          <path d="M100 140C100 140 130 120 135 100C140 80 120 70 100 85" stroke="currentColor" stroke-width="1" opacity="0.1" fill="currentColor" fill-opacity="0.03"/>
+          <circle cx="100" cy="95" r="3" fill="currentColor" opacity="0.08"/>
+          <circle cx="50" cy="138" r="2" fill="currentColor" opacity="0.08"/>
+          <circle cx="150" cy="108" r="2" fill="currentColor" opacity="0.08"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Right: Login form -->
+    <div class="landing-form-panel">
+      <div class="landing-form-wrapper">
+
+        <div class="form-header">
+          <h2>Welcome back</h2>
+          <p>Sign in to your practice dashboard</p>
+        </div>
+
+        <form class="login-form" onsubmit="event.preventDefault();">
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <input type="email" id="email" class="form-input" placeholder="you@practice.com" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <div class="flex justify-between items-center">
+              <label class="form-label" for="password">Password</label>
+              <a href="#" class="form-link">Forgot password?</a>
+            </div>
+            <input type="password" id="password" class="form-input" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+
+          <label class="form-checkbox">
+            <input type="checkbox">
+            Remember me for 30 days
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-block">
+            Sign in
+          </button>
+        </form>
+
+        <div class="divider-text">or</div>
+
+        <button class="btn btn-outline btn-lg btn-block" style="gap: var(--space-3);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5C4.86 1.5 1.5 4.86 1.5 9C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9C16.5 4.86 13.14 1.5 9 1.5Z" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M9 1.5C6.75 4 5.5 6.5 5.5 9C5.5 11.5 6.75 14 9 16.5M9 1.5C11.25 4 12.5 6.5 12.5 9C12.5 11.5 11.25 14 9 16.5M2 7H16M2 11H16" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <p class="form-footer">
+          New to NutriCRM? <a href="#">Create an account</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Palette Switcher -->
+  <div class="design-switcher">
+    <div class="switcher-group">
+      <span class="switcher-label">Theme</span>
+      <button class="palette-swatch-btn" data-palette="sage" title="Sage" style="background: linear-gradient(135deg, #4a6741, #9a6c41);"></button>
+      <button class="palette-swatch-btn" data-palette="pink" title="Pink Neutral" style="background: linear-gradient(135deg, #c47a8a, #b64c4f);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-soft" title="Soft Rose" style="background: linear-gradient(135deg, #d4919a, #bfccb9);"></button>
+      <button class="palette-swatch-btn active" data-palette="pink-mauve" title="Warm Mauve" style="background: linear-gradient(135deg, #b0687d, #5c4d59);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-deep" title="Deep Rose" style="background: linear-gradient(135deg, #a85d6e, #b2aaa0);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-lilac" title="Rose & Lilac" style="background: linear-gradient(135deg, #b0687d, #c69ec5);"></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-palette]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('palette').href = `css/palette-${btn.dataset.palette}.css`;
+        document.querySelectorAll('.palette-swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

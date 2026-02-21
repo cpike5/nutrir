@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCRM – Dashboard (V3: Command Center)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" id="palette" href="css/palette-pink-mauve.css">
+  <link rel="stylesheet" href="css/dashboard-v3.css">
+  <link rel="stylesheet" href="css/palette-switcher.css">
+</head>
+<body>
+
+  <div class="cc-layout">
+
+    <!-- ── Icon Rail ──────────────────────────────────────── -->
+    <aside class="icon-rail">
+      <div class="rail-brand">
+        <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+          <path d="M18 6C18 6 10 14 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14 18 6 18 6Z"
+                fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 14V22M15 19H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <nav class="rail-nav">
+        <div class="rail-item active" title="Dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Clients">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          </svg>
+          <span class="rail-notif"></span>
+        </div>
+        <div class="rail-item" title="Calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+
+        <div class="rail-sep"></div>
+
+        <div class="rail-item" title="Meal Plans">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Progress">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </div>
+        <div class="rail-item" title="Notes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+      </nav>
+
+      <div class="rail-footer">
+        <div class="rail-item" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </div>
+        <div class="rail-avatar" title="Elisa Martinez">EM</div>
+      </div>
+    </aside>
+
+    <!-- ── Main Area ──────────────────────────────────────── -->
+    <div class="cc-main">
+
+      <!-- Top Bar -->
+      <div class="cc-topbar">
+        <div class="cc-topbar-left">
+          <div class="cc-breadcrumb">
+            <strong>Dashboard</strong>
+            <span class="cc-breadcrumb-sep">/</span>
+            <span>Today</span>
+          </div>
+          <div class="cc-search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search clients, plans...">
+          </div>
+        </div>
+        <div class="cc-topbar-right">
+          <button class="cc-topbar-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            2
+          </button>
+          <button class="cc-topbar-btn primary">+ New Client</button>
+        </div>
+      </div>
+
+      <!-- Dashboard Body -->
+      <div class="cc-body">
+
+        <!-- Metrics Bar -->
+        <div class="cc-metrics-bar">
+          <div class="cc-metric">
+            <div class="cc-metric-label">Clients Seen</div>
+            <div class="cc-metric-row">
+              <div class="cc-metric-value">12</div>
+              <span class="cc-metric-delta up">+3</span>
+            </div>
+          </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">Today's Appts</div>
+            <div class="cc-metric-row">
+              <div class="cc-metric-value">3</div>
+              <span class="cc-metric-delta flat">&mdash;</span>
+            </div>
+          </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">Follow-ups</div>
+            <div class="cc-metric-row">
+              <div class="cc-metric-value">5</div>
+              <span class="cc-metric-delta down">2!</span>
+            </div>
+          </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">Active Plans</div>
+            <div class="cc-metric-row">
+              <div class="cc-metric-value">18</div>
+              <span class="cc-metric-delta up">+2</span>
+            </div>
+          </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">Completion</div>
+            <div class="cc-metric-row">
+              <div class="cc-metric-value">87%</div>
+              <span class="cc-metric-delta up">+4%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dense Grid -->
+        <div class="cc-grid">
+
+          <!-- Panel 1: Today's Schedule -->
+          <div class="cc-panel">
+            <div class="cc-panel-header">
+              <span class="cc-panel-title">Schedule</span>
+              <span class="cc-panel-count">4 today</span>
+            </div>
+            <div class="cc-panel-body">
+              <div class="cc-list-item">
+                <span class="cc-list-time">9:00</span>
+                <div class="cc-list-indicator type-initial"></div>
+                <div class="cc-list-content">
+                  <div class="cc-list-primary">Sofia Ramirez</div>
+                  <div class="cc-list-secondary">Initial &middot; 60 min</div>
+                </div>
+                <span class="badge badge-primary" style="font-size: 0.625rem;">In-person</span>
+              </div>
+              <div class="cc-list-item">
+                <span class="cc-list-time">10:30</span>
+                <div class="cc-list-indicator type-followup"></div>
+                <div class="cc-list-content">
+                  <div class="cc-list-primary">James Chen</div>
+                  <div class="cc-list-secondary">Follow-up &middot; 30 min</div>
+                </div>
+                <span class="badge badge-primary" style="font-size: 0.625rem;">In-person</span>
+              </div>
+              <div class="cc-list-item">
+                <span class="cc-list-time">1:00</span>
+                <div class="cc-list-indicator type-review"></div>
+                <div class="cc-list-content">
+                  <div class="cc-list-primary">Maria Garcia</div>
+                  <div class="cc-list-secondary">Plan Review &middot; 45 min</div>
+                </div>
+                <span class="badge badge-primary" style="font-size: 0.625rem;">In-person</span>
+              </div>
+              <div class="cc-list-item" style="opacity: 0.55;">
+                <span class="cc-list-time">3:30</span>
+                <div class="cc-list-indicator type-check"></div>
+                <div class="cc-list-content">
+                  <div class="cc-list-primary">David Thompson</div>
+                  <div class="cc-list-secondary">Check-in &middot; 15 min</div>
+                </div>
+                <span class="badge badge-accent" style="font-size: 0.625rem;">Virtual</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 2: Clients & Follow-ups -->
+          <div class="cc-panel">
+            <div class="cc-panel-header">
+              <span class="cc-panel-title">Follow-ups</span>
+              <span class="cc-panel-count">5 pending</span>
+            </div>
+            <div class="cc-panel-body">
+              <div class="cc-client-row">
+                <div class="cc-client-avatar" style="background: rgba(176, 92, 92, 0.12); color: var(--color-error);">CM</div>
+                <div class="cc-client-info">
+                  <div class="cc-client-name">Carlos Mendez</div>
+                  <div class="cc-client-meta">Overdue &middot; Feb 18</div>
+                </div>
+                <span class="badge badge-error" style="font-size: 0.5625rem;">Overdue</span>
+              </div>
+              <div class="cc-client-row">
+                <div class="cc-client-avatar" style="background: rgba(176, 92, 92, 0.12); color: var(--color-error);">LP</div>
+                <div class="cc-client-info">
+                  <div class="cc-client-name">Lisa Park</div>
+                  <div class="cc-client-meta">Overdue &middot; Feb 17</div>
+                </div>
+                <span class="badge badge-error" style="font-size: 0.5625rem;">Overdue</span>
+              </div>
+              <div class="cc-client-row">
+                <div class="cc-client-avatar">AP</div>
+                <div class="cc-client-info">
+                  <div class="cc-client-name">Aisha Patel</div>
+                  <div class="cc-client-meta">Due Feb 22 &middot; Plan review</div>
+                </div>
+                <span class="badge badge-warning" style="font-size: 0.5625rem;">Soon</span>
+              </div>
+              <div class="cc-client-row">
+                <div class="cc-client-avatar">RK</div>
+                <div class="cc-client-info">
+                  <div class="cc-client-name">Rachel Kim</div>
+                  <div class="cc-client-meta">Due Feb 24 &middot; Weight check</div>
+                </div>
+                <span class="badge badge-accent" style="font-size: 0.5625rem;">Scheduled</span>
+              </div>
+              <div class="cc-client-row">
+                <div class="cc-client-avatar">TW</div>
+                <div class="cc-client-info">
+                  <div class="cc-client-name">Tom Wilson</div>
+                  <div class="cc-client-meta">Due Feb 25 &middot; Initial follow-up</div>
+                </div>
+                <span class="badge badge-accent" style="font-size: 0.5625rem;">Scheduled</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Activity -->
+          <div class="cc-panel">
+            <div class="cc-panel-header">
+              <span class="cc-panel-title">Activity</span>
+              <span class="cc-panel-count">Recent</span>
+            </div>
+            <div class="cc-panel-body">
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-note"></div>
+                  <div class="cc-activity-text">Notes added for <strong>James Chen</strong></div>
+                  <span class="cc-activity-ago">2h</span>
+                </div>
+              </div>
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-plan"></div>
+                  <div class="cc-activity-text">Meal plan updated: <strong>Aisha Patel</strong></div>
+                  <span class="cc-activity-ago">1d</span>
+                </div>
+              </div>
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-appt"></div>
+                  <div class="cc-activity-text"><strong>Sofia Ramirez</strong> confirmed appt</div>
+                  <span class="cc-activity-ago">1d</span>
+                </div>
+              </div>
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-client"></div>
+                  <div class="cc-activity-text">New client: <strong>Elena Voss</strong></div>
+                  <span class="cc-activity-ago">2d</span>
+                </div>
+              </div>
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-plan"></div>
+                  <div class="cc-activity-text">Plan completed: <strong>Tom Wilson</strong></div>
+                  <span class="cc-activity-ago">3d</span>
+                </div>
+              </div>
+              <div class="cc-activity-item">
+                <div class="cc-activity-row">
+                  <div class="cc-activity-dot dot-appt"></div>
+                  <div class="cc-activity-text"><strong>Maria Garcia</strong> rescheduled</div>
+                  <span class="cc-activity-ago">3d</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="cc-status-bar">
+        <div class="cc-status-left">
+          <div class="cc-status-indicator">
+            <div class="cc-status-dot"></div>
+            <span>All systems online</span>
+          </div>
+          <span>24 clients &middot; 18 active plans</span>
+          <span>Last sync: 2 min ago</span>
+        </div>
+        <div class="cc-status-right">
+          <span><span class="cc-kbd">Ctrl</span> + <span class="cc-kbd">K</span> Search</span>
+          <span><span class="cc-kbd">Ctrl</span> + <span class="cc-kbd">N</span> New</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Palette Switcher -->
+  <div class="design-switcher">
+    <div class="switcher-group">
+      <span class="switcher-label">Theme</span>
+      <button class="palette-swatch-btn" data-palette="sage" title="Sage" style="background: linear-gradient(135deg, #4a6741, #9a6c41);"></button>
+      <button class="palette-swatch-btn" data-palette="pink" title="Pink Neutral" style="background: linear-gradient(135deg, #c47a8a, #b64c4f);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-soft" title="Soft Rose" style="background: linear-gradient(135deg, #d4919a, #bfccb9);"></button>
+      <button class="palette-swatch-btn active" data-palette="pink-mauve" title="Warm Mauve" style="background: linear-gradient(135deg, #b0687d, #5c4d59);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-deep" title="Deep Rose" style="background: linear-gradient(135deg, #a85d6e, #b2aaa0);"></button>
+      <button class="palette-swatch-btn" data-palette="pink-lilac" title="Rose & Lilac" style="background: linear-gradient(135deg, #b0687d, #c69ec5);"></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-palette]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('palette').href = `css/palette-${btn.dataset.palette}.css`;
+        document.querySelectorAll('.palette-swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
