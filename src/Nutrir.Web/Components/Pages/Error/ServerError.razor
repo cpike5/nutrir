@@ -1,7 +1,6 @@
 @page "/error/500"
 @layout Nutrir.Web.Components.Layout.ErrorLayout
 @using System.Diagnostics
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Server Error — Nutrir</PageTitle>
 
@@ -22,7 +21,7 @@
             Please try again in a few moments.
         </p>
         <div class="error-actions">
-            <button class="btn btn-primary" @onclick="Reload">
+            <button class="btn btn-primary" onclick="location.reload()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
                 </svg>
@@ -67,5 +66,4 @@
     protected override void OnInitialized() =>
         RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
 
-    private async Task Reload() => await JSRuntime.InvokeVoidAsync("location.reload");
 }

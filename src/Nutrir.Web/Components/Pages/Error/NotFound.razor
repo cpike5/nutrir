@@ -1,6 +1,5 @@
 @page "/error/404"
 @layout Nutrir.Web.Components.Layout.ErrorLayout
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Page Not Found — Nutrir</PageTitle>
 
@@ -27,7 +26,7 @@
                 </svg>
                 Dashboard
             </a>
-            <button class="btn btn-ghost" @onclick="GoBack">
+            <button class="btn btn-ghost" onclick="history.back()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
                 </svg>
@@ -47,6 +46,3 @@
     </div>
 </footer>
 
-@code {
-    private async Task GoBack() => await JSRuntime.InvokeVoidAsync("history.back");
-}

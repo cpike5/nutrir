@@ -9,6 +9,7 @@ services:
       - db
       - seq
     environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-nutrir};Username=${POSTGRES_USER:-nutrir};Password=${POSTGRES_PASSWORD:-nutrir_dev}
       - Seq__ServerUrl=http://seq:5341
 

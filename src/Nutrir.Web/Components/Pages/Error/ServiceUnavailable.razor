@@ -1,6 +1,5 @@
 @page "/error/503"
 @layout Nutrir.Web.Components.Layout.ErrorLayout
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Maintenance — Nutrir</PageTitle>
 
@@ -31,7 +30,7 @@
         </div>
 
         <div class="error-actions" style="margin-top: var(--space-6);">
-            <button class="btn btn-primary" @onclick="Refresh">
+            <button class="btn btn-primary" onclick="location.reload()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
                 </svg>
@@ -51,6 +50,3 @@
     </div>
 </footer>
 
-@code {
-    private async Task Refresh() => await JSRuntime.InvokeVoidAsync("location.reload");
-}

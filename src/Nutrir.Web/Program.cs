@@ -55,13 +55,21 @@ try
     }
     else
     {
-        app.UseExceptionHandler("/error/500", createScopeForErrors: true);
         app.UseHsts();
     }
 
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(context =>
+        {
+            context.Response.Redirect("/error/500");
+            return Task.CompletedTask;
+        });
+    });
+
     app.UseHttpsRedirection();
 
-    app.UseStatusCodePagesWithReExecute("/error/{0}");
+    app.UseStatusCodePagesWithRedirects("/error/{0}");
 
     app.UseAntiforgery();
 
@@ -72,10 +80,14 @@ try
     // Add additional endpoints required by the Identity /Account Razor components.
     app.MapAdditionalIdentityEndpoints();
 
-    // Dev-only endpoint to return arbitrary HTTP status codes for error page testing.
+    // Dev-only endpoints for error page testing.
     if (app.Environment.IsDevelopment())
     {
         app.MapGet("/dev/status/{code:int}", (int code) => Results.StatusCode(code));
+        app.MapGet("/dev/throw", void () =>
+        {
+            throw new InvalidOperationException("Dev Tools: intentional unhandled exception for error page testing.");
+        });
     }
 
     app.Run();
