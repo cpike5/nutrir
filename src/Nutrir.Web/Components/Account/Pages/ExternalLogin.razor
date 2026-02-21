@@ -19,26 +19,26 @@
 
 <PageTitle>Register</PageTitle>
 
-<StatusMessage Message="@message" />
-<h1>Register</h1>
-<h2>Associate your @ProviderDisplayName account.</h2>
-<hr class="divider" />
+<h2>Complete your registration</h2>
 
-<p>
+<StatusMessage Message="@message" />
+
+<p class="text-sm text-muted mb-4">
     You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
+    Please enter an email address to complete your registration.
 </p>
 
 <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
     <DataAnnotationsValidator />
     <ValidationSummary class="form-error" role="alert" />
-    <div class="form-group">
-        <label for="Input.Email" class="form-label">Email</label>
-        <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="email" placeholder="Please enter your email." />
-        <ValidationMessage For="() => Input.Email" class="form-error" />
+    <div class="flex flex-col gap-4">
+        <div class="form-group">
+            <label for="Input.Email" class="form-label">Email</label>
+            <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="email" placeholder="name@example.com" />
+            <ValidationMessage For="() => Input.Email" class="form-error" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
     </div>
-    <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
 </EditForm>
 
 @code {

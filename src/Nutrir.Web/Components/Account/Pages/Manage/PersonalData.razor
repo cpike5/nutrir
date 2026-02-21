@@ -1,22 +1,29 @@
-﻿@page "/Account/Manage/PersonalData"
+@page "/Account/Manage/PersonalData"
 
 @inject IdentityUserAccessor UserAccessor
 
 <PageTitle>Personal Data</PageTitle>
 
-<StatusMessage />
-<h3>Personal Data</h3>
+<div class="manage-section-header">
+    <h3>Personal Data</h3>
+    <p class="text-muted">Download or delete your personal data</p>
+</div>
 
-<p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-<p>
-    <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-</p>
-<div class="flex gap-2" style="flex-wrap: wrap; margin-top: var(--space-4);">
+<StatusMessage />
+
+<div class="card card-flat mb-6">
+    <p class="text-sm mb-4" style="color: var(--color-text);">Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
+    <div class="alert alert-warning">
+        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+    </div>
+</div>
+
+<div class="flex gap-2 flex-wrap">
     <form action="Account/Manage/DownloadPersonalData" method="post">
         <AntiforgeryToken />
         <button class="btn btn-primary" type="submit">Download</button>
     </form>
-    <a href="Account/Manage/DeletePersonalData" class="btn btn-primary">Delete</a>
+    <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">Delete</a>
 </div>
 
 @code {

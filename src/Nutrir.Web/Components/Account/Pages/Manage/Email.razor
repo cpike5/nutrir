@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/Email"
+@page "/Account/Manage/Email"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
@@ -14,42 +14,53 @@
 
 <PageTitle>Manage email</PageTitle>
 
-<h3>Manage email</h3>
+<div class="manage-section-header">
+    <h3>Manage email</h3>
+    <p class="text-muted">Change your email address and verification status</p>
+</div>
 
 <StatusMessage Message="@message"/>
+
 <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
     <AntiforgeryToken />
 </form>
-<EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <DataAnnotationsValidator />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="flex flex-col gap-4">
-        @if (isEmailConfirmed)
-        {
-            <div class="form-group">
-                <label for="email" class="form-label">Email</label>
-                <div class="flex items-center gap-2">
-                    <input type="text" value="@email" id="email" class="form-input" placeholder="Enter your email" disabled style="flex: 1;" />
-                    <span style="color: var(--color-success); font-weight: 600;">&#x2713;</span>
+
+<div class="card card-flat">
+    <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        <div class="flex flex-col gap-4">
+            @if (isEmailConfirmed)
+            {
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" value="@email" id="email" class="form-input flex-1" placeholder="Enter your email" disabled />
+                        <span class="badge badge-success">Verified</span>
+                    </div>
                 </div>
-            </div>
-        }
-        else
-        {
+            }
+            else
+            {
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="text" value="@email" id="email" class="form-input flex-1" placeholder="Enter your email" disabled />
+                        <span class="badge badge-warning">Unverified</span>
+                    </div>
+                    <button type="submit" class="btn btn-outline btn-sm" form="send-verification-form">Send verification email</button>
+                </div>
+            }
+            <hr class="divider" />
             <div class="form-group">
-                <label for="email" class="form-label">Email</label>
-                <input type="text" value="@email" id="email" class="form-input" placeholder="Enter your email" disabled />
-                <button type="submit" class="btn btn-primary" form="send-verification-form" style="margin-top: var(--space-2);">Send verification email</button>
+                <label for="Input.NewEmail" class="form-label">New email</label>
+                <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-input" autocomplete="email" aria-required="true" placeholder="Enter a new email" />
+                <ValidationMessage For="() => Input.NewEmail" class="form-error" />
             </div>
-        }
-        <div class="form-group">
-            <label for="Input.NewEmail" class="form-label">New email</label>
-            <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-input" autocomplete="email" aria-required="true" placeholder="Enter a new email" />
-            <ValidationMessage For="() => Input.NewEmail" class="form-error" />
+            <button type="submit" class="btn btn-primary">Change email</button>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-block">Change email</button>
-    </div>
-</EditForm>
+    </EditForm>
+</div>
 
 @code {
     private string? message;

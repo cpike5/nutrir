@@ -1,0 +1,126 @@
+@page "/clients"
+@rendermode InteractiveServer
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IClientService ClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Clients — Nutrir</PageTitle>
+
+<div class="clients-page">
+    <div class="clients-header">
+        <div class="clients-header-text">
+            <h1 class="clients-title">Clients</h1>
+        </div>
+        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">Add Client</Button>
+    </div>
+
+    <div class="clients-search">
+        <FormGroup Label="Search" Id="search">
+            <FormInput Id="search"
+                       Value="@_searchTerm"
+                       ValueChanged="OnSearchChanged"
+                       Placeholder="Search by name, email, or phone..." />
+        </FormGroup>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="clients-loading">Loading clients...</p>
+        }
+        else if (_clients is null || _clients.Count == 0)
+        {
+            <div class="clients-empty">
+                <p class="clients-empty-title">No clients found</p>
+                <p class="clients-empty-desc">
+                    @if (string.IsNullOrEmpty(_searchTerm))
+                    {
+                        <span>Get started by adding your first client.</span>
+                    }
+                    else
+                    {
+                        <span>Try adjusting your search criteria.</span>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            <table class="clients-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Nutritionist</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var client in _clients)
+                    {
+                        <tr class="clients-table-row">
+                            <td class="clients-table-name">@client.FirstName @client.LastName</td>
+                            <td class="clients-table-email">@(client.Email ?? "—")</td>
+                            <td class="clients-table-phone">@(client.Phone ?? "—")</td>
+                            <td class="clients-table-muted">@client.PrimaryNutritionistId</td>
+                            <td class="clients-table-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
+                            <td class="clients-table-actions">
+                                <a href="clients/@client.Id" class="clients-action-link">View</a>
+                                <a href="clients/@client.Id/edit" class="clients-action-link">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Card>
+</div>
+
+@code {
+    private List<ClientDto>? _clients;
+    private string? _searchTerm;
+    private bool _isLoading = true;
+    private System.Threading.Timer? _debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClientsAsync();
+    }
+
+    private async Task LoadClientsAsync()
+    {
+        _isLoading = true;
+        _clients = await ClientService.GetListAsync(_searchTerm);
+        _isLoading = false;
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _searchTerm = value;
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadClientsAsync();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void NavigateToCreate()
+    {
+        NavigationManager.NavigateTo("/clients/new");
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+}

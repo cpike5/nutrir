@@ -1,0 +1,196 @@
+@page "/clients/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IClientService ClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
+
+<div class="client-detail-page">
+    @if (_isLoading)
+    {
+        <p class="client-detail-loading">Loading client...</p>
+    }
+    else if (_client is null)
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Client not found</p>
+                <p class="client-detail-not-found-desc">The client you are looking for does not exist or has been removed.</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Clients</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="client-detail-header">
+            <h1 class="client-detail-title">@_client.FirstName @_client.LastName</h1>
+        </div>
+
+        <Card>
+            <div class="client-detail-grid">
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Email</span>
+                    <span class="client-detail-value">@(_client.Email ?? "Not provided")</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Phone</span>
+                    <span class="client-detail-value">@(_client.Phone ?? "Not provided")</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Date of Birth</span>
+                    <span class="client-detail-value">@(_client.DateOfBirth?.ToString("MMMM d, yyyy") ?? "Not provided")</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Primary Nutritionist</span>
+                    <span class="client-detail-value">@_client.PrimaryNutritionistId</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Consent</span>
+                    <span class="client-detail-value">
+                        @if (_client.ConsentGiven)
+                        {
+                            <Badge Variant="BadgeVariant.Success">Consent Given</Badge>
+                            @if (_client.ConsentTimestamp.HasValue)
+                            {
+                                <span class="client-detail-consent-meta">
+                                    @_client.ConsentTimestamp.Value.ToString("MMM d, yyyy h:mm tt") UTC
+                                </span>
+                            }
+                            @if (!string.IsNullOrEmpty(_client.ConsentPolicyVersion))
+                            {
+                                <span class="client-detail-consent-meta">
+                                    Policy v@(_client.ConsentPolicyVersion)
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <Badge Variant="BadgeVariant.Warning">No Consent</Badge>
+                        }
+                    </span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_client.Notes))
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Notes</span>
+                    <pre class="client-detail-notes">@_client.Notes</pre>
+                </div>
+            }
+
+            <Divider />
+
+            <div class="client-detail-meta">
+                <span class="client-detail-meta-item">Created: @_client.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                @if (_client.UpdatedAt.HasValue)
+                {
+                    <span class="client-detail-meta-item">Updated: @_client.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                }
+            </div>
+        </Card>
+
+        <div class="client-detail-actions">
+            <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
+            <Button Variant="ButtonVariant.Outline" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
+            <a href="/clients" class="client-detail-back-link">Back to Clients</a>
+        </div>
+
+        @if (_showDeleteConfirm)
+        {
+            <Card>
+                <div class="client-detail-delete-confirm">
+                    <p class="client-detail-delete-title">Confirm Deletion</p>
+                    <p class="client-detail-delete-desc">
+                        Are you sure you want to delete <strong>@_client.FirstName @_client.LastName</strong>?
+                        This action will soft-delete the client record.
+                    </p>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="client-detail-error">@_errorMessage</p>
+                    }
+                    <div class="client-detail-delete-actions">
+                        <Button Variant="ButtonVariant.Primary" OnClick="ConfirmDelete" Disabled="@_isDeleting">
+                            @if (_isDeleting)
+                            {
+                                <span>Deleting...</span>
+                            }
+                            else
+                            {
+                                <span>Yes, Delete</span>
+                            }
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = false)">Cancel</Button>
+                    </div>
+                </div>
+            </Card>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ClientDto? _client;
+    private bool _isLoading = true;
+    private bool _showDeleteConfirm;
+    private bool _isDeleting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = await ClientService.GetByIdAsync(Id);
+        _isLoading = false;
+    }
+
+    private void NavigateToEdit()
+    {
+        NavigationManager.NavigateTo($"/clients/{Id}/edit");
+    }
+
+    private void NavigateToList()
+    {
+        NavigationManager.NavigateTo("/clients");
+    }
+
+    private async Task ConfirmDelete()
+    {
+        _isDeleting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var success = await ClientService.SoftDeleteAsync(Id, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo("/clients");
+            }
+            else
+            {
+                _errorMessage = "Failed to delete the client. Please try again.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while deleting the client.";
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+}

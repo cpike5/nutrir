@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Services;
 
 namespace Nutrir.Infrastructure;
 
@@ -11,6 +13,14 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+        services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
+        services.AddScoped<DatabaseSeeder>();
+
+        services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<IInviteCodeService, InviteCodeService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddScoped<IClientService, ClientService>();
 
         return services;
     }

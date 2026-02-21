@@ -1,0 +1,109 @@
+.users-page {
+    max-width: 960px;
+    padding: var(--space-8);
+}
+
+.users-header {
+    margin-bottom: var(--space-6);
+}
+
+.users-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+}
+
+.users-subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.users-filters {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    align-items: flex-end;
+}
+
+.users-filter-search {
+    flex: 1;
+}
+
+.users-filter-role,
+.users-filter-status {
+    min-width: 160px;
+}
+
+.users-loading {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+.users-empty {
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.users-empty-title {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.users-empty-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table thead th {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.users-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.users-table tbody tr:hover {
+    background-color: var(--color-bg-alt);
+}
+
+.users-table tbody td {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.users-table-name {
+    font-weight: 500;
+}
+
+.users-table-email {
+    color: var(--color-text-muted);
+}
+
+.users-table-date {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+}

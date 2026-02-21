@@ -1,0 +1,278 @@
+@page "/clients/{Id:int}/edit"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IClientService ClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Client — Nutrir</PageTitle>
+
+<div class="client-form-page">
+    @if (_isLoading)
+    {
+        <p class="client-form-loading">Loading client...</p>
+    }
+    else if (_client is null)
+    {
+        <Card>
+            <div class="client-form-not-found">
+                <p class="client-form-not-found-title">Client not found</p>
+                <p class="client-form-not-found-desc">The client you are trying to edit does not exist or has been removed.</p>
+                <div class="client-form-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Clients</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="client-form-header">
+            <h1 class="client-form-title">Edit Client</h1>
+            <p class="client-form-subtitle">@_client.FirstName @_client.LastName</p>
+        </div>
+
+        <Card>
+            <div class="client-form-body">
+                <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditClient">
+                    <DataAnnotationsValidator />
+
+                    <div class="client-form-grid">
+                        <FormGroup Label="First Name" Id="firstName" Error="@GetFieldError(nameof(_model.FirstName))">
+                            <FormInput Id="firstName"
+                                       Value="@_model.FirstName"
+                                       ValueChanged="@(v => _model.FirstName = v)"
+                                       Placeholder="Enter first name" />
+                        </FormGroup>
+
+                        <FormGroup Label="Last Name" Id="lastName" Error="@GetFieldError(nameof(_model.LastName))">
+                            <FormInput Id="lastName"
+                                       Value="@_model.LastName"
+                                       ValueChanged="@(v => _model.LastName = v)"
+                                       Placeholder="Enter last name" />
+                        </FormGroup>
+                    </div>
+
+                    <div class="client-form-grid">
+                        <FormGroup Label="Email" Id="email">
+                            <FormInput Id="email"
+                                       Type="email"
+                                       Value="@_model.Email"
+                                       ValueChanged="@(v => _model.Email = v)"
+                                       Placeholder="email@example.com" />
+                        </FormGroup>
+
+                        <FormGroup Label="Phone" Id="phone">
+                            <FormInput Id="phone"
+                                       Type="tel"
+                                       Value="@_model.Phone"
+                                       ValueChanged="@(v => _model.Phone = v)"
+                                       Placeholder="(555) 123-4567" />
+                        </FormGroup>
+                    </div>
+
+                    <div class="client-form-grid">
+                        <FormGroup Label="Date of Birth" Id="dateOfBirth">
+                            <FormInput Id="dateOfBirth"
+                                       Type="date"
+                                       Value="@_model.DateOfBirth"
+                                       ValueChanged="@(v => _model.DateOfBirth = v)" />
+                        </FormGroup>
+
+                        <FormGroup Label="Primary Nutritionist ID" Id="nutritionistId">
+                            <FormInput Id="nutritionistId"
+                                       Value="@_model.PrimaryNutritionistId"
+                                       ValueChanged="@(v => _model.PrimaryNutritionistId = v)"
+                                       Placeholder="User ID of the nutritionist" />
+                        </FormGroup>
+                    </div>
+
+                    <FormGroup Label="Notes" Id="notes">
+                        <textarea id="notes"
+                                  class="form-input"
+                                  rows="4"
+                                  @bind="_model.Notes"
+                                  placeholder="Additional notes about the client..."></textarea>
+                    </FormGroup>
+
+                    <div class="client-form-consent">
+                        <FormCheckbox Label="Client has given consent to data collection"
+                                      Value="@_model.ConsentGiven"
+                                      ValueChanged="OnConsentChanged" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="client-form-error">@_errorMessage</p>
+                    }
+
+                    <div class="client-form-actions">
+                        <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                            @if (_isSubmitting)
+                            {
+                                <span>Saving...</span>
+                            }
+                            else
+                            {
+                                <span>Save Changes</span>
+                            }
+                        </Button>
+                        <a href="/clients/@Id" class="client-form-cancel-link">Cancel</a>
+                    </div>
+                </EditForm>
+            </div>
+        </Card>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ClientDto? _client;
+    private ClientFormModel _model = new();
+    private EditContext? _editContext;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = await ClientService.GetByIdAsync(Id);
+
+        if (_client is not null)
+        {
+            _model = new ClientFormModel
+            {
+                FirstName = _client.FirstName,
+                LastName = _client.LastName,
+                Email = _client.Email,
+                Phone = _client.Phone,
+                DateOfBirth = _client.DateOfBirth?.ToString("yyyy-MM-dd"),
+                PrimaryNutritionistId = _client.PrimaryNutritionistId,
+                ConsentGiven = _client.ConsentGiven,
+                Notes = _client.Notes
+            };
+            _editContext = new EditContext(_model);
+        }
+
+        _isLoading = false;
+    }
+
+    private void OnConsentChanged(bool value)
+    {
+        _model.ConsentGiven = value;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            DateOnly? dob = null;
+            if (!string.IsNullOrEmpty(_model.DateOfBirth) && DateOnly.TryParse(_model.DateOfBirth, out var parsedDob))
+            {
+                dob = parsedDob;
+            }
+
+            // Preserve existing consent timestamp/version if consent was already given,
+            // otherwise set new values when consent is newly given
+            DateTime? consentTimestamp = _client!.ConsentTimestamp;
+            string? consentVersion = _client.ConsentPolicyVersion;
+
+            if (_model.ConsentGiven && !_client.ConsentGiven)
+            {
+                // Consent newly given on this edit
+                consentTimestamp = DateTime.UtcNow;
+                consentVersion = "1.0";
+            }
+            else if (!_model.ConsentGiven)
+            {
+                // Consent revoked
+                consentTimestamp = null;
+                consentVersion = null;
+            }
+
+            var dto = new ClientDto(
+                Id: Id,
+                FirstName: _model.FirstName!,
+                LastName: _model.LastName!,
+                Email: string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
+                Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : _model.Phone,
+                DateOfBirth: dob,
+                PrimaryNutritionistId: _model.PrimaryNutritionistId ?? string.Empty,
+                ConsentGiven: _model.ConsentGiven,
+                ConsentTimestamp: consentTimestamp,
+                ConsentPolicyVersion: consentVersion,
+                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
+                IsDeleted: _client.IsDeleted,
+                CreatedAt: _client.CreatedAt,
+                UpdatedAt: DateTime.UtcNow,
+                DeletedAt: _client.DeletedAt
+            );
+
+            var success = await ClientService.UpdateAsync(Id, dto, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo($"/clients/{Id}");
+            }
+            else
+            {
+                _errorMessage = "Failed to save changes. Please try again.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while saving the client. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void NavigateToList()
+    {
+        NavigationManager.NavigateTo("/clients");
+    }
+
+    private string? GetFieldError(string fieldName)
+    {
+        if (_editContext is null) return null;
+        var messages = _editContext.GetValidationMessages(new FieldIdentifier(_model, fieldName));
+        return messages.FirstOrDefault();
+    }
+
+    private class ClientFormModel
+    {
+        [Required(ErrorMessage = "First name is required.")]
+        public string? FirstName { get; set; }
+
+        [Required(ErrorMessage = "Last name is required.")]
+        public string? LastName { get; set; }
+
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string? Email { get; set; }
+
+        public string? Phone { get; set; }
+
+        public string? DateOfBirth { get; set; }
+
+        public string? PrimaryNutritionistId { get; set; }
+
+        public bool ConsentGiven { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}

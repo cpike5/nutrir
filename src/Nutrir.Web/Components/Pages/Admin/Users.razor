@@ -1,0 +1,172 @@
+@page "/admin/users"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@implements IDisposable
+@inject IUserManagementService UserManagementService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Staff Accounts — Nutrir</PageTitle>
+
+<div class="users-page">
+    <div class="users-header">
+        <h1 class="users-title">Staff Accounts</h1>
+        <p class="users-subtitle">Manage practitioner and assistant accounts, roles, and access.</p>
+    </div>
+
+    <div class="users-filters">
+        <div class="users-filter-search">
+            <FormGroup Label="Search" Id="search">
+                <FormInput Id="search"
+                           Value="@_searchTerm"
+                           ValueChanged="OnSearchChanged"
+                           Placeholder="Search by name or email..." />
+            </FormGroup>
+        </div>
+        <div class="users-filter-role">
+            <FormGroup Label="Role" Id="role-filter">
+                <FormSelect Id="role-filter"
+                            Value="@_roleFilter"
+                            ValueChanged="OnRoleFilterChanged">
+                    <option value="">All</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Nutritionist">Nutritionist</option>
+                    <option value="Assistant">Assistant</option>
+                </FormSelect>
+            </FormGroup>
+        </div>
+        <div class="users-filter-status">
+            <FormGroup Label="Status" Id="status-filter">
+                <FormSelect Id="status-filter"
+                            Value="@_statusFilter"
+                            ValueChanged="OnStatusFilterChanged">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="deactivated">Deactivated</option>
+                </FormSelect>
+            </FormGroup>
+        </div>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="users-loading">Loading staff accounts...</p>
+        }
+        else if (_users is null || _users.Count == 0)
+        {
+            <div class="users-empty">
+                <p class="users-empty-title">No staff accounts found</p>
+                <p class="users-empty-desc">Try adjusting your search or filter criteria.</p>
+            </div>
+        }
+        else
+        {
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in _users)
+                    {
+                        <tr class="users-table-row" @onclick="() => NavigateToUser(user.Id)">
+                            <td class="users-table-name">@user.FirstName @user.LastName</td>
+                            <td class="users-table-email">@user.Email</td>
+                            <td>
+                                <Badge Variant="BadgeVariant.Primary">@user.Role</Badge>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <Badge Variant="BadgeVariant.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Variant="BadgeVariant.Error">Deactivated</Badge>
+                                }
+                            </td>
+                            <td class="users-table-date">
+                                @(user.LastLoginDate?.ToString("MMM d, yyyy h:mm tt") ?? "Never")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Card>
+</div>
+
+@code {
+    private List<UserListItemDto>? _users;
+    private string? _searchTerm;
+    private string? _roleFilter;
+    private string? _statusFilter;
+    private bool _isLoading = true;
+    private System.Threading.Timer? _debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoading = true;
+
+        bool? isActiveFilter = _statusFilter switch
+        {
+            "active" => true,
+            "deactivated" => false,
+            _ => null
+        };
+
+        string? roleFilter = string.IsNullOrEmpty(_roleFilter) ? null : _roleFilter;
+
+        _users = await UserManagementService.GetUsersAsync(_searchTerm, roleFilter, isActiveFilter);
+        _isLoading = false;
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _searchTerm = value;
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadUsersAsync();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private async Task OnRoleFilterChanged(string value)
+    {
+        _roleFilter = value;
+        await LoadUsersAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string value)
+    {
+        _statusFilter = value;
+        await LoadUsersAsync();
+    }
+
+    private void NavigateToUser(string userId)
+    {
+        NavigationManager.NavigateTo($"/admin/users/{userId}");
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+}

@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/ExternalLogins"
+@page "/Account/Manage/ExternalLogins"
 
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
@@ -12,38 +12,44 @@
 
 <PageTitle>Manage your external logins</PageTitle>
 
+<div class="manage-section-header">
+    <h3>External logins</h3>
+    <p class="text-muted">Manage your linked external login providers</p>
+</div>
+
 <StatusMessage />
+
 @if (currentLogins?.Count > 0)
 {
-    <h3>Registered Logins</h3>
-    <div class="flex flex-col gap-4" style="margin-bottom: var(--space-6);">
+    <h5 class="mb-4">Registered logins</h5>
+    <div class="flex flex-col gap-2 mb-6">
         @foreach (var login in currentLogins)
         {
-            <div class="card card-flat flex items-center gap-4" style="flex-direction: row; padding: var(--space-4);">
-                <span style="flex: 1;">@login.ProviderDisplayName</span>
+            <div class="card card-flat flex items-center gap-4 p-4" style="flex-direction: row;">
+                <span class="flex-1" style="font-weight: 500;">@login.ProviderDisplayName</span>
                 @if (showRemoveButton)
                 {
                     <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider" />
                         <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey" />
-                        <button type="submit" class="btn btn-primary" title="Remove this @login.ProviderDisplayName login from your account">Remove</button>
+                        <button type="submit" class="btn btn-outline btn-sm" title="Remove this @login.ProviderDisplayName login from your account">Remove</button>
                     </form>
                 }
             </div>
         }
     </div>
 }
+
 @if (otherLogins?.Count > 0)
 {
-    <h4>Add another service to log in.</h4>
-    <hr class="divider" />
+    <h5 class="mb-4">Add another service to log in</h5>
     <form action="Account/Manage/LinkExternalLogin" method="post">
         <AntiforgeryToken />
-        <div class="flex gap-2" style="flex-wrap: wrap;">
+        <div class="flex gap-2 flex-wrap">
             @foreach (var provider in otherLogins)
             {
-                <button type="submit" class="btn btn-primary" name="Provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
+                <button type="submit" class="btn btn-primary btn-sm" name="Provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
                     @provider.DisplayName
                 </button>
             }

@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/DeletePersonalData"
+@page "/Account/Manage/DeletePersonalData"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
@@ -12,31 +12,33 @@
 
 <PageTitle>Delete Personal Data</PageTitle>
 
-<StatusMessage Message="@message" />
-
-<h3>Delete Personal Data</h3>
-
-<div class="card card-flat" role="alert" style="border-color: var(--color-warning); margin-bottom: var(--space-4);">
-    <p>
-        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-    </p>
+<div class="manage-section-header">
+    <h3>Delete Personal Data</h3>
 </div>
 
-<EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <DataAnnotationsValidator />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="flex flex-col gap-4">
-        @if (requirePassword)
-        {
-            <div class="form-group">
-                <label for="Input.Password" class="form-label">Password</label>
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
-                <ValidationMessage For="() => Input.Password" class="form-error" />
-            </div>
-        }
-        <button class="btn btn-primary btn-lg btn-block" type="submit">Delete data and close my account</button>
-    </div>
-</EditForm>
+<StatusMessage Message="@message" />
+
+<div class="alert alert-error mb-6" role="alert">
+    <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+</div>
+
+<div class="card card-flat">
+    <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        <div class="flex flex-col gap-4">
+            @if (requirePassword)
+            {
+                <div class="form-group">
+                    <label for="Input.Password" class="form-label">Password</label>
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
+                    <ValidationMessage For="() => Input.Password" class="form-error" />
+                </div>
+            }
+            <button class="btn btn-danger" type="submit">Delete data and close my account</button>
+        </div>
+    </EditForm>
+</div>
 
 @code {
     private string? message;

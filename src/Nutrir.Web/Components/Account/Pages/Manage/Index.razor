@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage"
+@page "/Account/Manage"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
@@ -11,25 +11,31 @@
 
 <PageTitle>Profile</PageTitle>
 
-<h3>Profile</h3>
+<div class="manage-section-header">
+    <h3>Profile</h3>
+    <p class="text-muted">Update your profile information</p>
+</div>
+
 <StatusMessage />
 
-<EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <DataAnnotationsValidator />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="flex flex-col gap-4">
-        <div class="form-group">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" value="@username" id="username" class="form-input" placeholder="Choose your username." disabled />
+<div class="card card-flat">
+    <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        <div class="flex flex-col gap-4">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" value="@username" id="username" class="form-input" placeholder="Choose your username." disabled />
+            </div>
+            <div class="form-group">
+                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
+                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-input" placeholder="Enter your phone number" />
+                <ValidationMessage For="() => Input.PhoneNumber" class="form-error" />
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
         </div>
-        <div class="form-group">
-            <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-            <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-input" placeholder="Enter your phone number" />
-            <ValidationMessage For="() => Input.PhoneNumber" class="form-error" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-block">Save</button>
-    </div>
-</EditForm>
+    </EditForm>
+</div>
 
 @code {
     private ApplicationUser user = default!;

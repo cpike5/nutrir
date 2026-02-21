@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/ResetAuthenticator"
+@page "/Account/Manage/ResetAuthenticator"
 
 @using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
@@ -11,23 +11,24 @@
 
 <PageTitle>Reset authenticator key</PageTitle>
 
+<div class="manage-section-header">
+    <h3>Reset authenticator key</h3>
+</div>
+
 <StatusMessage />
-<h3>Reset authenticator key</h3>
-<div class="card card-flat" role="alert" style="border-color: var(--color-warning); margin-bottom: var(--space-4);">
-    <p>
-        <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure it.</strong>
-    </p>
+
+<div class="alert alert-warning mb-6" role="alert">
+    <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure it.</strong>
     <p>
         This process disables 2FA until you verify your authenticator app.
         If you do not complete your authenticator app configuration you may lose access to your account.
     </p>
 </div>
-<div>
-    <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
-        <AntiforgeryToken />
-        <button class="btn btn-primary" type="submit">Reset authenticator key</button>
-    </form>
-</div>
+
+<form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken />
+    <button class="btn btn-danger" type="submit">Reset authenticator key</button>
+</form>
 
 @code {
     [CascadingParameter]

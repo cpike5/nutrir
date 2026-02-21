@@ -1,0 +1,112 @@
+.clients-page {
+    max-width: 960px;
+    padding: var(--space-8);
+}
+
+.clients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+}
+
+.clients-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.clients-search {
+    margin-bottom: var(--space-6);
+    max-width: 400px;
+}
+
+.clients-loading {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+.clients-empty {
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.clients-empty-title {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.clients-empty-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.clients-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.clients-table thead th {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.clients-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.clients-table tbody tr:hover {
+    background-color: var(--color-bg-alt);
+}
+
+.clients-table tbody td {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.clients-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.clients-table-name {
+    font-weight: 500;
+}
+
+.clients-table-email,
+.clients-table-phone,
+.clients-table-muted {
+    color: var(--color-text-muted);
+}
+
+.clients-table-date {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+}
+
+.clients-table-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.clients-action-link {
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.clients-action-link:hover {
+    text-decoration: underline;
+}
