@@ -6,7 +6,7 @@
 **/.claude/
 **/archive/
 **/docs/
-**/css/
+/css/
 **/prototypes/
 *.md
 .env
