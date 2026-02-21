@@ -25,6 +25,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Database & EF Core](infrastructure/database.md) | PostgreSQL setup, AppDbContext, migrations, schema, conventions |
 | [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
 
+## Design System Documents
+
+| Document | Description |
+|----------|-------------|
+| [Blazor SSR Forms](design-system/blazor-ssr-forms.md) | SSR form patterns, the conditional `<EditForm>` gotcha, and multi-step wizard solution |
+
 ## Architecture Decision Records
 
 | ADR | Domain | Title |
