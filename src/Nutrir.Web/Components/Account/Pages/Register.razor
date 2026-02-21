@@ -65,6 +65,7 @@ else
         <ValidationSummary class="form-error" role="alert" />
 
         <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
+        <input type="hidden" name="Input.TargetRole" value="@_targetRole" />
 
         <div class="flex flex-col gap-4">
             <div class="form-group">
@@ -125,6 +126,17 @@ else
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    protected override void OnInitialized()
+    {
+        // When the "register" form POSTs, the component re-creates with _codeValidated = false.
+        // Restore step-2 state from the posted InviteCode so the form exists in the render tree.
+        if (!string.IsNullOrEmpty(Input.InviteCode))
+        {
+            _codeValidated = true;
+            _targetRole = Input.TargetRole;
+        }
+    }
+
     public async Task ValidateInviteCode(EditContext editContext)
     {
         _codeError = null;
@@ -146,6 +158,7 @@ else
         _codeValidated = true;
         _targetRole = result.TargetRole;
         Input.InviteCode = CodeInput.Code;
+        Input.TargetRole = result.TargetRole ?? "";
     }
 
     public async Task RegisterUser(EditContext editContext)
@@ -265,5 +278,7 @@ else
         public string ConfirmPassword { get; set; } = "";
 
         public string InviteCode { get; set; } = "";
+
+        public string TargetRole { get; set; } = "";
     }
 }
