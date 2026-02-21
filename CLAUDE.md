@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Nutrir — Project Instructions
 
 ## Project Overview
@@ -13,12 +17,46 @@ CRM application for a solo nutritionist/dietician. Client tracking, scheduling, 
 - **Logging:** Serilog → Seq (dev), Elastic (prod, external)
 - **Hosting:** Docker on self-hosted Linux VPS
 
+## Build & Run Commands
+
+```bash
+# Build the entire solution
+dotnet build Nutrir.sln
+
+# Run the web app (from repo root)
+dotnet run --project src/Nutrir.Web
+
+# Run with hot reload
+dotnet watch --project src/Nutrir.Web
+
+# Docker (app + PostgreSQL + Seq)
+docker compose up -d        # start all services
+docker compose down          # stop all services
+
+# EF Core migrations (run from repo root)
+dotnet ef migrations add <Name> --project src/Nutrir.Infrastructure --startup-project src/Nutrir.Web
+dotnet ef database update --project src/Nutrir.Infrastructure --startup-project src/Nutrir.Web
+```
+
+No test projects exist yet.
+
 ## Architecture
 
-Three-layer architecture:
-- **Core** — Domain entities, interfaces, enums. No dependencies on other layers.
-- **Infrastructure** — EF Core DbContext, repositories, external service integrations. References Core.
-- **Application (UI/API)** — Blazor Server project, services, DTOs, auth configuration. References Core and Infrastructure.
+Three-layer architecture with solution file `Nutrir.sln`:
+- **Nutrir.Core** (`src/Nutrir.Core/`) — Domain entities, interfaces, enums. No dependencies on other layers.
+- **Nutrir.Infrastructure** (`src/Nutrir.Infrastructure/`) — EF Core `AppDbContext`, repositories, migrations, external service integrations. References Core. Registers itself via `services.AddInfrastructure(configuration)` extension method.
+- **Nutrir.Web** (`src/Nutrir.Web/`) — Blazor Server project, UI components, auth configuration, `Program.cs` entry point. References Core and Infrastructure.
+
+### Key Entry Points
+- `src/Nutrir.Web/Program.cs` — App startup, DI registration, Serilog config, Identity setup
+- `src/Nutrir.Infrastructure/DependencyInjection.cs` — Infrastructure DI registration (`AddInfrastructure`)
+- `src/Nutrir.Infrastructure/Data/AppDbContext.cs` — EF Core context (inherits `IdentityDbContext<ApplicationUser>`)
+
+### UI Structure
+- `Components/Layout/` — `MainLayout`, `AuthLayout`, `TopBar`, `IconRailSidebar`, `StatusBar` (command-center style layout)
+- `Components/UI/` — Reusable design system components: `Button`, `Card`, `Badge`, `Panel`, `FormInput`, `FormSelect`, `FormCheckbox`, `FormGroup`, `Divider`
+- `Components/Pages/` — Route-level pages
+- `Components/Account/` — ASP.NET Identity scaffolded account pages (login, register, manage, 2FA)
 
 ## Key Conventions
 
