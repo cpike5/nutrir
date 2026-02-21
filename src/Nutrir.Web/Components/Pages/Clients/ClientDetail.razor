@@ -50,7 +50,7 @@
                 </div>
                 <div class="client-detail-field">
                     <span class="client-detail-label">Primary Nutritionist</span>
-                    <span class="client-detail-value">@_client.PrimaryNutritionistId</span>
+                    <span class="client-detail-value">@(_client.PrimaryNutritionistName ?? _client.PrimaryNutritionistId)</span>
                 </div>
                 <div class="client-detail-field">
                     <span class="client-detail-label">Consent</span>

@@ -212,6 +212,7 @@
                 Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : _model.Phone,
                 DateOfBirth: dob,
                 PrimaryNutritionistId: _model.PrimaryNutritionistId ?? string.Empty,
+                PrimaryNutritionistName: null,
                 ConsentGiven: _model.ConsentGiven,
                 ConsentTimestamp: consentTimestamp,
                 ConsentPolicyVersion: consentVersion,

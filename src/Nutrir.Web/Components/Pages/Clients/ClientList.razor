@@ -68,7 +68,7 @@
                             <td class="clients-table-name">@client.FirstName @client.LastName</td>
                             <td class="clients-table-email">@(client.Email ?? "—")</td>
                             <td class="clients-table-phone">@(client.Phone ?? "—")</td>
-                            <td class="clients-table-muted">@client.PrimaryNutritionistId</td>
+                            <td class="clients-table-muted">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</td>
                             <td class="clients-table-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
                             <td class="clients-table-actions">
                                 <a href="clients/@client.Id" class="clients-action-link">View</a>
