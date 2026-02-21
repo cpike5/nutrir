@@ -25,47 +25,43 @@
 
 <StatusMessage Message="@Message" />
 
-@if (!_codeValidated)
-{
-    <p class="text-sm text-muted mb-4">Enter your invite code to get started.</p>
+<EditForm Model="Input" method="post" OnSubmit="OnSubmit" FormName="register">
 
-    <EditForm Model="CodeInput" method="post" OnValidSubmit="ValidateInviteCode" FormName="validate-code">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="form-error" role="alert" />
+    <input type="hidden" name="Input.Step" value="@Input.Step" />
+    <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
+
+    @if (Input.Step == 1)
+    {
+        <p class="text-sm text-muted mb-4">Enter your invite code to get started.</p>
+
         @if (_codeError is not null)
         {
             <div class="status-message status-message-error" role="alert">@_codeError</div>
         }
         <div class="flex flex-col gap-4">
             <div class="form-group">
-                <label for="CodeInput.Code" class="form-label">Invite Code</label>
-                <InputText @bind-Value="CodeInput.Code" id="CodeInput.Code" class="form-input" autocomplete="off" aria-required="true" placeholder="ABC-1234" />
-                <ValidationMessage For="() => CodeInput.Code" class="form-error" />
+                <label for="Input.CodeEntry" class="form-label">Invite Code</label>
+                <InputText @bind-Value="Input.CodeEntry" id="Input.CodeEntry" class="form-input" autocomplete="off" aria-required="true" placeholder="ABC-1234" />
+                <ValidationMessage For="() => Input.CodeEntry" class="form-error" />
             </div>
             <button type="submit" class="btn btn-primary btn-lg btn-block">Validate Code</button>
         </div>
-    </EditForm>
 
-    <div class="flex flex-col gap-2 mt-6 text-center">
-        <span class="text-sm text-muted">
-            Already have an account?
-            <a href="Account/Login">Sign in</a>
-        </span>
-    </div>
-}
-else
-{
-    <div class="flex items-center gap-2 mb-4">
-        <span class="text-sm text-muted">Registering as:</span>
-        <span class="badge badge-primary">@_targetRole</span>
-    </div>
+        <div class="flex flex-col gap-2 mt-6 text-center">
+            <span class="text-sm text-muted">
+                Already have an account?
+                <a href="Account/Login">Sign in</a>
+            </span>
+        </div>
+    }
+    else
+    {
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-sm text-muted">Registering as:</span>
+            <span class="badge badge-primary">@_targetRole</span>
+        </div>
 
-    <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
-        <DataAnnotationsValidator />
         <ValidationSummary class="form-error" role="alert" />
-
-        <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
-        <input type="hidden" name="Input.TargetRole" value="@_targetRole" />
 
         <div class="flex flex-col gap-4">
             <div class="form-group">
@@ -95,30 +91,26 @@ else
             </div>
             <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
         </div>
-    </EditForm>
 
-    <div class="divider-text mt-6 mb-6">or continue with</div>
+        <div class="divider-text mt-6 mb-6">or continue with</div>
 
-    <ExternalLoginPicker />
+        <ExternalLoginPicker />
 
-    <div class="flex flex-col gap-2 mt-6 text-center">
-        <span class="text-sm text-muted">
-            Already have an account?
-            <a href="Account/Login">Sign in</a>
-        </span>
-    </div>
-}
+        <div class="flex flex-col gap-2 mt-6 text-center">
+            <span class="text-sm text-muted">
+                Already have an account?
+                <a href="Account/Login">Sign in</a>
+            </span>
+        </div>
+    }
+</EditForm>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
-    private bool _codeValidated;
     private string? _targetRole;
     private string? _codeError;
 
-    [SupplyParameterFromForm(FormName = "validate-code")]
-    private CodeInputModel CodeInput { get; set; } = new();
-
-    [SupplyParameterFromForm(FormName = "register")]
+    [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
@@ -126,22 +118,39 @@ else
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // When the "register" form POSTs, the component re-creates with _codeValidated = false.
-        // Restore step-2 state from the posted InviteCode so the form exists in the render tree.
-        if (!string.IsNullOrEmpty(Input.InviteCode))
+        // When step 2 POSTs, restore the target role from the invite code.
+        if (Input.Step == 2 && !string.IsNullOrEmpty(Input.InviteCode))
         {
-            _codeValidated = true;
-            _targetRole = Input.TargetRole;
+            var result = await InviteCodeService.ValidateAsync(Input.InviteCode);
+            _targetRole = result.IsValid ? result.TargetRole : null;
         }
     }
 
-    public async Task ValidateInviteCode(EditContext editContext)
+    public async Task OnSubmit(EditContext editContext)
+    {
+        if (Input.Step == 1)
+        {
+            await ValidateInviteCode();
+        }
+        else
+        {
+            await RegisterUser();
+        }
+    }
+
+    private async Task ValidateInviteCode()
     {
         _codeError = null;
 
-        var result = await InviteCodeService.ValidateAsync(CodeInput.Code);
+        if (string.IsNullOrWhiteSpace(Input.CodeEntry))
+        {
+            _codeError = "An invite code is required to register.";
+            return;
+        }
+
+        var result = await InviteCodeService.ValidateAsync(Input.CodeEntry);
 
         if (!result.IsValid)
         {
@@ -155,20 +164,19 @@ else
             return;
         }
 
-        _codeValidated = true;
+        Input.Step = 2;
+        Input.InviteCode = Input.CodeEntry;
         _targetRole = result.TargetRole;
-        Input.InviteCode = CodeInput.Code;
-        Input.TargetRole = result.TargetRole ?? "";
     }
 
-    public async Task RegisterUser(EditContext editContext)
+    private async Task RegisterUser()
     {
         // Re-validate the invite code to prevent tampering
         var codeResult = await InviteCodeService.ValidateAsync(Input.InviteCode);
         if (!codeResult.IsValid)
         {
             identityErrors = new[] { new IdentityError { Description = "The invite code is no longer valid." } };
-            _codeValidated = false;
+            Input.Step = 1;
             return;
         }
 
@@ -185,7 +193,6 @@ else
         if (!result.Succeeded)
         {
             identityErrors = result.Errors;
-            _codeValidated = true;
             _targetRole = codeResult.TargetRole;
             return;
         }
@@ -244,15 +251,14 @@ else
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
-    private sealed class CodeInputModel
-    {
-        [Required(ErrorMessage = "An invite code is required to register.")]
-        [Display(Name = "Invite Code")]
-        public string Code { get; set; } = "";
-    }
-
     private sealed class InputModel
     {
+        public int Step { get; set; } = 1;
+
+        public string CodeEntry { get; set; } = "";
+
+        public string InviteCode { get; set; } = "";
+
         [Required]
         [Display(Name = "First Name")]
         public string FirstName { get; set; } = "";
@@ -276,9 +282,5 @@ else
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
-
-        public string InviteCode { get; set; } = "";
-
-        public string TargetRole { get; set; } = "";
     }
 }
