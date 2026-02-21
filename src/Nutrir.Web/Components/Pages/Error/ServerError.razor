@@ -1,0 +1,71 @@
+@page "/error/500"
+@layout Nutrir.Web.Components.Layout.ErrorLayout
+@using System.Diagnostics
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Server Error — Nutrir</PageTitle>
+
+<header class="error-topbar">
+    <span class="error-topbar-brand">Nutrir</span>
+    <span class="error-topbar-sep">/</span>
+    <span class="error-topbar-label">Server Error</span>
+</header>
+
+<div class="error-content">
+    <div class="error-card">
+        <div class="error-code code-error">500</div>
+        <div class="error-divider divider-error"></div>
+        <h1 class="error-title">Something went wrong</h1>
+        <p class="error-description">
+            An unexpected error occurred while processing your request.
+            The issue has been logged and our team has been notified.
+            Please try again in a few moments.
+        </p>
+        <div class="error-actions">
+            <button class="btn btn-primary" @onclick="Reload">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                </svg>
+                Try again
+            </button>
+            <a href="/" class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Dashboard
+            </a>
+        </div>
+
+        @if (ShowRequestId)
+        {
+            <div class="error-detail">
+                <div class="error-detail-label">Request ID</div>
+                <div class="error-detail-value">@RequestId</div>
+            </div>
+        }
+    </div>
+</div>
+
+<footer class="error-status-bar">
+    <div class="error-status-left">
+        <div class="error-status-indicator">
+            <span class="error-status-dot dot-error"></span>
+            <span>Error detected</span>
+        </div>
+        <span>HTTP 500</span>
+    </div>
+</footer>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+
+    private async Task Reload() => await JSRuntime.InvokeVoidAsync("location.reload");
+}

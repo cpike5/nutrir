@@ -55,11 +55,13 @@ try
     }
     else
     {
-        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        app.UseExceptionHandler("/error/500", createScopeForErrors: true);
         app.UseHsts();
     }
 
     app.UseHttpsRedirection();
+
+    app.UseStatusCodePagesWithReExecute("/error/{0}");
 
     app.UseAntiforgery();
 

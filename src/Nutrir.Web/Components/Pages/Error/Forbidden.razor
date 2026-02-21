@@ -1,0 +1,60 @@
+@page "/error/403"
+@layout Nutrir.Web.Components.Layout.ErrorLayout
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Access Denied — Nutrir</PageTitle>
+
+<header class="error-topbar">
+    <span class="error-topbar-brand">Nutrir</span>
+    <span class="error-topbar-sep">/</span>
+    <span class="error-topbar-label">Access Denied</span>
+</header>
+
+<div class="error-content">
+    <div class="error-card">
+        <div class="error-code code-error">403</div>
+        <div class="error-divider divider-error"></div>
+        <h1 class="error-title">Access denied</h1>
+        <p class="error-description">
+            You do not have permission to view this page. If you believe this is an error,
+            contact your administrator or try signing in with a different account.
+        </p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/Account/Login" class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Sign in
+            </a>
+            <button class="btn btn-ghost" @onclick="GoBack">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Go back
+            </button>
+        </div>
+    </div>
+</div>
+
+<footer class="error-status-bar">
+    <div class="error-status-left">
+        <div class="error-status-indicator">
+            <span class="error-status-dot dot-ok"></span>
+            <span>System online</span>
+        </div>
+        <span>HTTP 403</span>
+    </div>
+</footer>
+
+@code {
+    private async Task GoBack() => await JSRuntime.InvokeVoidAsync("history.back");
+}

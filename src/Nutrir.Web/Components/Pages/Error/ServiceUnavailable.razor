@@ -1,0 +1,56 @@
+@page "/error/503"
+@layout Nutrir.Web.Components.Layout.ErrorLayout
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Maintenance — Nutrir</PageTitle>
+
+<header class="error-topbar">
+    <span class="error-topbar-brand">Nutrir</span>
+    <span class="error-topbar-sep">/</span>
+    <span class="error-topbar-label">Maintenance</span>
+</header>
+
+<div class="error-content">
+    <div class="error-card">
+        <div class="error-code code-warning">503</div>
+        <div class="error-divider divider-warning"></div>
+        <h1 class="error-title">Temporarily unavailable</h1>
+        <p class="error-description">
+            Nutrir is currently undergoing scheduled maintenance.
+            We expect to be back shortly. Thank you for your patience.
+        </p>
+
+        <div class="maintenance-info">
+            <div class="maintenance-row">
+                <span class="maintenance-label">Maintenance Progress</span>
+                <span class="maintenance-eta">Est. 15 min remaining</span>
+            </div>
+            <div class="maintenance-bar-track">
+                <div class="maintenance-bar-fill"></div>
+            </div>
+        </div>
+
+        <div class="error-actions" style="margin-top: var(--space-6);">
+            <button class="btn btn-primary" @onclick="Refresh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<footer class="error-status-bar">
+    <div class="error-status-left">
+        <div class="error-status-indicator">
+            <span class="error-status-dot dot-warning"></span>
+            <span>Maintenance mode</span>
+        </div>
+        <span>HTTP 503</span>
+    </div>
+</footer>
+
+@code {
+    private async Task Refresh() => await JSRuntime.InvokeVoidAsync("location.reload");
+}

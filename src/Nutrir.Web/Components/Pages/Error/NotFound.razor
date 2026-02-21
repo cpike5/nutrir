@@ -1,0 +1,52 @@
+@page "/error/404"
+@layout Nutrir.Web.Components.Layout.ErrorLayout
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Page Not Found — Nutrir</PageTitle>
+
+<header class="error-topbar">
+    <span class="error-topbar-brand">Nutrir</span>
+    <span class="error-topbar-sep">/</span>
+    <span class="error-topbar-label">Page Not Found</span>
+</header>
+
+<div class="error-content">
+    <div class="error-card">
+        <div class="error-code">404</div>
+        <div class="error-divider"></div>
+        <h1 class="error-title">Page not found</h1>
+        <p class="error-description">
+            The page you requested does not exist or may have been moved.
+            Check the URL for typos or use the navigation below to get back on track.
+        </p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Dashboard
+            </a>
+            <button class="btn btn-ghost" @onclick="GoBack">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Go back
+            </button>
+        </div>
+    </div>
+</div>
+
+<footer class="error-status-bar">
+    <div class="error-status-left">
+        <div class="error-status-indicator">
+            <span class="error-status-dot dot-ok"></span>
+            <span>System online</span>
+        </div>
+        <span>HTTP 404</span>
+    </div>
+</footer>
+
+@code {
+    private async Task GoBack() => await JSRuntime.InvokeVoidAsync("history.back");
+}
