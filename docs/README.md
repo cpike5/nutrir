@@ -16,6 +16,15 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | `compliance/` | Privacy laws, data handling, consent, regulatory |
 | `temp/` | Drafts and work-in-progress — move to proper folder when finalized |
 
+## Infrastructure Documents
+
+| Document | Description |
+|----------|-------------|
+| [Architecture Overview](infrastructure/architecture.md) | Three-layer architecture, DI patterns, middleware pipeline, UI structure, design system |
+| [Docker & Deployment](infrastructure/docker-and-deployment.md) | Docker Compose services, Dockerfile, environment variables, local dev setup |
+| [Database & EF Core](infrastructure/database.md) | PostgreSQL setup, AppDbContext, migrations, schema, conventions |
+| [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
+
 ## Architecture Decision Records
 
 | ADR | Domain | Title |
