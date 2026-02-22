@@ -4,9 +4,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
+@inject IAppointmentService AppointmentService
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
@@ -50,7 +52,7 @@
                 </div>
                 <div class="client-detail-field">
                     <span class="client-detail-label">Primary Nutritionist</span>
-                    <span class="client-detail-value">@_client.PrimaryNutritionistId</span>
+                    <span class="client-detail-value">@(_client.PrimaryNutritionistName ?? _client.PrimaryNutritionistId)</span>
                 </div>
                 <div class="client-detail-field">
                     <span class="client-detail-label">Consent</span>
@@ -99,6 +101,33 @@
             </div>
         </Card>
 
+        <Panel Title="Upcoming Appointments" Count="@(_upcomingAppointments.Count > 0 ? _upcomingAppointments.Count : null)">
+            <HeaderExtra>
+                <a href="/appointments/new?clientId=@Id" class="cc-panel-link">Schedule</a>
+            </HeaderExtra>
+            <ChildContent>
+                @if (_upcomingAppointments.Count == 0)
+                {
+                    <div class="cc-empty-state">
+                        <p>No upcoming appointments</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var appt in _upcomingAppointments)
+                    {
+                        <ScheduleListItem Time="@appt.StartTime.ToLocalTime().ToString("MMM d")"
+                                          ClientName="@FormatApptType(appt.Type)"
+                                          Duration="@appt.DurationMinutes"
+                                          Type="@appt.Type"
+                                          Status="@appt.Status"
+                                          Location="@appt.Location"
+                                          Href="@($"/appointments/{appt.Id}")" />
+                    }
+                }
+            </ChildContent>
+        </Panel>
+
         <div class="client-detail-actions">
             <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
             <Button Variant="ButtonVariant.Outline" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
@@ -143,6 +172,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private ClientDto? _client;
+    private List<AppointmentDto> _upcomingAppointments = [];
     private bool _isLoading = true;
     private bool _showDeleteConfirm;
     private bool _isDeleting;
@@ -151,8 +181,17 @@
     protected override async Task OnInitializedAsync()
     {
         _client = await ClientService.GetByIdAsync(Id);
+        _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
         _isLoading = false;
     }
+
+    private static string FormatApptType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
 
     private void NavigateToEdit()
     {

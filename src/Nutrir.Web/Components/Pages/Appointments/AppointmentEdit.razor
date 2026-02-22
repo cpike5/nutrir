@@ -1,0 +1,298 @@
+@page "/appointments/{Id:int}/edit"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IAppointmentService AppointmentService
+@inject IClientService ClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Appointment — Nutrir</PageTitle>
+
+<div class="client-form-page">
+    <div class="client-form-header">
+        <h1 class="client-form-title">Edit Appointment</h1>
+    </div>
+
+    @if (_isLoading)
+    {
+        <p class="client-detail-loading">Loading appointment...</p>
+    }
+    else if (_appointment is null)
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Appointment not found</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/appointments"))">Back to Appointments</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else if (!IsEditable())
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Appointment cannot be edited</p>
+                <p class="client-detail-not-found-desc">This appointment has been @_appointment.Status.ToString().ToLower() and can no longer be modified.</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}"))">Back to Appointment</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <div class="client-form-body">
+                <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditAppointment">
+                    <DataAnnotationsValidator />
+
+                    <FormGroup Label="Client" Id="clientId">
+                        <FormSelect Id="clientId"
+                                    Value="@_model.ClientId"
+                                    ValueChanged="@(v => _model.ClientId = v)">
+                            @foreach (var client in _clients)
+                            {
+                                <option value="@client.Id">@client.FirstName @client.LastName</option>
+                            }
+                        </FormSelect>
+                    </FormGroup>
+
+                    <FormGroup Label="Type" Id="type">
+                        <FormSelect Id="type"
+                                    Value="@_model.Type"
+                                    ValueChanged="@(v => _model.Type = v)">
+                            <option value="InitialConsultation">Initial Consultation</option>
+                            <option value="FollowUp">Follow-Up</option>
+                            <option value="CheckIn">Check-In</option>
+                        </FormSelect>
+                    </FormGroup>
+
+                    <div class="client-form-grid">
+                        <FormGroup Label="Date" Id="date" Error="@GetFieldError(nameof(_model.Date))">
+                            <FormInput Id="date" Type="date"
+                                       Value="@_model.Date"
+                                       ValueChanged="@(v => _model.Date = v)" />
+                        </FormGroup>
+
+                        <FormGroup Label="Time" Id="time" Error="@GetFieldError(nameof(_model.Time))">
+                            <FormInput Id="time" Type="time"
+                                       Value="@_model.Time"
+                                       ValueChanged="@(v => _model.Time = v)" />
+                        </FormGroup>
+                    </div>
+
+                    <div class="client-form-grid">
+                        <FormGroup Label="Duration" Id="duration">
+                            <FormSelect Id="duration"
+                                        Value="@_model.Duration"
+                                        ValueChanged="@(v => _model.Duration = v)">
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">60 minutes</option>
+                                <option value="75">75 minutes</option>
+                                <option value="90">90 minutes</option>
+                            </FormSelect>
+                        </FormGroup>
+
+                        <FormGroup Label="Location" Id="location">
+                            <FormSelect Id="location"
+                                        Value="@_model.Location"
+                                        ValueChanged="OnLocationChanged">
+                                <option value="InPerson">In-Person</option>
+                                <option value="Virtual">Virtual</option>
+                                <option value="Phone">Phone</option>
+                            </FormSelect>
+                        </FormGroup>
+                    </div>
+
+                    @if (_model.Location == "Virtual")
+                    {
+                        <FormGroup Label="Virtual Meeting URL" Id="virtualUrl">
+                            <FormInput Id="virtualUrl" Type="url"
+                                       Value="@_model.VirtualMeetingUrl"
+                                       ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
+                                       Placeholder="https://meet.example.com/..." />
+                        </FormGroup>
+                    }
+
+                    @if (_model.Location == "InPerson")
+                    {
+                        <FormGroup Label="Location Notes" Id="locationNotes">
+                            <FormInput Id="locationNotes"
+                                       Value="@_model.LocationNotes"
+                                       ValueChanged="@(v => _model.LocationNotes = v)"
+                                       Placeholder="Address or room number..." />
+                        </FormGroup>
+                    }
+
+                    <FormGroup Label="Notes" Id="notes">
+                        <textarea id="notes"
+                                  class="form-input"
+                                  rows="3"
+                                  @bind="_model.Notes"
+                                  placeholder="Appointment notes..."></textarea>
+                    </FormGroup>
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="client-form-error">@_errorMessage</p>
+                    }
+
+                    <div class="client-form-actions">
+                        <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                            @(_isSubmitting ? "Saving..." : "Save Changes")
+                        </Button>
+                        <a href="/appointments/@Id" class="client-form-cancel-link">Cancel</a>
+                    </div>
+                </EditForm>
+            </div>
+        </Card>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private AppointmentDto? _appointment;
+    private AppointmentFormModel _model = new();
+    private EditContext? _editContext;
+    private List<ClientDto> _clients = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+        _clients = await ClientService.GetListAsync();
+
+        if (_appointment is not null && IsEditable())
+        {
+            var localStart = _appointment.StartTime.ToLocalTime();
+            _model = new AppointmentFormModel
+            {
+                ClientId = _appointment.ClientId.ToString(),
+                Type = _appointment.Type.ToString(),
+                Date = localStart.ToString("yyyy-MM-dd"),
+                Time = localStart.ToString("HH:mm"),
+                Duration = _appointment.DurationMinutes.ToString(),
+                Location = _appointment.Location.ToString(),
+                VirtualMeetingUrl = _appointment.VirtualMeetingUrl,
+                LocationNotes = _appointment.LocationNotes,
+                Notes = _appointment.Notes
+            };
+        }
+
+        _editContext = new EditContext(_model);
+        _isLoading = false;
+    }
+
+    private bool IsEditable() =>
+        _appointment?.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed;
+
+    private void OnLocationChanged(string value)
+    {
+        _model.Location = value;
+        if (value != "Virtual") _model.VirtualMeetingUrl = null;
+        if (value != "InPerson") _model.LocationNotes = null;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            if (string.IsNullOrEmpty(_model.Date) || string.IsNullOrEmpty(_model.Time))
+            {
+                _errorMessage = "Date and time are required.";
+                return;
+            }
+
+            if (!DateTime.TryParse($"{_model.Date} {_model.Time}", out var startTime))
+            {
+                _errorMessage = "Invalid date or time.";
+                return;
+            }
+
+            var utcStartTime = DateTime.SpecifyKind(startTime, DateTimeKind.Local).ToUniversalTime();
+
+            if (!Enum.TryParse<AppointmentType>(_model.Type, out var type))
+                type = AppointmentType.FollowUp;
+
+            if (!Enum.TryParse<AppointmentLocation>(_model.Location, out var location))
+                location = AppointmentLocation.InPerson;
+
+            if (!int.TryParse(_model.Duration, out var duration))
+                duration = 30;
+
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var dto = new UpdateAppointmentDto(
+                Id: Id,
+                Type: type,
+                Status: _appointment!.Status,
+                StartTime: utcStartTime,
+                DurationMinutes: duration,
+                Location: location,
+                VirtualMeetingUrl: string.IsNullOrWhiteSpace(_model.VirtualMeetingUrl) ? null : _model.VirtualMeetingUrl,
+                LocationNotes: string.IsNullOrWhiteSpace(_model.LocationNotes) ? null : _model.LocationNotes,
+                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes);
+
+            var success = await AppointmentService.UpdateAsync(dto, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo($"/appointments/{Id}");
+            }
+            else
+            {
+                _errorMessage = "Failed to update the appointment. Please try again.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while updating the appointment. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private string? GetFieldError(string fieldName)
+    {
+        if (_editContext is null) return null;
+        var messages = _editContext.GetValidationMessages(new FieldIdentifier(_model, fieldName));
+        return messages.FirstOrDefault();
+    }
+
+    private class AppointmentFormModel
+    {
+        public string? ClientId { get; set; }
+        public string Type { get; set; } = "FollowUp";
+
+        [Required(ErrorMessage = "Date is required.")]
+        public string? Date { get; set; }
+
+        [Required(ErrorMessage = "Time is required.")]
+        public string? Time { get; set; }
+
+        public string Duration { get; set; } = "30";
+        public string Location { get; set; } = "InPerson";
+        public string? VirtualMeetingUrl { get; set; }
+        public string? LocationNotes { get; set; }
+        public string? Notes { get; set; }
+    }
+}

@@ -8,6 +8,7 @@ public record ClientDto(
     string? Phone,
     DateOnly? DateOfBirth,
     string PrimaryNutritionistId,
+    string? PrimaryNutritionistName,
     bool ConsentGiven,
     DateTime? ConsentTimestamp,
     string? ConsentPolicyVersion,

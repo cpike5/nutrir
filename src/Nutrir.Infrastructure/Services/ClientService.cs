@@ -61,7 +61,10 @@ public class ClientService : IClientService
     {
         var entity = await _dbContext.Clients.FindAsync(id);
 
-        return entity is null ? null : MapToDto(entity);
+        if (entity is null) return null;
+
+        var nutritionistName = await GetNutritionistNameAsync(entity.PrimaryNutritionistId);
+        return MapToDto(entity, nutritionistName);
     }
 
     public async Task<List<ClientDto>> GetListAsync(string? searchTerm = null)
@@ -82,7 +85,14 @@ public class ClientService : IClientService
             .ThenBy(c => c.FirstName)
             .ToListAsync();
 
-        return entities.Select(MapToDto).ToList();
+        var nutritionistIds = entities.Select(c => c.PrimaryNutritionistId).Distinct().ToList();
+        var nutritionists = await _dbContext.Users
+            .Where(u => nutritionistIds.Contains(u.Id))
+            .OfType<ApplicationUser>()
+            .ToDictionaryAsync(u => u.Id, u =>
+                !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : $"{u.FirstName} {u.LastName}".Trim());
+
+        return entities.Select(e => MapToDto(e, nutritionists.GetValueOrDefault(e.PrimaryNutritionistId))).ToList();
     }
 
     public async Task<bool> UpdateAsync(int id, ClientDto dto, string updatedByUserId)
@@ -150,7 +160,17 @@ public class ClientService : IClientService
         return true;
     }
 
-    private static ClientDto MapToDto(Client entity)
+    private async Task<string?> GetNutritionistNameAsync(string userId)
+    {
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user is ApplicationUser appUser)
+            return !string.IsNullOrEmpty(appUser.DisplayName)
+                ? appUser.DisplayName
+                : $"{appUser.FirstName} {appUser.LastName}".Trim();
+        return null;
+    }
+
+    private static ClientDto MapToDto(Client entity, string? nutritionistName = null)
     {
         return new ClientDto(
             entity.Id,
@@ -160,6 +180,7 @@ public class ClientService : IClientService
             entity.Phone,
             entity.DateOfBirth,
             entity.PrimaryNutritionistId,
+            nutritionistName,
             entity.ConsentGiven,
             entity.ConsentTimestamp,
             entity.ConsentPolicyVersion,
