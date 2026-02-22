@@ -42,7 +42,9 @@ else
         <MetricCard Label="This Week"
                     Value="@_thisWeekCount.ToString()"
                     Delta="@(_thisWeekCount > 0 ? MetricDelta.Up : MetricDelta.Flat)" />
-        <MetricCard Label="Active Plans" Value="--" Delta="MetricDelta.Flat" />
+        <MetricCard Label="Active Plans"
+                    Value="@_activePlanCount.ToString()"
+                    Delta="@(_activePlanCount > 0 ? MetricDelta.Up : MetricDelta.Flat)" />
         <MetricCard Label="Pending Consent"
                     Value="@_metrics.PendingConsentCount.ToString()"
                     DeltaText="@(_metrics.PendingConsentCount > 0 ? _metrics.PendingConsentCount.ToString() : null)"
@@ -154,18 +156,36 @@ else
             }
         </Panel>
 
-        <!-- Client Goals (empty state) -->
-        <Panel Title="Client Goals">
+        <!-- Recent Meal Plans -->
+        <Panel Title="Recent Meal Plans" Count="@(_recentMealPlans.Count > 0 ? _recentMealPlans.Count : null)">
             <HeaderExtra>
-                <span class="cc-panel-link" style="cursor: default; opacity: 0.5;">View All</span>
+                <a href="/meal-plans" class="cc-panel-link">View All</a>
             </HeaderExtra>
             <ChildContent>
-                <div class="cc-empty-state">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block; opacity: 0.4;">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                    <p>Goal tracking coming soon</p>
-                </div>
+                @if (_recentMealPlans.Count == 0)
+                {
+                    <div class="cc-empty-state">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block; opacity: 0.4;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <p>No meal plans yet</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var plan in _recentMealPlans)
+                    {
+                        <a href="/meal-plans/@plan.Id" class="cc-list-item" style="text-decoration:none; color:inherit;">
+                            <div class="cc-list-content">
+                                <div class="cc-list-primary">@plan.Title</div>
+                                <div class="cc-list-secondary">@plan.ClientFirstName @plan.ClientLastName</div>
+                            </div>
+                            <div class="cc-list-badge">
+                                <Badge Variant="@GetPlanStatusVariant(plan.Status)">@plan.Status</Badge>
+                            </div>
+                        </a>
+                    }
+                }
             </ChildContent>
         </Panel>
 
@@ -181,6 +201,8 @@ else
     private List<AuditLogDto> _activityItems = [];
     private List<AppointmentDto> _todaysAppointments = [];
     private int _thisWeekCount;
+    private int _activePlanCount;
+    private List<MealPlanSummaryDto> _recentMealPlans = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,6 +218,8 @@ else
         _activityItems = await AuditLogService.GetRecentAsync(8);
         _todaysAppointments = await DashboardService.GetTodaysAppointmentsAsync();
         _thisWeekCount = await DashboardService.GetThisWeekAppointmentCountAsync();
+        _activePlanCount = await DashboardService.GetActiveMealPlanCountAsync();
+        _recentMealPlans = await DashboardService.GetRecentMealPlansAsync(5);
         _loading = false;
     }
 
@@ -219,8 +243,17 @@ else
         if (action == "ClientUpdated") return "dot-note";
         if (action == "ClientSoftDeleted") return "dot-appt";
         if (action.StartsWith("Appointment")) return "dot-appt";
+        if (action.StartsWith("MealPlan")) return "dot-plan";
         return "dot-client";
     }
+
+    private static BadgeVariant GetPlanStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
 
     private static string FormatActivityText(AuditLogDto entry)
     {

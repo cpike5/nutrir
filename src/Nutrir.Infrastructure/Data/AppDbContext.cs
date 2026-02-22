@@ -16,6 +16,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
+    public DbSet<MealPlan> MealPlans => Set<MealPlan>();
+
+    public DbSet<MealPlanDay> MealPlanDays => Set<MealPlanDay>();
+
+    public DbSet<MealSlot> MealSlots => Set<MealSlot>();
+
+    public DbSet<MealItem> MealItems => Set<MealItem>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -93,6 +101,74 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(a => a.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
 
             entity.Ignore(a => a.EndTime);
+        });
+
+        builder.Entity<MealPlan>(entity =>
+        {
+            entity.HasQueryFilter(mp => !mp.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(mp => mp.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(mp => mp.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(mp => mp.Status).HasConversion<string>();
+            entity.Property(mp => mp.Title).HasMaxLength(200);
+            entity.Property(mp => mp.Description).HasColumnType("text");
+            entity.Property(mp => mp.Notes).HasColumnType("text");
+            entity.Property(mp => mp.Instructions).HasColumnType("text");
+            entity.Property(mp => mp.CalorieTarget).HasPrecision(18, 2);
+            entity.Property(mp => mp.ProteinTargetG).HasPrecision(18, 2);
+            entity.Property(mp => mp.CarbsTargetG).HasPrecision(18, 2);
+            entity.Property(mp => mp.FatTargetG).HasPrecision(18, 2);
+            entity.Property(mp => mp.IsDeleted).HasDefaultValue(false);
+            entity.Property(mp => mp.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+
+            entity.HasMany(mp => mp.Days)
+                .WithOne()
+                .HasForeignKey(d => d.MealPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MealPlanDay>(entity =>
+        {
+            entity.HasIndex(d => new { d.MealPlanId, d.DayNumber }).IsUnique();
+            entity.Property(d => d.Label).HasMaxLength(100);
+            entity.Property(d => d.Notes).HasColumnType("text");
+
+            entity.HasMany(d => d.MealSlots)
+                .WithOne()
+                .HasForeignKey(s => s.MealPlanDayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MealSlot>(entity =>
+        {
+            entity.Property(s => s.MealType).HasConversion<string>();
+            entity.Property(s => s.CustomName).HasMaxLength(100);
+            entity.Property(s => s.Notes).HasColumnType("text");
+
+            entity.HasMany(s => s.Items)
+                .WithOne()
+                .HasForeignKey(i => i.MealSlotId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MealItem>(entity =>
+        {
+            entity.Property(i => i.FoodName).HasMaxLength(200);
+            entity.Property(i => i.Unit).HasMaxLength(50);
+            entity.Property(i => i.Quantity).HasPrecision(18, 2);
+            entity.Property(i => i.CaloriesKcal).HasPrecision(18, 2);
+            entity.Property(i => i.ProteinG).HasPrecision(18, 2);
+            entity.Property(i => i.CarbsG).HasPrecision(18, 2);
+            entity.Property(i => i.FatG).HasPrecision(18, 2);
+            entity.Property(i => i.Notes).HasColumnType("text");
         });
     }
 }

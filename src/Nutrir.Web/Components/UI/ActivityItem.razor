@@ -1,0 +1,14 @@
+<div class="cc-activity-item" @attributes="AdditionalAttributes">
+    <div class="cc-activity-row">
+        <div class="cc-activity-dot @DotClass"></div>
+        <div class="cc-activity-text">@ChildContent</div>
+        <span class="cc-activity-ago">@TimeAgo</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string DotClass { get; set; } = "dot-client";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string TimeAgo { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

@@ -1,0 +1,486 @@
+@page "/meal-plans/{Id:int}/edit"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IMealPlanService MealPlanService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Meal Plan — Nutrir</PageTitle>
+
+<div class="client-detail-page">
+    @if (_isLoading)
+    {
+        <p class="client-detail-loading">Loading meal plan...</p>
+    }
+    else if (_plan is null)
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Meal plan not found</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/meal-plans"))">Back to Meal Plans</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="client-detail-header">
+            <h1 class="client-detail-title">@_plan.Title</h1>
+            <Badge Variant="@GetStatusVariant(_plan.Status)">@_plan.Status</Badge>
+        </div>
+
+        @if (_plan.CalorieTarget.HasValue || _plan.ProteinTargetG.HasValue)
+        {
+            <div class="mp-targets-bar">
+                <span class="mp-targets-label">Daily Targets:</span>
+                @if (_plan.CalorieTarget.HasValue) { <span>@_plan.CalorieTarget.Value.ToString("N0") kcal</span> }
+                @if (_plan.ProteinTargetG.HasValue) { <span>· @_plan.ProteinTargetG.Value.ToString("N0")g P</span> }
+                @if (_plan.CarbsTargetG.HasValue) { <span>· @_plan.CarbsTargetG.Value.ToString("N0")g C</span> }
+                @if (_plan.FatTargetG.HasValue) { <span>· @_plan.FatTargetG.Value.ToString("N0")g F</span> }
+            </div>
+        }
+
+        <!-- Day Tabs -->
+        <div class="mp-day-tabs">
+            @foreach (var day in _days)
+            {
+                <button class="mp-day-tab @(day.DayNumber == _selectedDay ? "active" : "")"
+                        @onclick="@(() => SelectDay(day.DayNumber))">
+                    @(day.Label ?? $"Day {day.DayNumber}")
+                </button>
+            }
+        </div>
+
+        <!-- Selected Day Content -->
+        @if (GetCurrentDay() is { } currentDay)
+        {
+            <!-- Day Summary Bar -->
+            <div class="mp-totals @GetDayTotalsClass(currentDay)">
+                <span class="mp-totals-label">Day Total:</span>
+                <span>@GetDayCalories(currentDay).ToString("N0") kcal</span>
+                <span>· @GetDayProtein(currentDay).ToString("N0")g P</span>
+                <span>· @GetDayCarbs(currentDay).ToString("N0")g C</span>
+                <span>· @GetDayFat(currentDay).ToString("N0")g F</span>
+                @if (_plan.CalorieTarget.HasValue)
+                {
+                    var diff = GetDayCalories(currentDay) - _plan.CalorieTarget.Value;
+                    <span class="mp-target-compare @(diff > 50 ? "over" : diff < -50 ? "under" : "on-target")">
+                        (@(diff >= 0 ? "+" : "")@diff.ToString("N0") kcal)
+                    </span>
+                }
+            </div>
+
+            <!-- Meal Slots -->
+            @foreach (var slot in currentDay.MealSlots.OrderBy(s => s.SortOrder))
+            {
+                <div class="mp-slot">
+                    <div class="mp-slot-header">
+                        <span class="mp-slot-name">@(slot.CustomName ?? FormatMealType(slot.MealType))</span>
+                        <span class="mp-slot-totals">
+                            @GetSlotCalories(slot).ToString("N0") kcal · @GetSlotProtein(slot).ToString("N0")g P
+                        </span>
+                        <button class="mp-slot-remove" title="Remove meal slot"
+                                @onclick="@(() => RemoveSlot(currentDay, slot))">×</button>
+                    </div>
+
+                    <!-- Items Table -->
+                    @if (slot.Items.Count > 0)
+                    {
+                        <table class="mp-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Food</th>
+                                    <th>Qty</th>
+                                    <th>Unit</th>
+                                    <th>Cal</th>
+                                    <th>P</th>
+                                    <th>C</th>
+                                    <th>F</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in slot.Items.OrderBy(i => i.SortOrder))
+                                {
+                                    <tr class="mp-item">
+                                        <td>@item.FoodName</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.Unit</td>
+                                        <td>@item.CaloriesKcal.ToString("N0")</td>
+                                        <td>@item.ProteinG.ToString("N0")</td>
+                                        <td>@item.CarbsG.ToString("N0")</td>
+                                        <td>@item.FatG.ToString("N0")</td>
+                                        <td>
+                                            <button class="mp-item-remove" @onclick="@(() => RemoveItem(slot, item))">×</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    <!-- Add Item Form -->
+                    @if (_addingToSlot == slot)
+                    {
+                        <div class="mp-item-form">
+                            <div class="mp-item-form-row">
+                                <FormInput Id="@($"food-{slot.GetHashCode()}")"
+                                           Placeholder="Food name"
+                                           Value="@_newItem.FoodName"
+                                           ValueChanged="@(v => _newItem.FoodName = v)" />
+                                <FormInput Id="@($"qty-{slot.GetHashCode()}")"
+                                           Type="number"
+                                           Placeholder="Qty"
+                                           Value="@_newItem.Quantity"
+                                           ValueChanged="@(v => _newItem.Quantity = v)" />
+                                <FormSelect Id="@($"unit-{slot.GetHashCode()}")"
+                                            Value="@_newItem.Unit"
+                                            ValueChanged="@(v => _newItem.Unit = v)">
+                                    <option value="g">g</option>
+                                    <option value="oz">oz</option>
+                                    <option value="cup">cup</option>
+                                    <option value="tbsp">tbsp</option>
+                                    <option value="tsp">tsp</option>
+                                    <option value="piece">piece</option>
+                                    <option value="serving">serving</option>
+                                    <option value="ml">ml</option>
+                                </FormSelect>
+                            </div>
+                            <div class="mp-item-form-row">
+                                <FormInput Id="@($"cal-{slot.GetHashCode()}")"
+                                           Type="number" Placeholder="Cal"
+                                           Value="@_newItem.Calories"
+                                           ValueChanged="@(v => _newItem.Calories = v)" />
+                                <FormInput Id="@($"prot-{slot.GetHashCode()}")"
+                                           Type="number" Placeholder="Protein (g)"
+                                           Value="@_newItem.Protein"
+                                           ValueChanged="@(v => _newItem.Protein = v)" />
+                                <FormInput Id="@($"carbs-{slot.GetHashCode()}")"
+                                           Type="number" Placeholder="Carbs (g)"
+                                           Value="@_newItem.Carbs"
+                                           ValueChanged="@(v => _newItem.Carbs = v)" />
+                                <FormInput Id="@($"fat-{slot.GetHashCode()}")"
+                                           Type="number" Placeholder="Fat (g)"
+                                           Value="@_newItem.Fat"
+                                           ValueChanged="@(v => _newItem.Fat = v)" />
+                            </div>
+                            <div class="mp-item-form-actions">
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="@(() => AddItem(slot))">Add Item</Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="@(() => _addingToSlot = null)">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <button class="mp-add-item-btn" @onclick="@(() => StartAddItem(slot))">+ Add food item</button>
+                    }
+                </div>
+            }
+
+            <!-- Add Meal Slot -->
+            @if (_addingSlot)
+            {
+                <div class="mp-add-slot-form">
+                    <FormSelect Id="newSlotType"
+                                Value="@_newSlotType"
+                                ValueChanged="@(v => _newSlotType = v)">
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="MorningSnack">Morning Snack</option>
+                        <option value="Lunch">Lunch</option>
+                        <option value="AfternoonSnack">Afternoon Snack</option>
+                        <option value="Dinner">Dinner</option>
+                        <option value="EveningSnack">Evening Snack</option>
+                    </FormSelect>
+                    <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="@(() => AddSlot(currentDay))">Add</Button>
+                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="@(() => _addingSlot = false)">Cancel</Button>
+                </div>
+            }
+            else
+            {
+                <button class="mp-add-slot-btn" @onclick="@(() => { _addingSlot = true; _newSlotType = "Breakfast"; })">+ Add meal slot</button>
+            }
+        }
+
+        <!-- Save / Back -->
+        <div class="client-detail-actions">
+            <Button Variant="ButtonVariant.Primary" OnClick="SaveContent" Disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save Meal Plan")
+            </Button>
+            <a href="/meal-plans/@Id" class="client-detail-back-link">Back to Detail</a>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="mp-success-message">@_successMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <p class="client-form-error">@_errorMessage</p>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private MealPlanDetailDto? _plan;
+    private List<EditDay> _days = [];
+    private int _selectedDay = 1;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _addingSlot;
+    private string _newSlotType = "Breakfast";
+    private EditSlot? _addingToSlot;
+    private NewItemModel _newItem = new();
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        if (_plan is not null)
+        {
+            _days = _plan.Days.Select(d => new EditDay
+            {
+                DayNumber = d.DayNumber,
+                Label = d.Label,
+                Notes = d.Notes,
+                MealSlots = d.MealSlots.Select(s => new EditSlot
+                {
+                    MealType = s.MealType,
+                    CustomName = s.CustomName,
+                    SortOrder = s.SortOrder,
+                    Notes = s.Notes,
+                    Items = s.Items.Select(i => new EditItem
+                    {
+                        FoodName = i.FoodName,
+                        Quantity = i.Quantity,
+                        Unit = i.Unit,
+                        CaloriesKcal = i.CaloriesKcal,
+                        ProteinG = i.ProteinG,
+                        CarbsG = i.CarbsG,
+                        FatG = i.FatG,
+                        Notes = i.Notes,
+                        SortOrder = i.SortOrder
+                    }).ToList()
+                }).ToList()
+            }).ToList();
+
+            if (_days.Count > 0) _selectedDay = _days[0].DayNumber;
+        }
+        _isLoading = false;
+    }
+
+    private EditDay? GetCurrentDay() => _days.FirstOrDefault(d => d.DayNumber == _selectedDay);
+
+    private void SelectDay(int day)
+    {
+        _selectedDay = day;
+        _addingToSlot = null;
+        _addingSlot = false;
+    }
+
+    private void AddSlot(EditDay day)
+    {
+        if (Enum.TryParse<MealType>(_newSlotType, out var mealType))
+        {
+            day.MealSlots.Add(new EditSlot
+            {
+                MealType = mealType,
+                SortOrder = day.MealSlots.Count
+            });
+        }
+        _addingSlot = false;
+    }
+
+    private void RemoveSlot(EditDay day, EditSlot slot)
+    {
+        day.MealSlots.Remove(slot);
+    }
+
+    private void StartAddItem(EditSlot slot)
+    {
+        _addingToSlot = slot;
+        _newItem = new NewItemModel { Unit = "g" };
+    }
+
+    private void AddItem(EditSlot slot)
+    {
+        if (string.IsNullOrWhiteSpace(_newItem.FoodName)) return;
+
+        decimal.TryParse(_newItem.Quantity, out var qty);
+        decimal.TryParse(_newItem.Calories, out var cal);
+        decimal.TryParse(_newItem.Protein, out var prot);
+        decimal.TryParse(_newItem.Carbs, out var carbs);
+        decimal.TryParse(_newItem.Fat, out var fat);
+
+        slot.Items.Add(new EditItem
+        {
+            FoodName = _newItem.FoodName!,
+            Quantity = qty,
+            Unit = _newItem.Unit ?? "g",
+            CaloriesKcal = cal,
+            ProteinG = prot,
+            CarbsG = carbs,
+            FatG = fat,
+            SortOrder = slot.Items.Count
+        });
+
+        _addingToSlot = null;
+        _newItem = new NewItemModel { Unit = "g" };
+    }
+
+    private void RemoveItem(EditSlot slot, EditItem item)
+    {
+        slot.Items.Remove(item);
+    }
+
+    private async Task SaveContent()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var dto = new SaveMealPlanContentDto(
+                MealPlanId: Id,
+                Days: _days.Select(d => new SaveMealPlanDayDto(
+                    Id: null,
+                    DayNumber: d.DayNumber,
+                    Label: d.Label,
+                    Notes: d.Notes,
+                    MealSlots: d.MealSlots.Select(s => new SaveMealSlotDto(
+                        Id: null,
+                        MealType: s.MealType,
+                        CustomName: s.CustomName,
+                        SortOrder: s.SortOrder,
+                        Notes: s.Notes,
+                        Items: s.Items.Select(i => new SaveMealItemDto(
+                            Id: null,
+                            FoodName: i.FoodName,
+                            Quantity: i.Quantity,
+                            Unit: i.Unit,
+                            CaloriesKcal: i.CaloriesKcal,
+                            ProteinG: i.ProteinG,
+                            CarbsG: i.CarbsG,
+                            FatG: i.FatG,
+                            Notes: i.Notes,
+                            SortOrder: i.SortOrder
+                        )).ToList()
+                    )).ToList()
+                )).ToList()
+            );
+
+            var success = await MealPlanService.SaveContentAsync(dto, userId);
+            if (success)
+            {
+                _successMessage = "Meal plan saved.";
+                // Reload to get updated IDs
+                _plan = await MealPlanService.GetByIdAsync(Id);
+            }
+            else
+            {
+                _errorMessage = "Failed to save meal plan.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while saving.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private decimal GetSlotCalories(EditSlot slot) => slot.Items.Sum(i => i.CaloriesKcal);
+    private decimal GetSlotProtein(EditSlot slot) => slot.Items.Sum(i => i.ProteinG);
+
+    private decimal GetDayCalories(EditDay day) => day.MealSlots.Sum(s => s.Items.Sum(i => i.CaloriesKcal));
+    private decimal GetDayProtein(EditDay day) => day.MealSlots.Sum(s => s.Items.Sum(i => i.ProteinG));
+    private decimal GetDayCarbs(EditDay day) => day.MealSlots.Sum(s => s.Items.Sum(i => i.CarbsG));
+    private decimal GetDayFat(EditDay day) => day.MealSlots.Sum(s => s.Items.Sum(i => i.FatG));
+
+    private string GetDayTotalsClass(EditDay day)
+    {
+        if (_plan?.CalorieTarget is null) return "";
+        var diff = GetDayCalories(day) - _plan.CalorieTarget.Value;
+        if (diff > 100) return "over";
+        if (diff < -100) return "under";
+        return "on-target";
+    }
+
+    private static string FormatMealType(MealType type) => type switch
+    {
+        MealType.Breakfast => "Breakfast",
+        MealType.MorningSnack => "Morning Snack",
+        MealType.Lunch => "Lunch",
+        MealType.AfternoonSnack => "Afternoon Snack",
+        MealType.Dinner => "Dinner",
+        MealType.EveningSnack => "Evening Snack",
+        _ => type.ToString()
+    };
+
+    private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
+
+    // ── View Models ──
+
+    private class EditDay
+    {
+        public int DayNumber { get; set; }
+        public string? Label { get; set; }
+        public string? Notes { get; set; }
+        public List<EditSlot> MealSlots { get; set; } = [];
+    }
+
+    private class EditSlot
+    {
+        public MealType MealType { get; set; }
+        public string? CustomName { get; set; }
+        public int SortOrder { get; set; }
+        public string? Notes { get; set; }
+        public List<EditItem> Items { get; set; } = [];
+    }
+
+    private class EditItem
+    {
+        public string FoodName { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public string Unit { get; set; } = "g";
+        public decimal CaloriesKcal { get; set; }
+        public decimal ProteinG { get; set; }
+        public decimal CarbsG { get; set; }
+        public decimal FatG { get; set; }
+        public string? Notes { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    private class NewItemModel
+    {
+        public string? FoodName { get; set; }
+        public string? Quantity { get; set; }
+        public string? Unit { get; set; } = "g";
+        public string? Calories { get; set; }
+        public string? Protein { get; set; }
+        public string? Carbs { get; set; }
+        public string? Fat { get; set; }
+    }
+}

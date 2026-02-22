@@ -31,3 +31,17 @@ public enum CardVariant
     Flat,
     Elevated
 }
+
+public enum MetricDelta
+{
+    Up,
+    Down,
+    Flat
+}
+
+public enum AlertSeverity
+{
+    Warning,
+    Error,
+    Info
+}

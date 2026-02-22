@@ -1,0 +1,18 @@
+<a class="cc-client-row" href="@Href" @attributes="AdditionalAttributes">
+    <div class="cc-client-avatar">@Initials</div>
+    <div class="cc-client-info">
+        <div class="cc-client-name">@Name</div>
+        <div class="cc-client-meta">@Meta</div>
+    </div>
+    <Badge Variant="@StatusVariant">@StatusText</Badge>
+</a>
+
+@code {
+    [Parameter] public string Initials { get; set; } = "";
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string Meta { get; set; } = "";
+    [Parameter] public BadgeVariant StatusVariant { get; set; } = BadgeVariant.Success;
+    [Parameter] public string StatusText { get; set; } = "Active";
+    [Parameter] public string? Href { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}
