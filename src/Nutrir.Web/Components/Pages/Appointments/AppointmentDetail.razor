@@ -1,0 +1,300 @@
+@page "/appointments/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IAppointmentService AppointmentService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
+
+<div class="client-detail-page">
+    @if (_isLoading)
+    {
+        <p class="client-detail-loading">Loading appointment...</p>
+    }
+    else if (_appointment is null)
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Appointment not found</p>
+                <p class="client-detail-not-found-desc">The appointment you are looking for does not exist or has been removed.</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Appointments</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="client-detail-header">
+            <h1 class="client-detail-title">
+                Appointment with @_appointment.ClientFirstName @_appointment.ClientLastName
+            </h1>
+            <Badge Variant="@GetStatusVariant(_appointment.Status)">@FormatStatus(_appointment.Status)</Badge>
+        </div>
+
+        <Card>
+            <div class="client-detail-grid">
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Client</span>
+                    <span class="client-detail-value">
+                        <a href="/clients/@_appointment.ClientId">@_appointment.ClientFirstName @_appointment.ClientLastName</a>
+                    </span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Type</span>
+                    <span class="client-detail-value">@FormatType(_appointment.Type)</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Date & Time</span>
+                    <span class="client-detail-value">@_appointment.StartTime.ToLocalTime().ToString("dddd, MMMM d, yyyy h:mm tt")</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Duration</span>
+                    <span class="client-detail-value">@_appointment.DurationMinutes minutes (@_appointment.StartTime.ToLocalTime().ToString("h:mm") — @_appointment.EndTime.ToLocalTime().ToString("h:mm tt"))</span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Location</span>
+                    <span class="client-detail-value">@FormatLocation(_appointment.Location)</span>
+                </div>
+
+                @if (_appointment.Location == AppointmentLocation.Virtual && !string.IsNullOrEmpty(_appointment.VirtualMeetingUrl))
+                {
+                    <div class="client-detail-field">
+                        <span class="client-detail-label">Meeting URL</span>
+                        <span class="client-detail-value">
+                            <a href="@_appointment.VirtualMeetingUrl" target="_blank" rel="noopener">@_appointment.VirtualMeetingUrl</a>
+                        </span>
+                    </div>
+                }
+
+                @if (_appointment.Location == AppointmentLocation.InPerson && !string.IsNullOrEmpty(_appointment.LocationNotes))
+                {
+                    <div class="client-detail-field">
+                        <span class="client-detail-label">Location Details</span>
+                        <span class="client-detail-value">@_appointment.LocationNotes</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_appointment.NutritionistName))
+                {
+                    <div class="client-detail-field">
+                        <span class="client-detail-label">Nutritionist</span>
+                        <span class="client-detail-value">@_appointment.NutritionistName</span>
+                    </div>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(_appointment.Notes))
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Notes</span>
+                    <pre class="client-detail-notes">@_appointment.Notes</pre>
+                </div>
+            }
+
+            @if (_appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Cancellation</span>
+                    <p class="client-detail-value">
+                        @if (_appointment.CancelledAt.HasValue)
+                        {
+                            <span>Cancelled on @_appointment.CancelledAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                        }
+                        @if (!string.IsNullOrEmpty(_appointment.CancellationReason))
+                        {
+                            <br />
+                            <span>Reason: @_appointment.CancellationReason</span>
+                        }
+                    </p>
+                </div>
+            }
+
+            <Divider />
+            <div class="client-detail-meta">
+                <span class="client-detail-meta-item">Created: @_appointment.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                @if (_appointment.UpdatedAt.HasValue)
+                {
+                    <span class="client-detail-meta-item">Updated: @_appointment.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                }
+            </div>
+        </Card>
+
+        @if (IsActionable())
+        {
+            <div class="client-detail-actions cc-appointment-actions">
+                @if (_appointment.Status == AppointmentStatus.Scheduled)
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="ConfirmAppointment">Confirm</Button>
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">Edit</Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">Cancel</Button>
+                }
+                else if (_appointment.Status == AppointmentStatus.Confirmed)
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="CompleteAppointment">Complete</Button>
+                    <Button Variant="ButtonVariant.Outline" OnClick="MarkNoShow">No-Show</Button>
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">Edit</Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">Cancel</Button>
+                }
+                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
+            </div>
+        }
+        else
+        {
+            <div class="client-detail-actions">
+                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
+            </div>
+        }
+
+        @if (_showCancelForm)
+        {
+            <Card>
+                <div class="client-detail-delete-confirm cc-cancel-form">
+                    <p class="client-detail-delete-title">Cancel Appointment</p>
+                    <p class="client-detail-delete-desc">Please provide a reason for cancellation.</p>
+                    <FormGroup Label="Reason" Id="cancelReason">
+                        <textarea id="cancelReason"
+                                  class="form-input"
+                                  rows="2"
+                                  @bind="_cancellationReason"
+                                  placeholder="Cancellation reason..."></textarea>
+                    </FormGroup>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="client-detail-error">@_errorMessage</p>
+                    }
+                    <div class="client-detail-delete-actions">
+                        <Button Variant="ButtonVariant.Primary" OnClick="CancelAppointment" Disabled="@_isProcessing">
+                            @(_isProcessing ? "Cancelling..." : "Confirm Cancellation")
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = false)">Go Back</Button>
+                    </div>
+                </div>
+            </Card>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private AppointmentDto? _appointment;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+    private bool _showCancelForm;
+    private string? _cancellationReason;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+        _isLoading = false;
+    }
+
+    private bool IsActionable() =>
+        _appointment?.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed;
+
+    private async Task<string> GetUserId()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private async Task ConfirmAppointment()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.Confirmed, userId);
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task CompleteAppointment()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.Completed, userId);
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task MarkNoShow()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.NoShow, userId);
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task CancelAppointment()
+    {
+        _isProcessing = true;
+        _errorMessage = null;
+
+        try
+        {
+            var userId = await GetUserId();
+            await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.Cancelled, userId, _cancellationReason);
+            _appointment = await AppointmentService.GetByIdAsync(Id);
+            _showCancelForm = false;
+        }
+        catch
+        {
+            _errorMessage = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private void NavigateToList() => NavigationManager.NavigateTo("/appointments");
+
+    private static string FormatType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
+
+    private static string FormatLocation(AppointmentLocation location) => location switch
+    {
+        AppointmentLocation.InPerson => "In-Person",
+        AppointmentLocation.Virtual => "Virtual",
+        AppointmentLocation.Phone => "Phone",
+        _ => location.ToString()
+    };
+
+    private static string FormatStatus(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => "Scheduled",
+        AppointmentStatus.Confirmed => "Confirmed",
+        AppointmentStatus.Completed => "Completed",
+        AppointmentStatus.NoShow => "No-Show",
+        AppointmentStatus.LateCancellation => "Late Cancel",
+        AppointmentStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+
+    private static BadgeVariant GetStatusVariant(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Confirmed => BadgeVariant.Accent,
+        AppointmentStatus.Completed => BadgeVariant.Success,
+        AppointmentStatus.NoShow => BadgeVariant.Error,
+        AppointmentStatus.LateCancellation => BadgeVariant.Warning,
+        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+}

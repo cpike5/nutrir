@@ -1,0 +1,222 @@
+@page "/appointments"
+@rendermode InteractiveServer
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IAppointmentService AppointmentService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Appointments — Nutrir</PageTitle>
+
+<div class="clients-page">
+    <div class="clients-header">
+        <div class="clients-header-text">
+            <h1 class="clients-title">Appointments</h1>
+        </div>
+        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">New Appointment</Button>
+    </div>
+
+    <div class="appt-filters">
+        <FormGroup Label="From" Id="fromDate">
+            <FormInput Id="fromDate" Type="date"
+                       Value="@_fromDate"
+                       ValueChanged="OnFromDateChanged" />
+        </FormGroup>
+        <FormGroup Label="To" Id="toDate">
+            <FormInput Id="toDate" Type="date"
+                       Value="@_toDate"
+                       ValueChanged="OnToDateChanged" />
+        </FormGroup>
+        <FormGroup Label="Status" Id="statusFilter">
+            <FormSelect Id="statusFilter"
+                        Value="@_statusFilter"
+                        ValueChanged="OnStatusChanged">
+                <option value="">All Statuses</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="NoShow">No-Show</option>
+                <option value="Cancelled">Cancelled</option>
+            </FormSelect>
+        </FormGroup>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="clients-loading">Loading appointments...</p>
+        }
+        else if (_appointments is null || _appointments.Count == 0)
+        {
+            <div class="clients-empty">
+                <p class="clients-empty-title">No appointments found</p>
+                <p class="clients-empty-desc">
+                    @if (string.IsNullOrEmpty(_statusFilter))
+                    {
+                        <span>Schedule your first appointment to get started.</span>
+                    }
+                    else
+                    {
+                        <span>Try adjusting your filters.</span>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            <table class="clients-table">
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Client</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var appt in _appointments)
+                    {
+                        <tr class="clients-table-row">
+                            <td class="clients-table-name">@appt.StartTime.ToLocalTime().ToString("MMM d, h:mm tt")</td>
+                            <td>@appt.ClientFirstName @appt.ClientLastName</td>
+                            <td class="clients-table-muted">@FormatType(appt.Type)</td>
+                            <td class="clients-table-muted">@appt.DurationMinutes min</td>
+                            <td class="clients-table-muted">@FormatLocation(appt.Location)</td>
+                            <td><Badge Variant="@GetStatusVariant(appt.Status)">@FormatStatus(appt.Status)</Badge></td>
+                            <td class="clients-table-actions">
+                                <a href="appointments/@appt.Id" class="clients-action-link">View</a>
+                                @if (appt.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed)
+                                {
+                                    <a href="appointments/@appt.Id/edit" class="clients-action-link">Edit</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Card>
+</div>
+
+@code {
+    private List<AppointmentDto>? _appointments;
+    private string? _fromDate;
+    private string? _toDate;
+    private string? _statusFilter;
+    private bool _isLoading = true;
+    private System.Threading.Timer? _debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        _fromDate = now.ToString("yyyy-MM-dd");
+        _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
+        await LoadAppointmentsAsync();
+    }
+
+    private async Task LoadAppointmentsAsync()
+    {
+        _isLoading = true;
+
+        DateTime? from = null;
+        DateTime? to = null;
+        AppointmentStatus? status = null;
+
+        if (DateTime.TryParse(_fromDate, out var parsedFrom))
+            from = DateTime.SpecifyKind(parsedFrom, DateTimeKind.Utc);
+
+        if (DateTime.TryParse(_toDate, out var parsedTo))
+            to = DateTime.SpecifyKind(parsedTo.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+
+        if (!string.IsNullOrEmpty(_statusFilter) && Enum.TryParse<AppointmentStatus>(_statusFilter, out var parsedStatus))
+            status = parsedStatus;
+
+        _appointments = await AppointmentService.GetListAsync(from, to, status: status);
+        _isLoading = false;
+    }
+
+    private void OnFromDateChanged(string value)
+    {
+        _fromDate = value;
+        DebouncedLoad();
+    }
+
+    private void OnToDateChanged(string value)
+    {
+        _toDate = value;
+        DebouncedLoad();
+    }
+
+    private void OnStatusChanged(string value)
+    {
+        _statusFilter = value;
+        DebouncedLoad();
+    }
+
+    private void DebouncedLoad()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadAppointmentsAsync();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void NavigateToCreate()
+    {
+        NavigationManager.NavigateTo("/appointments/new");
+    }
+
+    private static string FormatType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
+
+    private static string FormatLocation(AppointmentLocation location) => location switch
+    {
+        AppointmentLocation.InPerson => "In-Person",
+        AppointmentLocation.Virtual => "Virtual",
+        AppointmentLocation.Phone => "Phone",
+        _ => location.ToString()
+    };
+
+    private static string FormatStatus(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => "Scheduled",
+        AppointmentStatus.Confirmed => "Confirmed",
+        AppointmentStatus.Completed => "Completed",
+        AppointmentStatus.NoShow => "No-Show",
+        AppointmentStatus.LateCancellation => "Late Cancel",
+        AppointmentStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+
+    private static BadgeVariant GetStatusVariant(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Confirmed => BadgeVariant.Accent,
+        AppointmentStatus.Completed => BadgeVariant.Success,
+        AppointmentStatus.NoShow => BadgeVariant.Error,
+        AppointmentStatus.LateCancellation => BadgeVariant.Warning,
+        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+}

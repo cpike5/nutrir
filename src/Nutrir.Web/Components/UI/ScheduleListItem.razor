@@ -1,0 +1,61 @@
+@using Nutrir.Core.Enums
+
+<a href="@Href" class="cc-list-item" style="text-decoration: none; color: inherit;">
+    <span class="cc-list-time">@Time</span>
+    <span class="cc-list-indicator @GetTypeClass()"></span>
+    <div class="cc-list-content">
+        <div class="cc-list-primary">@ClientName</div>
+        <div class="cc-list-secondary">@FormatType() · @Duration min · @Location</div>
+    </div>
+    <span class="cc-list-badge">
+        <Badge Variant="@GetStatusBadgeVariant()">@FormatStatus()</Badge>
+    </span>
+</a>
+
+@code {
+    [Parameter] public string? Time { get; set; }
+    [Parameter] public string? ClientName { get; set; }
+    [Parameter] public int Duration { get; set; }
+    [Parameter] public AppointmentType Type { get; set; }
+    [Parameter] public AppointmentStatus Status { get; set; }
+    [Parameter] public AppointmentLocation Location { get; set; }
+    [Parameter] public string? Href { get; set; }
+
+    private string GetTypeClass() => Type switch
+    {
+        AppointmentType.InitialConsultation => "type-initial",
+        AppointmentType.FollowUp => "type-followup",
+        AppointmentType.CheckIn => "type-check",
+        _ => "type-followup"
+    };
+
+    private string FormatType() => Type switch
+    {
+        AppointmentType.InitialConsultation => "Initial",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => Type.ToString()
+    };
+
+    private string FormatStatus() => Status switch
+    {
+        AppointmentStatus.Scheduled => "Scheduled",
+        AppointmentStatus.Confirmed => "Confirmed",
+        AppointmentStatus.Completed => "Completed",
+        AppointmentStatus.NoShow => "No-Show",
+        AppointmentStatus.LateCancellation => "Late Cancel",
+        AppointmentStatus.Cancelled => "Cancelled",
+        _ => Status.ToString()
+    };
+
+    private BadgeVariant GetStatusBadgeVariant() => Status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Confirmed => BadgeVariant.Accent,
+        AppointmentStatus.Completed => BadgeVariant.Success,
+        AppointmentStatus.NoShow => BadgeVariant.Error,
+        AppointmentStatus.LateCancellation => BadgeVariant.Warning,
+        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+}
