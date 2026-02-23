@@ -38,6 +38,15 @@ public class MaintenanceModeMiddleware
             return;
         }
 
+        // Allow login flow so admins can authenticate during maintenance
+        if (path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Account/Logout", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/Account/ExternalLogin", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         // Allow static assets
         if (path.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/_content", StringComparison.OrdinalIgnoreCase) ||

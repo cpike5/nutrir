@@ -266,6 +266,20 @@
   transition: width 1s var(--ease-default);
 }
 
+/* Admin login link on 503 page */
+.admin-login-link {
+  font-size: 0.625rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
+.admin-login-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .error-rail {
