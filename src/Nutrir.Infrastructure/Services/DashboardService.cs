@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
+using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -10,11 +11,13 @@ public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAppointmentService _appointmentService;
+    private readonly IMealPlanService _mealPlanService;
 
-    public DashboardService(AppDbContext dbContext, IAppointmentService appointmentService)
+    public DashboardService(AppDbContext dbContext, IAppointmentService appointmentService, IMealPlanService mealPlanService)
     {
         _dbContext = dbContext;
         _appointmentService = appointmentService;
+        _mealPlanService = mealPlanService;
     }
 
     public async Task<DashboardMetricsDto> GetMetricsAsync()
@@ -94,6 +97,17 @@ public class DashboardService : IDashboardService
 
         return await _dbContext.Appointments
             .CountAsync(a => a.StartTime >= startOfWeek && a.StartTime < endOfWeek);
+    }
+
+    public async Task<int> GetActiveMealPlanCountAsync()
+    {
+        return await _mealPlanService.GetActiveCountAsync();
+    }
+
+    public async Task<List<MealPlanSummaryDto>> GetRecentMealPlansAsync(int count = 5)
+    {
+        var plans = await _mealPlanService.GetListAsync();
+        return plans.Take(count).ToList();
     }
 
     private static ClientDto MapToDto(Core.Entities.Client c) => new(

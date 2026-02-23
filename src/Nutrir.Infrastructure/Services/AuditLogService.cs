@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
@@ -41,5 +43,21 @@ public class AuditLogService : IAuditLogService
         _logger.LogDebug(
             "Audit log recorded: {Action} on {EntityType} {EntityId} by {UserId}",
             action, entityType, entityId, userId);
+    }
+
+    public async Task<List<AuditLogDto>> GetRecentAsync(int count = 10)
+    {
+        return await _dbContext.AuditLogEntries
+            .OrderByDescending(e => e.Timestamp)
+            .Take(count)
+            .Select(e => new AuditLogDto(
+                e.Id,
+                e.Timestamp,
+                e.UserId,
+                e.Action,
+                e.EntityType,
+                e.EntityId,
+                e.Details))
+            .ToListAsync();
     }
 }

@@ -115,12 +115,13 @@ public class DatabaseSeeder
         {
             _logger.LogInformation("Dashboard seed data already exists, skipping");
 
-            // Still try to seed appointments (may be added after initial seeding)
+            // Still try to seed appointments and meal plans (may be added after initial seeding)
             var existingNutritionist = await _userManager.FindByEmailAsync(_seedOptions.AdminEmail);
             if (existingNutritionist is not null)
             {
                 var existingClientLookup = await _dbContext.Clients.ToDictionaryAsync(c => $"{c.FirstName} {c.LastName}", c => c.Id);
                 await SeedAppointmentDataAsync(existingNutritionist.Id, existingClientLookup);
+                await SeedMealPlanDataAsync(existingNutritionist.Id, existingClientLookup);
             }
             return;
         }
@@ -263,6 +264,7 @@ public class DatabaseSeeder
         _logger.LogInformation("Seeded {Count} dashboard audit log entries", auditEntries.Count);
 
         await SeedAppointmentDataAsync(nutritionistId, clientLookup);
+        await SeedMealPlanDataAsync(nutritionistId, clientLookup);
     }
 
     private async Task SeedAppointmentDataAsync(string nutritionistId, Dictionary<string, int> clientLookup)
@@ -398,5 +400,315 @@ public class DatabaseSeeder
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Seeded {Count} appointments", appointments.Count);
+    }
+
+    private async Task SeedMealPlanDataAsync(string nutritionistId, Dictionary<string, int> clientLookup)
+    {
+        if (await _dbContext.MealPlans.AnyAsync())
+        {
+            _logger.LogInformation("Meal plan seed data already exists, skipping");
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(now);
+
+        var mealPlans = new List<MealPlan>
+        {
+            // Plan 1: Weight Management for James Whitfield (Active)
+            new()
+            {
+                ClientId = clientLookup["James Whitfield"],
+                CreatedByUserId = nutritionistId,
+                Title = "Week 1 — Weight Management",
+                Description = "Calorie-controlled plan targeting steady weight loss of 0.5kg/week.",
+                Status = MealPlanStatus.Active,
+                StartDate = today.AddDays(-7),
+                EndDate = today,
+                CalorieTarget = 2000,
+                ProteinTargetG = 150,
+                CarbsTargetG = 200,
+                FatTargetG = 67,
+                Notes = "Client is motivated. Monitor adherence at next follow-up.",
+                Instructions = "Follow portion sizes closely. Drink at least 2L water daily.",
+                CreatedAt = now.AddDays(-7),
+                Days =
+                [
+                    new()
+                    {
+                        DayNumber = 1, Label = "Monday",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Oatmeal", Quantity = 80, Unit = "g", CaloriesKcal = 300, ProteinG = 10, CarbsG = 54, FatG = 5, SortOrder = 0 },
+                                    new() { FoodName = "Banana", Quantity = 1, Unit = "piece", CaloriesKcal = 105, ProteinG = 1, CarbsG = 27, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Almond butter", Quantity = 1, Unit = "tbsp", CaloriesKcal = 98, ProteinG = 3, CarbsG = 3, FatG = 9, SortOrder = 2 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.MorningSnack, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Greek yogurt", Quantity = 150, Unit = "g", CaloriesKcal = 130, ProteinG = 15, CarbsG = 6, FatG = 5, SortOrder = 0 },
+                                    new() { FoodName = "Blueberries", Quantity = 75, Unit = "g", CaloriesKcal = 43, ProteinG = 1, CarbsG = 11, FatG = 0, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Grilled chicken breast", Quantity = 150, Unit = "g", CaloriesKcal = 248, ProteinG = 46, CarbsG = 0, FatG = 5, SortOrder = 0 },
+                                    new() { FoodName = "Brown rice", Quantity = 100, Unit = "g", CaloriesKcal = 112, ProteinG = 3, CarbsG = 24, FatG = 1, SortOrder = 1 },
+                                    new() { FoodName = "Mixed salad with olive oil", Quantity = 1, Unit = "serving", CaloriesKcal = 120, ProteinG = 2, CarbsG = 6, FatG = 10, SortOrder = 2 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.AfternoonSnack, SortOrder = 3,
+                                Items =
+                                [
+                                    new() { FoodName = "Apple", Quantity = 1, Unit = "piece", CaloriesKcal = 95, ProteinG = 0, CarbsG = 25, FatG = 0, SortOrder = 0 },
+                                    new() { FoodName = "Almonds", Quantity = 20, Unit = "g", CaloriesKcal = 116, ProteinG = 4, CarbsG = 4, FatG = 10, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 4,
+                                Items =
+                                [
+                                    new() { FoodName = "Baked salmon", Quantity = 150, Unit = "g", CaloriesKcal = 280, ProteinG = 40, CarbsG = 0, FatG = 13, SortOrder = 0 },
+                                    new() { FoodName = "Sweet potato", Quantity = 150, Unit = "g", CaloriesKcal = 135, ProteinG = 2, CarbsG = 31, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Steamed broccoli", Quantity = 100, Unit = "g", CaloriesKcal = 35, ProteinG = 3, CarbsG = 7, FatG = 0, SortOrder = 2 }
+                                ]
+                            }
+                        ]
+                    },
+                    new()
+                    {
+                        DayNumber = 2, Label = "Tuesday",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Scrambled eggs", Quantity = 3, Unit = "piece", CaloriesKcal = 210, ProteinG = 18, CarbsG = 2, FatG = 15, SortOrder = 0 },
+                                    new() { FoodName = "Whole wheat toast", Quantity = 2, Unit = "piece", CaloriesKcal = 160, ProteinG = 6, CarbsG = 28, FatG = 2, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Turkey wrap", Quantity = 1, Unit = "serving", CaloriesKcal = 380, ProteinG = 30, CarbsG = 35, FatG = 12, SortOrder = 0 },
+                                    new() { FoodName = "Carrot sticks", Quantity = 100, Unit = "g", CaloriesKcal = 41, ProteinG = 1, CarbsG = 10, FatG = 0, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Lean beef stir-fry", Quantity = 200, Unit = "g", CaloriesKcal = 350, ProteinG = 35, CarbsG = 15, FatG = 16, SortOrder = 0 },
+                                    new() { FoodName = "Jasmine rice", Quantity = 100, Unit = "g", CaloriesKcal = 130, ProteinG = 3, CarbsG = 28, FatG = 0, SortOrder = 1 }
+                                ]
+                            }
+                        ]
+                    },
+                    new()
+                    {
+                        DayNumber = 3, Label = "Wednesday",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Protein smoothie", Quantity = 1, Unit = "serving", CaloriesKcal = 320, ProteinG = 30, CarbsG = 35, FatG = 8, SortOrder = 0, Notes = "Whey protein, banana, spinach, almond milk" }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Grilled chicken salad", Quantity = 1, Unit = "serving", CaloriesKcal = 400, ProteinG = 40, CarbsG = 15, FatG = 20, SortOrder = 0 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Baked cod", Quantity = 180, Unit = "g", CaloriesKcal = 160, ProteinG = 35, CarbsG = 0, FatG = 1, SortOrder = 0 },
+                                    new() { FoodName = "Quinoa", Quantity = 100, Unit = "g", CaloriesKcal = 120, ProteinG = 4, CarbsG = 21, FatG = 2, SortOrder = 1 },
+                                    new() { FoodName = "Roasted vegetables", Quantity = 150, Unit = "g", CaloriesKcal = 100, ProteinG = 3, CarbsG = 15, FatG = 4, SortOrder = 2 }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+
+            // Plan 2: Low FODMAP for Elena Morales (Active)
+            new()
+            {
+                ClientId = clientLookup["Elena Morales"],
+                CreatedByUserId = nutritionistId,
+                Title = "Low FODMAP Introduction",
+                Description = "Elimination phase of low FODMAP diet for IBS symptom management.",
+                Status = MealPlanStatus.Active,
+                StartDate = today.AddDays(-3),
+                EndDate = today.AddDays(11),
+                CalorieTarget = 1800,
+                ProteinTargetG = 120,
+                CarbsTargetG = 180,
+                FatTargetG = 60,
+                Notes = "Track symptom diary alongside this plan.",
+                Instructions = "Avoid all high FODMAP foods. Keep a symptom diary.",
+                CreatedAt = now.AddDays(-4),
+                Days =
+                [
+                    new()
+                    {
+                        DayNumber = 1, Label = "Day 1",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Gluten-free oats", Quantity = 60, Unit = "g", CaloriesKcal = 220, ProteinG = 8, CarbsG = 40, FatG = 4, SortOrder = 0 },
+                                    new() { FoodName = "Strawberries", Quantity = 100, Unit = "g", CaloriesKcal = 32, ProteinG = 1, CarbsG = 8, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Lactose-free milk", Quantity = 200, Unit = "ml", CaloriesKcal = 90, ProteinG = 6, CarbsG = 10, FatG = 3, SortOrder = 2 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Grilled chicken", Quantity = 120, Unit = "g", CaloriesKcal = 198, ProteinG = 37, CarbsG = 0, FatG = 4, SortOrder = 0 },
+                                    new() { FoodName = "Rice noodles", Quantity = 100, Unit = "g", CaloriesKcal = 130, ProteinG = 2, CarbsG = 30, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Spinach and carrot salad", Quantity = 1, Unit = "serving", CaloriesKcal = 80, ProteinG = 3, CarbsG = 10, FatG = 3, SortOrder = 2 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Baked tofu", Quantity = 150, Unit = "g", CaloriesKcal = 180, ProteinG = 20, CarbsG = 4, FatG = 10, SortOrder = 0, Notes = "Firm tofu only — silken is higher FODMAP" },
+                                    new() { FoodName = "Basmati rice", Quantity = 100, Unit = "g", CaloriesKcal = 130, ProteinG = 3, CarbsG = 28, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Green beans", Quantity = 100, Unit = "g", CaloriesKcal = 31, ProteinG = 2, CarbsG = 7, FatG = 0, SortOrder = 2 }
+                                ]
+                            }
+                        ]
+                    },
+                    new()
+                    {
+                        DayNumber = 2, Label = "Day 2",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Sourdough toast (spelt)", Quantity = 2, Unit = "piece", CaloriesKcal = 180, ProteinG = 6, CarbsG = 30, FatG = 3, SortOrder = 0 },
+                                    new() { FoodName = "Peanut butter", Quantity = 2, Unit = "tbsp", CaloriesKcal = 190, ProteinG = 7, CarbsG = 6, FatG = 16, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Tuna salad", Quantity = 1, Unit = "serving", CaloriesKcal = 320, ProteinG = 30, CarbsG = 10, FatG = 18, SortOrder = 0, Notes = "Use mayo in moderation" }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Grilled salmon", Quantity = 150, Unit = "g", CaloriesKcal = 280, ProteinG = 40, CarbsG = 0, FatG = 13, SortOrder = 0 },
+                                    new() { FoodName = "Potato (boiled)", Quantity = 150, Unit = "g", CaloriesKcal = 115, ProteinG = 3, CarbsG = 26, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Zucchini", Quantity = 100, Unit = "g", CaloriesKcal = 17, ProteinG = 1, CarbsG = 3, FatG = 0, SortOrder = 2 }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+
+            // Plan 3: Marathon Prep for David Kim (Draft)
+            new()
+            {
+                ClientId = clientLookup["David Kim"],
+                CreatedByUserId = nutritionistId,
+                Title = "Sports Nutrition — Marathon Prep",
+                Description = "High-carb, high-protein plan for marathon training block.",
+                Status = MealPlanStatus.Draft,
+                CalorieTarget = 3000,
+                ProteinTargetG = 160,
+                CarbsTargetG = 400,
+                FatTargetG = 80,
+                Notes = "Draft — finalize after next check-in. Adjust based on training volume.",
+                CreatedAt = now.AddDays(-1),
+                Days =
+                [
+                    new()
+                    {
+                        DayNumber = 1, Label = "Training Day",
+                        MealSlots =
+                        [
+                            new()
+                            {
+                                MealType = MealType.Breakfast, SortOrder = 0,
+                                Items =
+                                [
+                                    new() { FoodName = "Overnight oats with protein powder", Quantity = 1, Unit = "serving", CaloriesKcal = 450, ProteinG = 35, CarbsG = 60, FatG = 10, SortOrder = 0 },
+                                    new() { FoodName = "Orange juice", Quantity = 250, Unit = "ml", CaloriesKcal = 112, ProteinG = 2, CarbsG = 26, FatG = 0, SortOrder = 1 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Lunch, SortOrder = 1,
+                                Items =
+                                [
+                                    new() { FoodName = "Pasta with chicken and vegetables", Quantity = 1, Unit = "serving", CaloriesKcal = 650, ProteinG = 45, CarbsG = 80, FatG = 15, SortOrder = 0 }
+                                ]
+                            },
+                            new()
+                            {
+                                MealType = MealType.Dinner, SortOrder = 2,
+                                Items =
+                                [
+                                    new() { FoodName = "Lean steak", Quantity = 200, Unit = "g", CaloriesKcal = 400, ProteinG = 50, CarbsG = 0, FatG = 20, SortOrder = 0 },
+                                    new() { FoodName = "Baked potato", Quantity = 200, Unit = "g", CaloriesKcal = 160, ProteinG = 4, CarbsG = 36, FatG = 0, SortOrder = 1 },
+                                    new() { FoodName = "Mixed greens", Quantity = 100, Unit = "g", CaloriesKcal = 25, ProteinG = 2, CarbsG = 4, FatG = 0, SortOrder = 2 }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        _dbContext.MealPlans.AddRange(mealPlans);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Seeded {Count} meal plans", mealPlans.Count);
     }
 }

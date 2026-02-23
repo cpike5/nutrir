@@ -9,4 +9,6 @@ public interface IDashboardService
     Task<List<ClientDto>> GetClientsMissingConsentAsync();
     Task<List<AppointmentDto>> GetTodaysAppointmentsAsync();
     Task<int> GetThisWeekAppointmentCountAsync();
+    Task<int> GetActiveMealPlanCountAsync();
+    Task<List<MealPlanSummaryDto>> GetRecentMealPlansAsync(int count = 5);
 }

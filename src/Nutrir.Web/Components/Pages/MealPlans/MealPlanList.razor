@@ -1,0 +1,138 @@
+@page "/meal-plans"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IMealPlanService MealPlanService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Meal Plans — Nutrir</PageTitle>
+
+<div class="clients-page">
+    <div class="clients-header">
+        <div class="clients-header-text">
+            <h1 class="clients-title">Meal Plans</h1>
+        </div>
+        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">New Meal Plan</Button>
+    </div>
+
+    <div class="appt-filters">
+        <FormGroup Label="Status" Id="statusFilter">
+            <FormSelect Id="statusFilter"
+                        Value="@_statusFilter"
+                        ValueChanged="OnStatusChanged">
+                <option value="">All Statuses</option>
+                <option value="Draft">Draft</option>
+                <option value="Active">Active</option>
+                <option value="Archived">Archived</option>
+            </FormSelect>
+        </FormGroup>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="clients-loading">Loading meal plans...</p>
+        }
+        else if (_mealPlans is null || _mealPlans.Count == 0)
+        {
+            <div class="clients-empty">
+                <p class="clients-empty-title">No meal plans found</p>
+                <p class="clients-empty-desc">
+                    @if (string.IsNullOrEmpty(_statusFilter))
+                    {
+                        <span>Create your first meal plan to get started.</span>
+                    }
+                    else
+                    {
+                        <span>Try adjusting your filters.</span>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            <table class="clients-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Client</th>
+                        <th>Status</th>
+                        <th>Days</th>
+                        <th>Start Date</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in _mealPlans)
+                    {
+                        <tr class="clients-table-row">
+                            <td class="clients-table-name">@plan.Title</td>
+                            <td>@plan.ClientFirstName @plan.ClientLastName</td>
+                            <td><Badge Variant="@GetStatusVariant(plan.Status)">@plan.Status</Badge></td>
+                            <td class="clients-table-muted">@plan.DayCount</td>
+                            <td class="clients-table-muted">@(plan.StartDate?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td class="clients-table-muted">@plan.CreatedAt.ToString("MMM d")</td>
+                            <td class="clients-table-actions">
+                                <a href="meal-plans/@plan.Id" class="clients-action-link">View</a>
+                                @if (plan.Status is MealPlanStatus.Draft or MealPlanStatus.Active)
+                                {
+                                    <a href="meal-plans/@plan.Id/edit" class="clients-action-link">Edit</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Card>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public int? ClientId { get; set; }
+
+    private List<MealPlanSummaryDto>? _mealPlans;
+    private string? _statusFilter;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMealPlansAsync();
+    }
+
+    private async Task LoadMealPlansAsync()
+    {
+        _isLoading = true;
+
+        MealPlanStatus? status = null;
+        if (!string.IsNullOrEmpty(_statusFilter) && Enum.TryParse<MealPlanStatus>(_statusFilter, out var parsed))
+            status = parsed;
+
+        _mealPlans = await MealPlanService.GetListAsync(ClientId, status);
+        _isLoading = false;
+    }
+
+    private async void OnStatusChanged(string value)
+    {
+        _statusFilter = value;
+        await LoadMealPlansAsync();
+        StateHasChanged();
+    }
+
+    private void NavigateToCreate()
+    {
+        var url = ClientId.HasValue ? $"/meal-plans/new?clientId={ClientId}" : "/meal-plans/new";
+        NavigationManager.NavigateTo(url);
+    }
+
+    private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
+}

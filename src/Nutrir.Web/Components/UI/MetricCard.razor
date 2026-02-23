@@ -1,0 +1,25 @@
+<div class="cc-metric" @attributes="AdditionalAttributes">
+    <div class="cc-metric-row">
+        <span class="cc-metric-label">@Label</span>
+        @if (!string.IsNullOrEmpty(DeltaText))
+        {
+            <span class="cc-metric-delta @DeltaCss">@DeltaText</span>
+        }
+    </div>
+    <div class="cc-metric-value">@Value</div>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "0";
+    [Parameter] public string? DeltaText { get; set; }
+    [Parameter] public MetricDelta Delta { get; set; } = MetricDelta.Flat;
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string DeltaCss => Delta switch
+    {
+        MetricDelta.Up => "up",
+        MetricDelta.Down => "down",
+        _ => "flat"
+    };
+}

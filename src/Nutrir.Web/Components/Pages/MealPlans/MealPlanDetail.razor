@@ -1,0 +1,358 @@
+@page "/meal-plans/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IMealPlanService MealPlanService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
+
+<div class="client-detail-page">
+    @if (_isLoading)
+    {
+        <p class="client-detail-loading">Loading meal plan...</p>
+    }
+    else if (_plan is null)
+    {
+        <Card>
+            <div class="client-detail-not-found">
+                <p class="client-detail-not-found-title">Meal plan not found</p>
+                <div class="client-detail-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/meal-plans"))">Back to Meal Plans</Button>
+                </div>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="client-detail-header">
+            <h1 class="client-detail-title">@_plan.Title</h1>
+            <Badge Variant="@GetStatusVariant(_plan.Status)">@_plan.Status</Badge>
+        </div>
+
+        <Card>
+            <div class="client-detail-grid">
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Client</span>
+                    <span class="client-detail-value">
+                        <a href="/clients/@_plan.ClientId">@_plan.ClientFirstName @_plan.ClientLastName</a>
+                    </span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Date Range</span>
+                    <span class="client-detail-value">
+                        @if (_plan.StartDate.HasValue || _plan.EndDate.HasValue)
+                        {
+                            @(_plan.StartDate?.ToString("MMM d, yyyy") ?? "—")
+                            <span> to </span>
+                            @(_plan.EndDate?.ToString("MMM d, yyyy") ?? "—")
+                        }
+                        else
+                        {
+                            <span>Not set</span>
+                        }
+                    </span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Daily Targets</span>
+                    <span class="client-detail-value">
+                        @if (_plan.CalorieTarget.HasValue)
+                        {
+                            <span>@_plan.CalorieTarget.Value.ToString("N0") kcal</span>
+                        }
+                        @if (_plan.ProteinTargetG.HasValue)
+                        {
+                            <span> · @_plan.ProteinTargetG.Value.ToString("N0")g P</span>
+                        }
+                        @if (_plan.CarbsTargetG.HasValue)
+                        {
+                            <span> · @_plan.CarbsTargetG.Value.ToString("N0")g C</span>
+                        }
+                        @if (_plan.FatTargetG.HasValue)
+                        {
+                            <span> · @_plan.FatTargetG.Value.ToString("N0")g F</span>
+                        }
+                        @if (!_plan.CalorieTarget.HasValue && !_plan.ProteinTargetG.HasValue && !_plan.CarbsTargetG.HasValue && !_plan.FatTargetG.HasValue)
+                        {
+                            <span>Not set</span>
+                        }
+                    </span>
+                </div>
+                <div class="client-detail-field">
+                    <span class="client-detail-label">Created By</span>
+                    <span class="client-detail-value">@(_plan.CreatedByName ?? "—")</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_plan.Description))
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Description</span>
+                    <pre class="client-detail-notes">@_plan.Description</pre>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_plan.Instructions))
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Client Instructions</span>
+                    <pre class="client-detail-notes">@_plan.Instructions</pre>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_plan.Notes))
+            {
+                <Divider />
+                <div class="client-detail-notes-section">
+                    <span class="client-detail-label">Internal Notes</span>
+                    <pre class="client-detail-notes">@_plan.Notes</pre>
+                </div>
+            }
+
+            <Divider />
+            <div class="client-detail-meta">
+                <span class="client-detail-meta-item">Created: @_plan.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                @if (_plan.UpdatedAt.HasValue)
+                {
+                    <span class="client-detail-meta-item">Updated: @_plan.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                }
+            </div>
+        </Card>
+
+        <!-- Days / Meals / Items Hierarchy -->
+        @foreach (var day in _plan.Days)
+        {
+            <Panel Title="@(day.Label ?? $"Day {day.DayNumber}")" Count="@(day.MealSlots.Count > 0 ? day.MealSlots.Count : null)">
+                <HeaderExtra>
+                    <span class="mp-day-totals-header">
+                        @day.TotalCalories.ToString("N0") kcal · @day.TotalProtein.ToString("N0")g P · @day.TotalCarbs.ToString("N0")g C · @day.TotalFat.ToString("N0")g F
+                    </span>
+                </HeaderExtra>
+                <ChildContent>
+                    @if (day.MealSlots.Count == 0)
+                    {
+                        <div class="cc-empty-state">
+                            <p>No meals added for this day</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var slot in day.MealSlots)
+                        {
+                            <div class="mp-slot-section">
+                                <div class="mp-slot-header">
+                                    <span class="mp-slot-name">@(slot.CustomName ?? FormatMealType(slot.MealType))</span>
+                                    <span class="mp-slot-totals">
+                                        @slot.TotalCalories.ToString("N0") kcal · @slot.TotalProtein.ToString("N0")g P · @slot.TotalCarbs.ToString("N0")g C · @slot.TotalFat.ToString("N0")g F
+                                    </span>
+                                </div>
+                                @if (slot.Items.Count > 0)
+                                {
+                                    <table class="mp-items-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Food</th>
+                                                <th>Qty</th>
+                                                <th>Cal</th>
+                                                <th>P</th>
+                                                <th>C</th>
+                                                <th>F</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in slot.Items)
+                                            {
+                                                <tr>
+                                                    <td class="mp-item-name">
+                                                        @item.FoodName
+                                                        @if (!string.IsNullOrEmpty(item.Notes))
+                                                        {
+                                                            <span class="mp-item-note">@item.Notes</span>
+                                                        }
+                                                    </td>
+                                                    <td>@item.Quantity @item.Unit</td>
+                                                    <td>@item.CaloriesKcal.ToString("N0")</td>
+                                                    <td>@item.ProteinG.ToString("N0")</td>
+                                                    <td>@item.CarbsG.ToString("N0")</td>
+                                                    <td>@item.FatG.ToString("N0")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                            </div>
+                        }
+                    }
+                </ChildContent>
+            </Panel>
+        }
+
+        <!-- Action Buttons -->
+        <div class="client-detail-actions">
+            @if (_plan.Status is MealPlanStatus.Draft)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
+                <Button Variant="ButtonVariant.Outline" OnClick="ActivatePlan">Activate</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
+            }
+            else if (_plan.Status is MealPlanStatus.Active)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
+                <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ArchivePlan">Archive</Button>
+            }
+            else if (_plan.Status is MealPlanStatus.Archived)
+            {
+                <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ReactivatePlan">Reactivate</Button>
+            }
+            <a href="/meal-plans" class="client-detail-back-link">Back to Meal Plans</a>
+        </div>
+
+        @if (_showDeleteConfirm)
+        {
+            <Card>
+                <div class="client-detail-delete-confirm">
+                    <p class="client-detail-delete-title">Confirm Deletion</p>
+                    <p class="client-detail-delete-desc">
+                        Are you sure you want to delete <strong>@_plan.Title</strong>?
+                    </p>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="client-detail-error">@_errorMessage</p>
+                    }
+                    <div class="client-detail-delete-actions">
+                        <Button Variant="ButtonVariant.Primary" OnClick="ConfirmDelete" Disabled="@_isProcessing">
+                            @(_isProcessing ? "Deleting..." : "Yes, Delete")
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = false)">Cancel</Button>
+                    </div>
+                </div>
+            </Card>
+        }
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="mp-success-message">@_successMessage</div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private MealPlanDetailDto? _plan;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+    private bool _showDeleteConfirm;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        _isLoading = false;
+    }
+
+    private async Task<string> GetUserId()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private void NavigateToEdit() => NavigationManager.NavigateTo($"/meal-plans/{Id}/edit");
+
+    private async Task ActivatePlan()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task ArchivePlan()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Archived, userId);
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task ReactivatePlan()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        _isProcessing = false;
+    }
+
+    private async Task DuplicatePlan()
+    {
+        _isProcessing = true;
+        var userId = await GetUserId();
+        var result = await MealPlanService.DuplicateAsync(Id, userId);
+        if (result)
+        {
+            _successMessage = "Plan duplicated as Draft.";
+        }
+        _isProcessing = false;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        _isProcessing = true;
+        _errorMessage = null;
+        try
+        {
+            var userId = await GetUserId();
+            var success = await MealPlanService.SoftDeleteAsync(Id, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo("/meal-plans");
+            }
+            else
+            {
+                _errorMessage = "Failed to delete the meal plan.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while deleting the meal plan.";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private static string FormatMealType(MealType type) => type switch
+    {
+        MealType.Breakfast => "Breakfast",
+        MealType.MorningSnack => "Morning Snack",
+        MealType.Lunch => "Lunch",
+        MealType.AfternoonSnack => "Afternoon Snack",
+        MealType.Dinner => "Dinner",
+        MealType.EveningSnack => "Evening Snack",
+        _ => type.ToString()
+    };
+
+    private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
+}

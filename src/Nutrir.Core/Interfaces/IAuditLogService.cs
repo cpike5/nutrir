@@ -1,3 +1,5 @@
+using Nutrir.Core.DTOs;
+
 namespace Nutrir.Core.Interfaces;
 
 public interface IAuditLogService
@@ -9,4 +11,6 @@ public interface IAuditLogService
         string? entityId = null,
         string? details = null,
         string? ipAddress = null);
+
+    Task<List<AuditLogDto>> GetRecentAsync(int count = 10);
 }

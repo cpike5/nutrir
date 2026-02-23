@@ -9,6 +9,7 @@
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject IAppointmentService AppointmentService
+@inject IMealPlanService MealPlanService
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
@@ -128,6 +129,45 @@
             </ChildContent>
         </Panel>
 
+        <Panel Title="Meal Plans" Count="@(_clientMealPlans.Count > 0 ? _clientMealPlans.Count : null)">
+            <HeaderExtra>
+                <a href="/meal-plans/new?clientId=@Id" class="cc-panel-link">Create</a>
+            </HeaderExtra>
+            <ChildContent>
+                @if (_clientMealPlans.Count == 0)
+                {
+                    <div class="cc-empty-state">
+                        <p>No meal plans</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var plan in _clientMealPlans)
+                    {
+                        <a href="/meal-plans/@plan.Id" class="cc-list-item" style="text-decoration:none; color:inherit;">
+                            <div class="cc-list-content">
+                                <div class="cc-list-primary">@plan.Title</div>
+                                <div class="cc-list-secondary">
+                                    @if (plan.StartDate.HasValue)
+                                    {
+                                        @plan.StartDate.Value.ToString("MMM d")
+                                        <span> — </span>
+                                        @(plan.EndDate?.ToString("MMM d") ?? "")
+                                    }
+                                </div>
+                            </div>
+                            <div class="cc-list-badge">
+                                <Badge Variant="@GetPlanStatusVariant(plan.Status)">@plan.Status</Badge>
+                            </div>
+                        </a>
+                    }
+                    <a href="/meal-plans?clientId=@Id" class="cc-list-item" style="text-decoration:none; color:var(--color-primary); justify-content:center;">
+                        View All
+                    </a>
+                }
+            </ChildContent>
+        </Panel>
+
         <div class="client-detail-actions">
             <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
             <Button Variant="ButtonVariant.Outline" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
@@ -173,6 +213,7 @@
 
     private ClientDto? _client;
     private List<AppointmentDto> _upcomingAppointments = [];
+    private List<MealPlanSummaryDto> _clientMealPlans = [];
     private bool _isLoading = true;
     private bool _showDeleteConfirm;
     private bool _isDeleting;
@@ -182,8 +223,17 @@
     {
         _client = await ClientService.GetByIdAsync(Id);
         _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
+        _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
         _isLoading = false;
     }
+
+    private static BadgeVariant GetPlanStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
 
     private static string FormatApptType(AppointmentType type) => type switch
     {

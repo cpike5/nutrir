@@ -57,7 +57,7 @@ try
         await dbContext.Database.MigrateAsync();
 
         var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        await seeder.SeedAsync();
+        await seeder.SeedAsync(app.Environment.IsDevelopment());
     }
 
     // Configure the HTTP request pipeline.
