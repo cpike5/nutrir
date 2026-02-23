@@ -1,5 +1,7 @@
 @page "/error/503"
 @layout Nutrir.Web.Components.Layout.ErrorLayout
+@using Nutrir.Core.Interfaces
+@inject IMaintenanceService MaintenanceService
 
 <PageTitle>Maintenance — Nutrir</PageTitle>
 
@@ -15,19 +17,37 @@
         <div class="error-divider divider-warning"></div>
         <h1 class="error-title">Temporarily unavailable</h1>
         <p class="error-description">
-            Nutrir is currently undergoing scheduled maintenance.
-            We expect to be back shortly. Thank you for your patience.
+            @if (!string.IsNullOrWhiteSpace(_state.Message))
+            {
+                @_state.Message
+            }
+            else
+            {
+                <text>Nutrir is currently undergoing scheduled maintenance.
+                We expect to be back shortly. Thank you for your patience.</text>
+            }
         </p>
 
-        <div class="maintenance-info">
-            <div class="maintenance-row">
-                <span class="maintenance-label">Maintenance Progress</span>
-                <span class="maintenance-eta">Est. 15 min remaining</span>
+        @if (_state.IsEnabled && _state.EstimatedEndAt.HasValue)
+        {
+            <div class="maintenance-info">
+                <div class="maintenance-row">
+                    <span class="maintenance-label">Maintenance Progress</span>
+                    <span class="maintenance-eta">Est. @FormatRemainingTime() remaining</span>
+                </div>
+                <div class="maintenance-bar-track">
+                    <div class="maintenance-bar-fill" style="width: @ProgressPercent()%"></div>
+                </div>
             </div>
-            <div class="maintenance-bar-track">
-                <div class="maintenance-bar-fill"></div>
+        }
+        else if (_state.IsEnabled)
+        {
+            <div class="maintenance-info">
+                <div class="maintenance-row">
+                    <span class="maintenance-label">Maintenance in progress</span>
+                </div>
             </div>
-        </div>
+        }
 
         <div class="error-actions" style="margin-top: var(--space-6);">
             <button class="btn btn-primary" onclick="location.reload()">
@@ -50,3 +70,34 @@
     </div>
 </footer>
 
+@code {
+    private Nutrir.Core.Models.MaintenanceState _state = new();
+
+    protected override void OnInitialized()
+    {
+        _state = MaintenanceService.GetState();
+    }
+
+    private string FormatRemainingTime()
+    {
+        if (!_state.EstimatedEndAt.HasValue) return "";
+
+        var remaining = _state.EstimatedEndAt.Value - DateTime.UtcNow;
+        if (remaining.TotalSeconds <= 0) return "< 1 min";
+        if (remaining.TotalMinutes < 1) return "< 1 min";
+        if (remaining.TotalHours < 1) return $"{(int)remaining.TotalMinutes} min";
+        return $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
+    }
+
+    private int ProgressPercent()
+    {
+        if (!_state.StartedAt.HasValue || !_state.EstimatedEndAt.HasValue) return 0;
+
+        var total = (_state.EstimatedEndAt.Value - _state.StartedAt.Value).TotalSeconds;
+        if (total <= 0) return 100;
+
+        var elapsed = (DateTime.UtcNow - _state.StartedAt.Value).TotalSeconds;
+        var percent = (int)(elapsed / total * 100);
+        return Math.Clamp(percent, 0, 100);
+    }
+}

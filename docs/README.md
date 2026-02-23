@@ -24,6 +24,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Docker & Deployment](infrastructure/docker-and-deployment.md) | Docker Compose services, Dockerfile, environment variables, local dev setup |
 | [Database & EF Core](infrastructure/database.md) | PostgreSQL setup, AppDbContext, migrations, schema, conventions |
 | [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
+| [Maintenance Mode](infrastructure/maintenance-mode.md) | Admin-toggleable maintenance mode with 503 page, API endpoints, middleware |
 
 ## Design System Documents
 
