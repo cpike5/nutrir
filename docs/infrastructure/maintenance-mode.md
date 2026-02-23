@@ -102,6 +102,20 @@ Check status (no auth needed):
 curl https://localhost:7100/api/admin/maintenance/status
 ```
 
+## Admin UI
+
+The maintenance mode admin page is available at `/admin/maintenance` (requires Admin or Nutritionist role). It provides a visual interface for toggling maintenance mode without needing curl commands.
+
+### Features
+
+- **Status card**: Shows current state (Active/Inactive badge), who enabled it, start time, estimated end time, and custom message
+- **Controls card**:
+  - When **inactive**: Form with optional message and estimated minutes fields, plus an "Enable Maintenance Mode" button
+  - When **active**: Summary text and a "Disable Maintenance Mode" button
+- Sidebar navigation link (wrench icon) in the admin section
+
+The page injects `IMaintenanceService` directly (singleton) — no HTTP calls to the API endpoints are needed.
+
 ## Limitations
 
 - **In-memory state**: Resets on application restart. Not persisted to database.

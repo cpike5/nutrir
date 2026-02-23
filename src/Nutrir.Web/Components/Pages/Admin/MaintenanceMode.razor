@@ -1,0 +1,195 @@
+@page "/admin/maintenance"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.Interfaces
+@using Nutrir.Core.Models
+@using System.Security.Claims
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IMaintenanceService MaintenanceService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Maintenance Mode — Nutrir</PageTitle>
+
+<div class="maintenance-page">
+    <div class="maintenance-header">
+        <h1 class="maintenance-title">Maintenance Mode</h1>
+        <p class="maintenance-subtitle">Take the application offline for scheduled maintenance.</p>
+    </div>
+
+    <Card>
+        <div class="status-section">
+            <h2 class="section-title">Current Status</h2>
+            <div class="status-display">
+                <div class="status-badge-row">
+                    @if (_state.IsEnabled)
+                    {
+                        <Badge Variant="BadgeVariant.Warning">Active</Badge>
+                    }
+                    else
+                    {
+                        <Badge Variant="BadgeVariant.Success">Inactive</Badge>
+                    }
+                </div>
+
+                @if (_state.IsEnabled)
+                {
+                    <div class="status-details">
+                        @if (!string.IsNullOrEmpty(_state.EnabledBy))
+                        {
+                            <div class="status-detail">
+                                <span class="status-detail-label">Enabled by</span>
+                                <span class="status-detail-value">@_state.EnabledBy</span>
+                            </div>
+                        }
+                        @if (_state.StartedAt.HasValue)
+                        {
+                            <div class="status-detail">
+                                <span class="status-detail-label">Started at</span>
+                                <span class="status-detail-value">@_state.StartedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                            </div>
+                        }
+                        @if (_state.EstimatedEndAt.HasValue)
+                        {
+                            <div class="status-detail">
+                                <span class="status-detail-label">Estimated end</span>
+                                <span class="status-detail-value">@_state.EstimatedEndAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_state.Message))
+                        {
+                            <div class="status-detail">
+                                <span class="status-detail-label">Message</span>
+                                <span class="status-detail-value">@_state.Message</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </Card>
+
+    <Card>
+        <div class="controls-section">
+            <h2 class="section-title">Controls</h2>
+
+            @if (!_state.IsEnabled)
+            {
+                <div class="enable-form">
+                    <div class="enable-form-fields">
+                        <FormGroup Label="Message (optional)" Id="maintenance-message">
+                            <FormInput Id="maintenance-message"
+                                       Placeholder="e.g. Upgrading database schema"
+                                       Value="@_message"
+                                       ValueChanged="(string v) => _message = v" />
+                        </FormGroup>
+                        <FormGroup Label="Estimated minutes (optional)" Id="estimated-minutes">
+                            <FormInput Id="estimated-minutes"
+                                       Type="number"
+                                       Placeholder="e.g. 30"
+                                       Value="@_estimatedMinutes"
+                                       ValueChanged="(string v) => _estimatedMinutes = v" />
+                        </FormGroup>
+                    </div>
+                    <div class="controls-action">
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@_isSubmitting"
+                                OnClick="EnableMaintenance">
+                            @(_isSubmitting ? "Enabling..." : "Enable Maintenance Mode")
+                        </Button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="controls-info">
+                    Maintenance mode is currently active. Non-admin users are seeing the 503 maintenance page.
+                </p>
+                <div class="controls-action">
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@_isSubmitting"
+                            OnClick="DisableMaintenance">
+                        @(_isSubmitting ? "Disabling..." : "Disable Maintenance Mode")
+                    </Button>
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <div class="controls-error">@_error</div>
+            }
+        </div>
+    </Card>
+</div>
+
+@code {
+    private MaintenanceState _state = new();
+    private string _message = "";
+    private string _estimatedMinutes = "";
+    private bool _isSubmitting;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _state = MaintenanceService.GetState();
+    }
+
+    private async Task EnableMaintenance()
+    {
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            int? minutes = null;
+            if (!string.IsNullOrWhiteSpace(_estimatedMinutes))
+            {
+                if (!int.TryParse(_estimatedMinutes, out var parsed) || parsed < 1)
+                {
+                    _error = "Estimated minutes must be a positive number.";
+                    return;
+                }
+                minutes = parsed;
+            }
+
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            var userName = authState.User.Identity?.Name ?? "Unknown";
+
+            MaintenanceService.Enable(
+                string.IsNullOrWhiteSpace(_message) ? null : _message.Trim(),
+                minutes,
+                userName);
+
+            _state = MaintenanceService.GetState();
+            _message = "";
+            _estimatedMinutes = "";
+        }
+        catch (Exception)
+        {
+            _error = "An error occurred while enabling maintenance mode.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void DisableMaintenance()
+    {
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            MaintenanceService.Disable();
+            _state = MaintenanceService.GetState();
+        }
+        catch (Exception)
+        {
+            _error = "An error occurred while disabling maintenance mode.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
