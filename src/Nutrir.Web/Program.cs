@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.Entities;
 using Nutrir.Infrastructure;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Core.Interfaces;
 using Nutrir.Web.Components;
 using Nutrir.Web.Components.Account;
+using Nutrir.Web.Middleware;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -81,6 +83,8 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseMiddleware<MaintenanceModeMiddleware>();
+
     app.UseStatusCodePagesWithRedirects("/error/{0}");
 
     app.UseAntiforgery();
@@ -91,6 +95,23 @@ try
 
     // Add additional endpoints required by the Identity /Account Razor components.
     app.MapAdditionalIdentityEndpoints();
+
+    // Maintenance mode admin API endpoints.
+    app.MapGet("/api/admin/maintenance/status", (IMaintenanceService svc) =>
+        Results.Ok(svc.GetState()));
+
+    app.MapPost("/api/admin/maintenance/enable", (MaintenanceRequest request, IMaintenanceService svc, HttpContext ctx) =>
+    {
+        var userName = ctx.User.Identity?.Name ?? "unknown";
+        svc.Enable(request.Message, request.EstimatedMinutes, userName);
+        return Results.Ok(svc.GetState());
+    }).RequireAuthorization(policy => policy.RequireRole("Admin", "Nutritionist"));
+
+    app.MapPost("/api/admin/maintenance/disable", (IMaintenanceService svc) =>
+    {
+        svc.Disable();
+        return Results.Ok(svc.GetState());
+    }).RequireAuthorization(policy => policy.RequireRole("Admin", "Nutritionist"));
 
     // Dev-only endpoints for error page testing.
     if (app.Environment.IsDevelopment())
@@ -112,3 +133,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public record MaintenanceRequest(string? Message = null, int? EstimatedMinutes = null);
