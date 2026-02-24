@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IMealPlanService, MealPlanService>();
         services.AddScoped<IProgressService, ProgressService>();
+        services.AddScoped<ISearchService, SearchService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();
 
