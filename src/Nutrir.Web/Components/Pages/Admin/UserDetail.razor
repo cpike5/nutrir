@@ -10,8 +10,9 @@
 
 <PageTitle>User Detail — Nutrir</PageTitle>
 
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Staff", "/admin/users"), new BreadcrumbItem(_user is not null ? $"{_user.FirstName} {_user.LastName}" : "User") })" />
+
 <div class="user-detail">
-    <a href="/admin/users" class="user-detail-back">&larr; Back to Staff Accounts</a>
 
     @if (_isLoading)
     {

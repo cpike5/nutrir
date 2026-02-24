@@ -6,16 +6,6 @@
     gap: var(--space-6);
 }
 
-.user-detail-back {
-    font-size: var(--text-sm);
-    color: var(--color-primary);
-    text-decoration: none;
-    transition: color 0.15s ease;
-}
-
-.user-detail-back:hover {
-    color: var(--color-primary-hover);
-}
 
 .user-detail-loading {
     padding: var(--space-8);

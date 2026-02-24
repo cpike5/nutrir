@@ -1,0 +1,28 @@
+@using Nutrir.Web.Components.UI
+
+<nav class="cc-breadcrumb" aria-label="Breadcrumb">
+    @for (int i = 0; i < Items.Count; i++)
+    {
+        var item = Items[i];
+        var isLast = i == Items.Count - 1;
+
+        @if (i > 0)
+        {
+            <span class="cc-breadcrumb-sep" aria-hidden="true">/</span>
+        }
+
+        @if (isLast)
+        {
+            <span class="cc-breadcrumb-current" aria-current="page">@item.Label</span>
+        }
+        else
+        {
+            <a href="@item.Href" class="cc-breadcrumb-link">@item.Label</a>
+        }
+    }
+</nav>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<BreadcrumbItem> Items { get; set; } = [];
+}
