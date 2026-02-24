@@ -1,8 +1,9 @@
-/* Dropdown container — uses fixed positioning to escape any parent stacking context */
+/* Dropdown container */
 .search-dropdown {
-    position: fixed;
-    top: 52px;
-    right: var(--space-6);
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: var(--space-2);
     min-width: 420px;
     max-width: 560px;
     max-height: 480px;
