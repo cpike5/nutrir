@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrir — Global Search Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design Tokens ───────────────────────────────────────── */
+    :root {
+      --color-bg:        #f8f5f0;
+      --color-text:      #282828;
+      --color-primary:   #4a6741;
+      --color-secondary: #9a6c41;
+      --color-accent:    #b6b697;
+
+      --rgb-bg:        248, 245, 240;
+      --rgb-text:      40, 40, 40;
+      --rgb-primary:   74, 103, 65;
+      --rgb-secondary: 154, 108, 65;
+      --rgb-accent:    182, 182, 151;
+
+      --color-bg-alt:      #f1eee9;
+      --color-bg-card:     #ffffff;
+      --color-bg-elevated: #ffffff;
+      --color-bg-input:    #ffffff;
+
+      --color-text-muted:          #6b6b6b;
+      --color-text-on-primary:     #ffffff;
+      --color-text-on-secondary:   #ffffff;
+      --color-text-link:           var(--color-primary);
+
+      --color-primary-hover:   #3d5736;
+      --color-primary-muted:   rgba(74, 103, 65, 0.12);
+      --color-secondary-hover: #885f39;
+      --color-secondary-muted: rgba(154, 108, 65, 0.12);
+      --color-accent-hover:    #a0a085;
+      --color-accent-muted:    rgba(182, 182, 151, 0.15);
+
+      --color-border:       rgba(0, 0, 0, 0.08);
+      --color-border-input: rgba(0, 0, 0, 0.12);
+      --color-border-focus: var(--color-primary);
+
+      --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.10);
+
+      --color-success:  #3d8b4f;
+      --color-warning:  #c4882f;
+      --color-error:    #c14a3d;
+      --color-info:     #4a7e8b;
+
+      --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Outfit', var(--font-sans);
+
+      --text-xs:   0.75rem;
+      --text-sm:   0.875rem;
+      --text-base: 1rem;
+
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-full: 9999px;
+
+      --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration-fast:   150ms;
+      --duration-normal: 250ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .cc-layout {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      min-height: 100vh;
+    }
+
+    .icon-rail {
+      background: var(--color-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-4) 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .rail-brand {
+      width: 32px;
+      height: 32px;
+      margin-bottom: var(--space-6);
+      color: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .rail-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+      flex: 1;
+    }
+
+    .rail-item {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-default);
+    }
+
+    .rail-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
+    .rail-item.active { color: white; background: rgba(255,255,255,0.12); }
+    .rail-item.active::after {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 18px;
+      background: white;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .rail-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .rail-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      font-family: var(--font-display);
+      cursor: pointer;
+    }
+
+    .cc-main { display: flex; flex-direction: column; }
+
+    /* ── Topbar ──────────────────────────────────────────────── */
+    .cc-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      position: relative;
+      z-index: 1001; /* above dropdown backdrop */
+    }
+
+    .cc-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .cc-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    .cc-breadcrumb-current { color: var(--color-text); font-weight: 500; }
+    .cc-breadcrumb-sep { color: var(--color-accent); font-size: var(--text-xs); }
+
+    /* ── Search Input ────────────────────────────────────────── */
+    .cc-search {
+      position: relative;
+    }
+
+    .cc-search-icon {
+      position: absolute;
+      left: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-accent);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .cc-search input {
+      padding: 6px var(--space-10) 6px 2rem;
+      font-family: var(--font-sans);
+      font-size: var(--text-xs);
+      color: var(--color-text);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      width: 220px;
+      transition: all var(--duration-fast) var(--ease-default);
+    }
+
+    .cc-search input::placeholder { color: var(--color-accent); }
+
+    .cc-search input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(74, 103, 65, 0.08);
+      width: 280px;
+      background: var(--color-bg-input);
+    }
+
+    /* Ctrl+K hint */
+    .cc-search-hint {
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      pointer-events: none;
+      transition: opacity var(--duration-fast) var(--ease-default);
+    }
+
+    .cc-search:focus-within .cc-search-hint { opacity: 0; }
+
+    .cc-kbd {
+      padding: 1px 4px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 3px;
+      font-family: var(--font-sans);
+      font-size: 0.5625rem;
+      color: var(--color-text-muted);
+    }
+
+    /* Clear button (shown when input has text) */
+    .cc-search-clear {
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0;
+      border-radius: var(--radius-full);
+      transition: color var(--duration-fast) var(--ease-default);
+    }
+
+    .cc-search-clear:hover { color: var(--color-text); }
+    .cc-search.has-value .cc-search-clear { display: flex; }
+    .cc-search.has-value .cc-search-hint { display: none; }
+
+    /* ── Dropdown ────────────────────────────────────────────── */
+    .search-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: transparent;
+    }
+
+    .search-backdrop.visible { display: block; }
+
+    .search-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      right: 0;
+      min-width: 420px;
+      max-width: 560px;
+      max-height: 480px;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      overflow: hidden;
+      flex-direction: column;
+      animation: dropdownOpen 150ms var(--ease-default) both;
+    }
+
+    .search-dropdown.visible { display: flex; }
+
+    @keyframes dropdownOpen {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .search-dropdown-scroll {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ── Section Headers ─────────────────────────────────────── */
+    .search-section:not(:first-child) .search-section-header {
+      border-top: 1px solid var(--color-border);
+    }
+
+    .search-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-bg-alt);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .search-section-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+
+    .search-section-count {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    /* ── Result Rows ─────────────────────────────────────────── */
+    .search-result-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: background var(--duration-fast) var(--ease-default);
+      outline: none;
+    }
+
+    .search-result-row:last-child { border-bottom: none; }
+
+    .search-result-row:hover,
+    .search-result-row:focus {
+      background: rgba(74, 103, 65, 0.04);
+    }
+
+    .search-result-row:focus {
+      box-shadow: inset 0 0 0 2px rgba(74, 103, 65, 0.25);
+    }
+
+    .search-result-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+      flex-shrink: 0;
+    }
+
+    .search-result-icon.client {
+      background: var(--color-primary-muted);
+      color: var(--color-primary);
+    }
+
+    .search-result-icon.appointment {
+      background: var(--color-secondary-muted);
+      color: var(--color-secondary);
+    }
+
+    .search-result-icon.meal-plan {
+      background: var(--color-accent-muted);
+      color: var(--color-text-muted);
+    }
+
+    .search-result-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-result-primary {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-result-secondary {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-result-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    .search-chevron {
+      color: var(--color-accent);
+      opacity: 0;
+      transition: opacity var(--duration-fast) var(--ease-default);
+      flex-shrink: 0;
+    }
+
+    .search-result-row:hover .search-chevron,
+    .search-result-row:focus .search-chevron { opacity: 1; }
+
+    /* ── Badges ──────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px var(--space-2);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      border-radius: var(--radius-full);
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    .badge-success { background: rgba(61,139,79,0.12); color: var(--color-success); }
+    .badge-accent  { background: var(--color-accent-muted); color: var(--color-text-muted); }
+    .badge-primary { background: var(--color-primary-muted); color: var(--color-primary); }
+    .badge-warning { background: rgba(196,136,47,0.12); color: var(--color-warning); }
+    .badge-error   { background: rgba(193,74,61,0.12); color: var(--color-error); }
+
+    /* ── Section Footer ──────────────────────────────────────── */
+    .search-section-footer {
+      padding: var(--space-2) var(--space-4);
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg-card);
+    }
+
+    .search-section-footer a {
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--color-primary);
+      text-decoration: none;
+      transition: color var(--duration-fast) var(--ease-default);
+    }
+
+    .search-section-footer a:hover { color: var(--color-primary-hover); }
+
+    /* ── Recent Searches ─────────────────────────────────────── */
+    .search-recent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-bg-alt);
+    }
+
+    .search-recent-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+
+    .search-recent-clear {
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: color var(--duration-fast) var(--ease-default);
+    }
+
+    .search-recent-clear:hover { color: var(--color-text); }
+
+    .search-recent-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: background var(--duration-fast) var(--ease-default);
+    }
+
+    .search-recent-row:last-child { border-bottom: none; }
+    .search-recent-row:hover { background: rgba(74, 103, 65, 0.04); }
+
+    .search-recent-clock {
+      color: var(--color-accent);
+      flex-shrink: 0;
+    }
+
+    .search-recent-name {
+      flex: 1;
+      font-size: var(--text-sm);
+      color: var(--color-text);
+    }
+
+    .search-recent-type {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    /* ── Empty State ─────────────────────────────────────────── */
+    .search-empty {
+      padding: var(--space-8) var(--space-4);
+      text-align: center;
+    }
+
+    .search-empty-primary {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      margin-bottom: var(--space-2);
+    }
+
+    .search-empty-secondary {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Skeleton Loading ────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+
+    .cc-skeleton {
+      background: linear-gradient(
+        90deg,
+        rgba(182, 182, 151, 0.08) 25%,
+        rgba(182, 182, 151, 0.20) 50%,
+        rgba(182, 182, 151, 0.08) 75%
+      );
+      background-size: 800px 100%;
+      animation: shimmer 1.6s infinite linear;
+      border-radius: var(--radius-lg);
+    }
+
+    .search-skeleton-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+    }
+
+    .search-skeleton-row:last-child { border-bottom: none; }
+
+    .search-skeleton-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+
+    .search-skeleton-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .search-skeleton-line {
+      height: 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .search-skeleton-badge {
+      width: 48px;
+      height: 18px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+
+    /* ── Topbar right ─────────────────────────────────────────── */
+    .cc-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .cc-topbar-btn {
+      padding: 5px var(--space-3);
+      font-family: var(--font-sans);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      transition: all var(--duration-fast) var(--ease-default);
+    }
+
+    .cc-topbar-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+    .cc-topbar-btn.primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+    .cc-topbar-btn.primary:hover { background: var(--color-primary-hover); }
+
+    /* ── Page content (placeholder) ──────────────────────────── */
+    .cc-body {
+      flex: 1;
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .cc-page-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-2);
+    }
+
+    .cc-page-sub {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-6);
+    }
+
+    /* ── Demo States ─────────────────────────────────────────── */
+    .demo-controls {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+      flex-wrap: wrap;
+    }
+
+    .demo-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      color: var(--color-text-muted);
+      font-family: var(--font-sans);
+      transition: all var(--duration-fast) var(--ease-default);
+    }
+
+    .demo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+    .demo-btn.active { background: var(--color-primary-muted); border-color: var(--color-primary); color: var(--color-primary); }
+
+    .demo-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+      display: block;
+      margin-bottom: var(--space-3);
+    }
+
+    /* ── Annotation Boxes ────────────────────────────────────── */
+    .annotation {
+      background: rgba(74, 126, 139, 0.06);
+      border: 1px solid rgba(74, 126, 139, 0.25);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+
+    .annotation h3 {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-info);
+      margin-bottom: var(--space-2);
+    }
+
+    .annotation ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .annotation ul li {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      padding-left: var(--space-4);
+      position: relative;
+    }
+
+    .annotation ul li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: var(--color-accent);
+    }
+
+    .annotation code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.06);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* ── Scroll within dropdown ───────────────────────────────── */
+    .search-dropdown-scroll::-webkit-scrollbar { width: 4px; }
+    .search-dropdown-scroll::-webkit-scrollbar-track { background: transparent; }
+    .search-dropdown-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+    /* ── SVG Icons (inline) ──────────────────────────────────── */
+    .icon-sm { width: 14px; height: 14px; }
+    .icon-md { width: 16px; height: 16px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .cc-layout { grid-template-columns: 1fr; }
+      .icon-rail { display: none; }
+      .search-dropdown { min-width: calc(100vw - 2rem); right: -1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cc-layout">
+
+    <!-- ── Icon Rail ──────────────────────────────────────────── -->
+    <aside class="icon-rail">
+      <div class="rail-brand">N</div>
+      <nav class="rail-nav">
+        <!-- Dashboard -->
+        <div class="rail-item active" style="position:relative;" title="Dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </div>
+        <!-- Clients -->
+        <div class="rail-item" title="Clients">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <!-- Appointments -->
+        <div class="rail-item" title="Appointments">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <!-- Meal Plans -->
+        <div class="rail-item" title="Meal Plans">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+      </nav>
+      <div class="rail-footer">
+        <div class="rail-avatar">JD</div>
+      </div>
+    </aside>
+
+    <!-- ── Main ───────────────────────────────────────────────── -->
+    <div class="cc-main">
+
+      <!-- ── Topbar ─────────────────────────────────────────── -->
+      <header class="cc-topbar">
+        <div class="cc-topbar-left">
+          <nav class="cc-breadcrumb">
+            <a href="#" class="cc-breadcrumb-link">Nutrir</a>
+            <span class="cc-breadcrumb-sep">/</span>
+            <span class="cc-breadcrumb-current">Clients</span>
+          </nav>
+        </div>
+
+        <!-- Search Component -->
+        <div class="cc-search" id="searchWrapper">
+          <!-- Search icon -->
+          <svg class="cc-search-icon icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+
+          <!-- Input -->
+          <input
+            type="text"
+            id="globalSearch"
+            placeholder="Search..."
+            autocomplete="off"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="searchDropdown"
+            aria-label="Search clients, appointments, and meal plans"
+          >
+
+          <!-- Ctrl+K hint (hidden when focused) -->
+          <div class="cc-search-hint">
+            <kbd class="cc-kbd">⌘</kbd>
+            <kbd class="cc-kbd">K</kbd>
+          </div>
+
+          <!-- Clear button (shown when input has value) -->
+          <button class="cc-search-clear" id="searchClear" aria-label="Clear search" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <!-- Dropdown -->
+          <div class="search-dropdown" id="searchDropdown" role="listbox" aria-label="Search results">
+            <div class="search-dropdown-scroll" id="searchDropdownScroll">
+              <!-- Content injected by JS based on state -->
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-topbar-right">
+          <button class="cc-topbar-btn primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            New Client
+          </button>
+        </div>
+      </header>
+
+      <!-- ── Body ──────────────────────────────────────────────── -->
+      <main class="cc-body">
+        <div class="cc-page-title">Global Search Prototype</div>
+        <p class="cc-page-sub">Demonstrating all dropdown states for the global search component.</p>
+
+        <div class="annotation">
+          <h3>Prototype Instructions</h3>
+          <ul>
+            <li>Click or focus the search input in the topbar to open the dropdown.</li>
+            <li>Press <code>Ctrl+K</code> / <code>Cmd+K</code> from anywhere on the page to focus the search.</li>
+            <li>Use the demo buttons below to jump to specific states.</li>
+            <li>Arrow keys navigate the results; Enter navigates; Escape clears/closes; Tab moves focus into results.</li>
+            <li>Click outside or press Escape to close.</li>
+          </ul>
+        </div>
+
+        <span class="demo-label">Jump to state:</span>
+        <div class="demo-controls">
+          <button class="demo-btn" onclick="showState('recent')">Initial (Recent Searches)</button>
+          <button class="demo-btn" onclick="showState('loading')">Loading</button>
+          <button class="demo-btn" onclick="showState('results')">Results Found</button>
+          <button class="demo-btn" onclick="showState('partial')">Partial Results (1 type)</button>
+          <button class="demo-btn" onclick="showState('empty')">No Results</button>
+          <button class="demo-btn" onclick="showState('error')">Error</button>
+        </div>
+
+        <div class="annotation" style="margin-top: var(--space-4);">
+          <h3>State Notes</h3>
+          <ul>
+            <li><strong>Initial / Recent:</strong> Shown when input is focused but fewer than 2 characters have been typed. Pulls from <code>localStorage</code>.</li>
+            <li><strong>Loading:</strong> Shown 250ms after typing begins (debounce period). Skeleton rows prevent layout shift.</li>
+            <li><strong>Results:</strong> Up to 3 results per entity type. "See all" footer appears when more exist.</li>
+            <li><strong>Partial:</strong> Only sections with results render — empty sections are completely omitted.</li>
+            <li><strong>No Results:</strong> Centered message, no icon. Secondary text suggests what to search for.</li>
+            <li><strong>Error:</strong> Single line in error color, inline in dropdown. Does not break the layout.</li>
+          </ul>
+        </div>
+      </main>
+
+    </div><!-- /.cc-main -->
+  </div><!-- /.cc-layout -->
+
+  <!-- Backdrop (click outside) -->
+  <div class="search-backdrop" id="searchBackdrop"></div>
+
+  <script>
+    // ── State Data ──────────────────────────────────────────────
+    const STATES = {
+      recent: buildRecent(),
+      loading: buildLoading(),
+      results: buildResults(),
+      partial: buildPartial(),
+      empty: buildEmpty(),
+      error: buildError(),
+    };
+
+    // ── DOM refs ────────────────────────────────────────────────
+    const searchInput    = document.getElementById('globalSearch');
+    const searchWrapper  = document.getElementById('searchWrapper');
+    const searchDropdown = document.getElementById('searchDropdown');
+    const searchScroll   = document.getElementById('searchDropdownScroll');
+    const searchBackdrop = document.getElementById('searchBackdrop');
+    const searchClear    = document.getElementById('searchClear');
+
+    // ── Open / Close ────────────────────────────────────────────
+    function openDropdown(html) {
+      searchScroll.innerHTML = html;
+      searchDropdown.classList.add('visible');
+      searchBackdrop.classList.add('visible');
+      searchInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDropdown() {
+      searchDropdown.classList.remove('visible');
+      searchBackdrop.classList.remove('visible');
+      searchInput.setAttribute('aria-expanded', 'false');
+      searchInput.removeAttribute('aria-activedescendant');
+    }
+
+    // ── Input events ────────────────────────────────────────────
+    let debounceTimer = null;
+
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.length < 2) {
+        openDropdown(STATES.recent);
+      }
+    });
+
+    searchInput.addEventListener('input', () => {
+      const val = searchInput.value;
+
+      // Toggle has-value for clear button
+      if (val.length > 0) {
+        searchWrapper.classList.add('has-value');
+      } else {
+        searchWrapper.classList.remove('has-value');
+      }
+
+      if (val.length < 2) {
+        openDropdown(STATES.recent);
+        return;
+      }
+
+      // Show loading immediately
+      openDropdown(STATES.loading);
+
+      // Debounce the "search"
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        // Simulate a result (for prototype, cycle through states based on query)
+        openDropdown(STATES.results);
+      }, 600); // 600ms for demo visibility; actual debounce is 250ms
+    });
+
+    // ── Clear button ────────────────────────────────────────────
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchWrapper.classList.remove('has-value');
+      searchInput.focus();
+      openDropdown(STATES.recent);
+    });
+
+    // ── Keyboard shortcut Ctrl+K / Cmd+K ────────────────────────
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+        if (searchInput.value.length < 2) {
+          openDropdown(STATES.recent);
+        }
+      }
+    });
+
+    // ── Escape handling ─────────────────────────────────────────
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (searchInput.value.length > 0) {
+          searchInput.value = '';
+          searchWrapper.classList.remove('has-value');
+          openDropdown(STATES.recent);
+        } else {
+          closeDropdown();
+          searchInput.blur();
+        }
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const firstRow = searchDropdown.querySelector('[role="option"]');
+        if (firstRow) firstRow.focus();
+      }
+    });
+
+    // ── Keyboard nav inside dropdown ────────────────────────────
+    searchDropdown.addEventListener('keydown', (e) => {
+      const rows = Array.from(searchDropdown.querySelectorAll('[role="option"]'));
+      const idx = rows.indexOf(document.activeElement);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = rows[idx + 1];
+        if (next) next.focus();
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (idx === 0) {
+          searchInput.focus();
+        } else {
+          const prev = rows[idx - 1];
+          if (prev) prev.focus();
+        }
+      }
+
+      if (e.key === 'Escape') {
+        closeDropdown();
+        searchInput.focus();
+      }
+
+      if (e.key === 'Enter' && idx >= 0) {
+        // In a real implementation this would navigate.
+        // For prototype, just close the dropdown.
+        alert('Would navigate to: ' + rows[idx].dataset.url);
+        closeDropdown();
+        searchInput.blur();
+      }
+
+      // Track aria-activedescendant
+      if (document.activeElement.role === 'option') {
+        searchInput.setAttribute('aria-activedescendant', document.activeElement.id || '');
+      }
+    });
+
+    // ── Backdrop dismiss ─────────────────────────────────────────
+    searchBackdrop.addEventListener('click', () => {
+      closeDropdown();
+    });
+
+    // ── Demo state buttons ───────────────────────────────────────
+    function showState(state) {
+      // Focus the input first so the dropdown is contextually correct
+      searchInput.focus();
+
+      // Set some dummy text so it looks active (except recent/error)
+      if (state === 'recent') {
+        searchInput.value = '';
+        searchWrapper.classList.remove('has-value');
+      } else if (state === 'empty') {
+        searchInput.value = 'xyz';
+        searchWrapper.classList.add('has-value');
+      } else if (state === 'error') {
+        searchInput.value = 'sarah';
+        searchWrapper.classList.add('has-value');
+      } else {
+        searchInput.value = 'sarah';
+        searchWrapper.classList.add('has-value');
+      }
+
+      openDropdown(STATES[state]);
+
+      // Highlight the active demo button
+      document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    // ── State HTML builders ──────────────────────────────────────
+
+    function buildRecent() {
+      return `
+        <div class="search-recent-header">
+          <span class="search-recent-label">Recent</span>
+          <button class="search-recent-clear">Clear history</button>
+        </div>
+        ${recentRow('Sarah Mitchell', 'client', '#')}
+        ${recentRow('Mediterranean Week 1', 'meal plan', '#')}
+        ${recentRow('Initial Consult — Feb 20', 'appointment', '#')}
+        ${recentRow('Mike Thompson', 'client', '#')}
+        ${recentRow('Priya Sharma', 'client', '#')}
+      `;
+    }
+
+    function recentRow(label, type, url) {
+      return `
+        <a class="search-recent-row" href="${url}" role="option" tabindex="0" data-url="${url}"
+           onclick="event.preventDefault(); alert('Would navigate to result.')">
+          <svg class="search-recent-clock icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="search-recent-name">${label}</span>
+          <span class="search-recent-type">${type}</span>
+        </a>
+      `;
+    }
+
+    function buildLoading() {
+      return `
+        ${loadingSection('Clients', 3)}
+        ${loadingSection('Appointments', 2)}
+        ${loadingSection('Meal Plans', 2)}
+      `;
+    }
+
+    function loadingSection(label, count) {
+      let rows = '';
+      const widths = ['68%', '52%', '75%', '45%', '60%'];
+      const badge_widths = ['44px', '52px', '40px', '48px', '56px'];
+      for (let i = 0; i < count; i++) {
+        rows += `
+          <div class="search-skeleton-row">
+            <div class="cc-skeleton search-skeleton-avatar"></div>
+            <div class="search-skeleton-content">
+              <div class="cc-skeleton search-skeleton-line" style="width:${widths[i]}"></div>
+              <div class="cc-skeleton search-skeleton-line" style="width:40%; margin-top:2px;"></div>
+            </div>
+            <div class="cc-skeleton search-skeleton-badge" style="width:${badge_widths[i]}"></div>
+          </div>
+        `;
+      }
+      return `
+        <div class="search-section">
+          <div class="search-section-header">
+            <span class="search-section-label">${label}</span>
+          </div>
+          ${rows}
+        </div>
+      `;
+    }
+
+    function buildResults() {
+      return `
+        <div class="search-section">
+          <div class="search-section-header">
+            <span class="search-section-label">Clients</span>
+            <span class="search-section-count">3 of 7</span>
+          </div>
+          ${clientRow('SM', 'Sarah Mitchell', 'sarah.mitchell@email.com', 'Active', 'badge-success', '#')}
+          ${clientRow('MT', 'Mike Thompson', 'mike.thompson@email.com', 'Inactive', 'badge-accent', '#')}
+          ${clientRow('PS', 'Priya Sharma', 'priya.sharma@email.com', 'Active', 'badge-success', '#')}
+          <div class="search-section-footer">
+            <a href="/clients?q=sarah" onclick="event.preventDefault(); alert('Would navigate to /clients?q=sarah')">See all 7 clients</a>
+          </div>
+        </div>
+        <div class="search-section">
+          <div class="search-section-header">
+            <span class="search-section-label">Appointments</span>
+            <span class="search-section-count">2 of 2</span>
+          </div>
+          ${apptRow('Initial Consult', 'Sarah Mitchell', 'Mar 2, 2026, 10:00 AM', 'Scheduled', 'badge-success', '#')}
+          ${apptRow('Follow-up', 'Sarah Mitchell', 'Mar 9, 2026, 2:30 PM', 'Scheduled', 'badge-success', '#')}
+        </div>
+        <div class="search-section">
+          <div class="search-section-header">
+            <span class="search-section-label">Meal Plans</span>
+            <span class="search-section-count">1 of 1</span>
+          </div>
+          ${mealPlanRow('Mediterranean Week 1', 'Sarah Mitchell', 'Created Feb 20, 2026', 'Active', 'badge-primary', '#')}
+        </div>
+      `;
+    }
+
+    function buildPartial() {
+      return `
+        <div class="search-section">
+          <div class="search-section-header">
+            <span class="search-section-label">Clients</span>
+            <span class="search-section-count">1 of 1</span>
+          </div>
+          ${clientRow('SM', 'Sarah Mitchell', 'sarah.mitchell@email.com', 'Active', 'badge-success', '#')}
+        </div>
+      `;
+    }
+
+    function buildEmpty() {
+      return `
+        <div class="search-empty">
+          <div class="search-empty-primary">No results for "xyz"</div>
+          <div class="search-empty-secondary">Try a client name, appointment type,<br>or meal plan title.</div>
+        </div>
+      `;
+    }
+
+    function buildError() {
+      return `
+        <div style="padding: var(--space-4); font-size: var(--text-xs); color: var(--color-error);">
+          Could not load results. Try again.
+        </div>
+      `;
+    }
+
+    // ── Result row builders ───────────────────────────────────────
+
+    function clientRow(initials, name, email, status, badgeClass, url) {
+      return `
+        <a class="search-result-row" href="${url}" role="option" tabindex="0" data-url="${url}"
+           onclick="event.preventDefault(); alert('Would navigate to client: ${name}')">
+          <div class="search-result-icon client">${initials}</div>
+          <div class="search-result-content">
+            <div class="search-result-primary">${name}</div>
+            <div class="search-result-secondary">${email}</div>
+          </div>
+          <div class="search-result-meta">
+            <span class="badge ${badgeClass}">${status}</span>
+            <svg class="search-chevron icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
+      `;
+    }
+
+    function apptRow(type, client, datetime, status, badgeClass, url) {
+      return `
+        <a class="search-result-row" href="${url}" role="option" tabindex="0" data-url="${url}"
+           onclick="event.preventDefault(); alert('Would navigate to appointment: ${type}')">
+          <div class="search-result-icon appointment">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-primary">${type}</div>
+            <div class="search-result-secondary">${client} &middot; ${datetime}</div>
+          </div>
+          <div class="search-result-meta">
+            <span class="badge ${badgeClass}">${status}</span>
+            <svg class="search-chevron icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
+      `;
+    }
+
+    function mealPlanRow(name, client, meta, status, badgeClass, url) {
+      return `
+        <a class="search-result-row" href="${url}" role="option" tabindex="0" data-url="${url}"
+           onclick="event.preventDefault(); alert('Would navigate to meal plan: ${name}')">
+          <div class="search-result-icon meal-plan">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-primary">${name}</div>
+            <div class="search-result-secondary">${client} &middot; ${meta}</div>
+          </div>
+          <div class="search-result-meta">
+            <span class="badge ${badgeClass}">${status}</span>
+            <svg class="search-chevron icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
+      `;
+    }
+  </script>
+</body>
+</html>

@@ -32,6 +32,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Blazor SSR Forms](design-system/blazor-ssr-forms.md) | SSR form patterns, the conditional `<EditForm>` gotcha, and multi-step wizard solution |
 | [Data Tables](design-system/data-tables.md) | Table styling conventions — card wrapper, identity cells, badges, row hover, responsive breakpoints |
+| [Global Search](design-system/global-search.md) | UX spec for global search — dropdown anatomy, all states, keyboard nav, ARIA, CSS classes, Blazor notes |
 
 ## Compliance Documents
 
