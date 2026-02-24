@@ -10,6 +10,7 @@
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
+@inject IUserManagementService UserManagementService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Client — Nutrir</PageTitle>
@@ -101,11 +102,14 @@
                                        ValueChanged="@(v => _model.DateOfBirth = v)" />
                         </FormGroup>
 
-                        <FormGroup Label="Primary Nutritionist ID" Id="nutritionistId">
-                            <FormInput Id="nutritionistId"
-                                       Value="@_model.PrimaryNutritionistId"
-                                       ValueChanged="@(v => _model.PrimaryNutritionistId = v)"
-                                       Placeholder="User ID of the nutritionist" />
+                        <FormGroup Label="Primary Nutritionist" Id="nutritionist">
+                            <Autocomplete Id="nutritionist"
+                                          Options="@_nutritionistOptions"
+                                          Value="@_model.PrimaryNutritionistId"
+                                          ValueChanged="@(v => _model.PrimaryNutritionistId = v)"
+                                          DisplayText="@_nutritionistDisplayText"
+                                          DisplayTextChanged="@(v => _nutritionistDisplayText = v)"
+                                          Placeholder="Search for a nutritionist..." />
                         </FormGroup>
                     </div>
 
@@ -161,6 +165,8 @@
     private bool _isLoading = true;
     private bool _isSubmitting;
     private string? _errorMessage;
+    private IReadOnlyList<Autocomplete.AutocompleteOption> _nutritionistOptions = [];
+    private string? _nutritionistDisplayText;
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,6 +186,19 @@
                 Notes = _client.Notes
             };
             _editContext = new EditContext(_model);
+
+            var nutritionists = await UserManagementService.GetUsersAsync(
+                roleFilter: "Nutritionist", isActiveFilter: true);
+
+            _nutritionistOptions = nutritionists
+                .Select(n => new Autocomplete.AutocompleteOption(n.Id, n.DisplayName))
+                .ToList();
+
+            // Pre-populate display text from loaded nutritionist list or from the client record
+            var currentNutritionist = _nutritionistOptions.FirstOrDefault(
+                o => o.Value == _client.PrimaryNutritionistId);
+            _nutritionistDisplayText = currentNutritionist?.Text
+                ?? _client.PrimaryNutritionistName;
         }
 
         _isLoading = false;

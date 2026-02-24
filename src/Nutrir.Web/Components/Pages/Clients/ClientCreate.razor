@@ -10,6 +10,7 @@
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
+@inject IUserManagementService UserManagementService
 @inject NavigationManager NavigationManager
 
 <PageTitle>New Client — Nutrir</PageTitle>
@@ -78,6 +79,16 @@
                                    Value="@_model.DateOfBirth"
                                    ValueChanged="@(v => _model.DateOfBirth = v)" />
                     </FormGroup>
+
+                    <FormGroup Label="Primary Nutritionist" Id="nutritionist" Error="@GetFieldError(nameof(_model.PrimaryNutritionistId))">
+                        <Autocomplete Id="nutritionist"
+                                      Options="@_nutritionistOptions"
+                                      Value="@_model.PrimaryNutritionistId"
+                                      ValueChanged="@(v => _model.PrimaryNutritionistId = v)"
+                                      DisplayText="@_nutritionistDisplayText"
+                                      DisplayTextChanged="@(v => _nutritionistDisplayText = v)"
+                                      Placeholder="Search for a nutritionist..." />
+                    </FormGroup>
                 </div>
 
                 <FormGroup Label="Notes" Id="notes">
@@ -127,10 +138,29 @@
     private EditContext? _editContext;
     private bool _isSubmitting;
     private string? _errorMessage;
+    private IReadOnlyList<Autocomplete.AutocompleteOption> _nutritionistOptions = [];
+    private string? _nutritionistDisplayText;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _editContext = new EditContext(_model);
+
+        var nutritionists = await UserManagementService.GetUsersAsync(
+            roleFilter: "Nutritionist", isActiveFilter: true);
+
+        _nutritionistOptions = nutritionists
+            .Select(n => new Autocomplete.AutocompleteOption(n.Id, n.DisplayName))
+            .ToList();
+
+        // Default to the current logged-in user if they are a nutritionist
+        var authState = await AuthState;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var currentUserOption = _nutritionistOptions.FirstOrDefault(o => o.Value == userId);
+        if (currentUserOption is not null)
+        {
+            _model.PrimaryNutritionistId = currentUserOption.Value;
+            _nutritionistDisplayText = currentUserOption.Text;
+        }
     }
 
     private void OnPhoneChanged(string value)
@@ -166,7 +196,7 @@
                 Email: string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
                 Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : PhoneFormatter.ToDigits(_model.Phone),
                 DateOfBirth: dob,
-                PrimaryNutritionistId: userId,
+                PrimaryNutritionistId: _model.PrimaryNutritionistId!,
                 PrimaryNutritionistName: null,
                 ConsentGiven: _model.ConsentGiven,
                 ConsentTimestamp: _model.ConsentGiven ? DateTime.UtcNow : null,
@@ -212,6 +242,9 @@
         public string? Phone { get; set; }
 
         public string? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "A primary nutritionist is required.")]
+        public string? PrimaryNutritionistId { get; set; }
 
         public bool ConsentGiven { get; set; }
 
