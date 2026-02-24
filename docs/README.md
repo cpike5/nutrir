@@ -47,6 +47,14 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |-----|--------|-------|
 | [ADR-0001](infrastructure/adr-0001-url-structure.md) | Infrastructure | URL structure & application routing |
 
+## Worklog
+
+| Entry | Description |
+|-------|-------------|
+| [2026-02-23 Client Table Redesign](worklog/2026-02-23-client-table-redesign.md) | Client list table styling overhaul |
+| [2026-02-23 Client Detail Redesign](worklog/2026-02-23-client-detail-redesign.md) | Client detail page redesign |
+| [2026-02-23 Appointment Pages Redesign](worklog/2026-02-23-appointment-pages-redesign.md) | Appointment pages styling overhaul |
+
 ## Conventions
 
 - **Specs** — Name as `feature-name.md` (e.g., `clients/intake-form.md`)
