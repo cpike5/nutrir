@@ -66,7 +66,7 @@
                         <FormInput Id="phone"
                                    Type="tel"
                                    Value="@_model.Phone"
-                                   ValueChanged="@(v => _model.Phone = v)"
+                                   ValueChanged="OnPhoneChanged"
                                    Placeholder="(555) 123-4567" />
                     </FormGroup>
                 </div>
@@ -133,6 +133,11 @@
         _editContext = new EditContext(_model);
     }
 
+    private void OnPhoneChanged(string value)
+    {
+        _model.Phone = PhoneFormatter.Format(value);
+    }
+
     private void OnConsentChanged(bool value)
     {
         _model.ConsentGiven = value;
@@ -159,7 +164,7 @@
                 FirstName: _model.FirstName!,
                 LastName: _model.LastName!,
                 Email: string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
-                Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : _model.Phone,
+                Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : PhoneFormatter.ToDigits(_model.Phone),
                 DateOfBirth: dob,
                 PrimaryNutritionistId: userId,
                 PrimaryNutritionistName: null,
