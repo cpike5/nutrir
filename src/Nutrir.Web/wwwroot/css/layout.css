@@ -137,6 +137,7 @@
   font-weight: 600;
   font-family: var(--font-display);
   cursor: pointer;
+  text-decoration: none;
   transition: background var(--duration-fast) var(--ease-default);
 }
 

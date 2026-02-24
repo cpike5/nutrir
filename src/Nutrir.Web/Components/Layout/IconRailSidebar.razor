@@ -85,9 +85,9 @@
                         </svg>
                     </button>
                 </form>
-                <div class="rail-avatar" title="@context.User.Identity?.Name">
+                <NavLink class="rail-avatar" href="Account/Manage" title="@context.User.Identity?.Name">
                     @(context.User.Identity?.Name?.Substring(0, 1).ToUpper())
-                </div>
+                </NavLink>
             </Authorized>
             <NotAuthorized>
                 <NavLink class="rail-item" href="Account/Login" title="Login">
