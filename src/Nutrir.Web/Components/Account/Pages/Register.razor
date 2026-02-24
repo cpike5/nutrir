@@ -23,87 +23,89 @@
 
 <h2>Create your account</h2>
 
-<StatusMessage Message="@Message" />
+<div class="auth-form-section">
+    <StatusMessage Message="@Message" />
 
-<EditForm Model="Input" method="post" OnSubmit="OnSubmit" FormName="register">
+    <EditForm Model="Input" method="post" OnSubmit="OnSubmit" FormName="register">
 
-    <input type="hidden" name="Input.Step" value="@Input.Step" />
-    <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
+        <input type="hidden" name="Input.Step" value="@Input.Step" />
+        <input type="hidden" name="Input.InviteCode" value="@Input.InviteCode" />
 
-    @if (Input.Step == 1)
-    {
-        <p class="text-sm text-muted mb-4">Enter your invite code to get started.</p>
-
-        @if (_codeError is not null)
+        @if (Input.Step == 1)
         {
-            <div class="status-message status-message-error" role="alert">@_codeError</div>
+            <p class="text-sm text-muted mb-4">Enter your invite code to get started.</p>
+
+            @if (_codeError is not null)
+            {
+                <div class="status-message status-message-error" role="alert">@_codeError</div>
+            }
+            <div class="flex flex-col gap-4">
+                <div class="form-group">
+                    <label for="Input.CodeEntry" class="form-label">Invite Code</label>
+                    <InputText @bind-Value="Input.CodeEntry" id="Input.CodeEntry" class="form-input" autocomplete="off" aria-required="true" placeholder="ABC-1234" />
+                    <ValidationMessage For="() => Input.CodeEntry" class="form-error" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">Validate Code</button>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-6 text-center">
+                <span class="text-sm text-muted">
+                    Already have an account?
+                    <a href="Account/Login">Sign in</a>
+                </span>
+            </div>
         }
-        <div class="flex flex-col gap-4">
-            <div class="form-group">
-                <label for="Input.CodeEntry" class="form-label">Invite Code</label>
-                <InputText @bind-Value="Input.CodeEntry" id="Input.CodeEntry" class="form-input" autocomplete="off" aria-required="true" placeholder="ABC-1234" />
-                <ValidationMessage For="() => Input.CodeEntry" class="form-error" />
+        else
+        {
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-sm text-muted">Registering as:</span>
+                <span class="badge badge-primary">@_targetRole</span>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Validate Code</button>
-        </div>
 
-        <div class="flex flex-col gap-2 mt-6 text-center">
-            <span class="text-sm text-muted">
-                Already have an account?
-                <a href="Account/Login">Sign in</a>
-            </span>
-        </div>
-    }
-    else
-    {
-        <div class="flex items-center gap-2 mb-4">
-            <span class="text-sm text-muted">Registering as:</span>
-            <span class="badge badge-primary">@_targetRole</span>
-        </div>
+            <ValidationSummary class="form-error" role="alert" />
 
-        <ValidationSummary class="form-error" role="alert" />
-
-        <div class="flex flex-col gap-4">
-            <div class="form-group">
-                <label for="Input.FirstName" class="form-label">First Name</label>
-                <InputText @bind-Value="Input.FirstName" id="Input.FirstName" class="form-input" autocomplete="given-name" aria-required="true" placeholder="First name" />
-                <ValidationMessage For="() => Input.FirstName" class="form-error" />
+            <div class="flex flex-col gap-4">
+                <div class="form-group">
+                    <label for="Input.FirstName" class="form-label">First Name</label>
+                    <InputText @bind-Value="Input.FirstName" id="Input.FirstName" class="form-input" autocomplete="given-name" aria-required="true" placeholder="First name" />
+                    <ValidationMessage For="() => Input.FirstName" class="form-error" />
+                </div>
+                <div class="form-group">
+                    <label for="Input.LastName" class="form-label">Last Name</label>
+                    <InputText @bind-Value="Input.LastName" id="Input.LastName" class="form-input" autocomplete="family-name" aria-required="true" placeholder="Last name" />
+                    <ValidationMessage For="() => Input.LastName" class="form-error" />
+                </div>
+                <div class="form-group">
+                    <label for="Input.Email" class="form-label">Email</label>
+                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <ValidationMessage For="() => Input.Email" class="form-error" />
+                </div>
+                <div class="form-group">
+                    <label for="Input.Password" class="form-label">Password</label>
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <ValidationMessage For="() => Input.Password" class="form-error" />
+                </div>
+                <div class="form-group">
+                    <label for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <ValidationMessage For="() => Input.ConfirmPassword" class="form-error" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
             </div>
-            <div class="form-group">
-                <label for="Input.LastName" class="form-label">Last Name</label>
-                <InputText @bind-Value="Input.LastName" id="Input.LastName" class="form-input" autocomplete="family-name" aria-required="true" placeholder="Last name" />
-                <ValidationMessage For="() => Input.LastName" class="form-error" />
-            </div>
-            <div class="form-group">
-                <label for="Input.Email" class="form-label">Email</label>
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <ValidationMessage For="() => Input.Email" class="form-error" />
-            </div>
-            <div class="form-group">
-                <label for="Input.Password" class="form-label">Password</label>
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <ValidationMessage For="() => Input.Password" class="form-error" />
-            </div>
-            <div class="form-group">
-                <label for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-input" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <ValidationMessage For="() => Input.ConfirmPassword" class="form-error" />
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
-        </div>
 
-        <div class="divider-text mt-6 mb-6">or continue with</div>
+            <div class="divider-text mt-6 mb-6">or continue with</div>
 
-        <ExternalLoginPicker />
+            <ExternalLoginPicker />
 
-        <div class="flex flex-col gap-2 mt-6 text-center">
-            <span class="text-sm text-muted">
-                Already have an account?
-                <a href="Account/Login">Sign in</a>
-            </span>
-        </div>
-    }
-</EditForm>
+            <div class="flex flex-col gap-2 mt-6 text-center">
+                <span class="text-sm text-muted">
+                    Already have an account?
+                    <a href="Account/Login">Sign in</a>
+                </span>
+            </div>
+        }
+    </EditForm>
+</div>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;

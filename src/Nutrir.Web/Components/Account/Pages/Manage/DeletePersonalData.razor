@@ -12,32 +12,36 @@
 
 <PageTitle>Delete Personal Data</PageTitle>
 
-<div class="manage-section-header">
-    <h3>Delete Personal Data</h3>
-</div>
-
 <StatusMessage Message="@message" />
 
-<div class="alert alert-error mb-6" role="alert">
-    <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-</div>
-
-<div class="card card-flat">
-    <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="form-error" role="alert" />
-        <div class="flex flex-col gap-4">
-            @if (requirePassword)
-            {
-                <div class="form-group">
-                    <label for="Input.Password" class="form-label">Password</label>
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
-                    <ValidationMessage For="() => Input.Password" class="form-error" />
-                </div>
-            }
-            <button class="btn btn-danger" type="submit">Delete data and close my account</button>
+<div class="table-card">
+    <div class="section-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+        </svg>
+        <span>Delete Personal Data</span>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-error mb-4" role="alert">
+            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
         </div>
-    </EditForm>
+
+        <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="form-error" role="alert" />
+            <div class="flex flex-col gap-4">
+                @if (requirePassword)
+                {
+                    <div class="form-group">
+                        <label for="Input.Password" class="form-label">Password</label>
+                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-input" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
+                        <ValidationMessage For="() => Input.Password" class="form-error" />
+                    </div>
+                }
+                <button class="btn btn-danger" type="submit">Delete data and close my account</button>
+            </div>
+        </EditForm>
+    </div>
 </div>
 
 @code {
