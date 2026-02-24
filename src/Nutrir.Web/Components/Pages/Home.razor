@@ -17,7 +17,21 @@
 
 @if (_loading)
 {
-    <div class="cc-empty-state">Loading dashboard...</div>
+    <div class="cc-skeleton-container">
+        <div class="cc-skeleton cc-skeleton-greeting"></div>
+        <div class="cc-skeleton-metrics">
+            <div class="cc-skeleton cc-skeleton-metric"></div>
+            <div class="cc-skeleton cc-skeleton-metric"></div>
+            <div class="cc-skeleton cc-skeleton-metric"></div>
+            <div class="cc-skeleton cc-skeleton-metric"></div>
+            <div class="cc-skeleton cc-skeleton-metric"></div>
+        </div>
+        <div class="cc-skeleton-panels">
+            <div class="cc-skeleton cc-skeleton-panel"></div>
+            <div class="cc-skeleton cc-skeleton-panel"></div>
+            <div class="cc-skeleton cc-skeleton-panel"></div>
+        </div>
+    </div>
 }
 else
 {
@@ -93,7 +107,13 @@ else
             <ChildContent>
                 @if (_recentClients.Count == 0)
                 {
-                    <div class="cc-empty-state">No clients yet</div>
+                    <div class="cc-empty-state">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block; opacity: 0.4;">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                        </svg>
+                        <p>No clients yet</p>
+                        <a href="/clients/new" class="cc-empty-cta">Add your first client</a>
+                    </div>
                 }
                 else
                 {
@@ -142,7 +162,12 @@ else
         <Panel Title="Alerts & Reminders" Count="@_consentAlerts.Count">
             @if (_consentAlerts.Count == 0)
             {
-                <div class="cc-empty-state">No alerts</div>
+                <div class="cc-empty-state">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <p>All clear — no alerts</p>
+                </div>
             }
             else
             {
@@ -175,7 +200,7 @@ else
                 {
                     @foreach (var plan in _recentMealPlans)
                     {
-                        <a href="/meal-plans/@plan.Id" class="cc-list-item" style="text-decoration:none; color:inherit;">
+                        <a href="/meal-plans/@plan.Id" class="cc-list-item">
                             <div class="cc-list-content">
                                 <div class="cc-list-primary">@plan.Title</div>
                                 <div class="cc-list-secondary">@plan.ClientFirstName @plan.ClientLastName</div>

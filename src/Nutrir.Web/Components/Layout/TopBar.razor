@@ -1,6 +1,15 @@
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
 <header class="cc-topbar">
     <div class="cc-topbar-left">
-        <span class="cc-breadcrumb" style="font-weight: 500; color: var(--color-text);">Nutrir</span>
+        <div class="cc-topbar-title-group">
+            <span class="cc-breadcrumb" style="font-weight: 500; color: var(--color-text);">Nutrir</span>
+            @if (_isHome)
+            {
+                <span class="cc-topbar-subtitle">Dashboard overview</span>
+            }
+        </div>
     </div>
     <div class="cc-topbar-right">
         <div class="cc-search">
@@ -11,3 +20,30 @@
         </div>
     </div>
 </header>
+
+@code {
+    private bool _isHome;
+
+    protected override void OnInitialized()
+    {
+        UpdateIsHome();
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateIsHome();
+        StateHasChanged();
+    }
+
+    private void UpdateIsHome()
+    {
+        var relative = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        _isHome = string.IsNullOrEmpty(relative) || relative == "/";
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
