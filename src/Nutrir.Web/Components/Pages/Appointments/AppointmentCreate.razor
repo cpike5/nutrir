@@ -30,13 +30,18 @@
             <DataAnnotationsValidator />
 
             <!-- Section: Client -->
-            <div class="section-header">
+            <div class="section-header" @onclick='() => ToggleSection("Client")'>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="8" cy="5" r="3"/>
                     <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
                 </svg>
                 Client
+                <svg class="section-chevron @(_expandedSections.Contains("Client") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4"/>
+                </svg>
             </div>
+            @if (_expandedSections.Contains("Client"))
+            {
             <div class="form-body">
                 <FormGroup Label="Client" Id="clientId" Error="@GetFieldError(nameof(_model.ClientId))">
                     <FormSelect Id="clientId"
@@ -60,15 +65,21 @@
                     </FormSelect>
                 </FormGroup>
             </div>
+            }
 
             <!-- Section: Schedule -->
-            <div class="section-header">
+            <div class="section-header" @onclick='() => ToggleSection("Schedule")'>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="2" y="2.5" width="12" height="12" rx="2"/>
                     <path d="M5 1v3M11 1v3M2 6.5h12"/>
                 </svg>
                 Schedule
+                <svg class="section-chevron @(_expandedSections.Contains("Schedule") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4"/>
+                </svg>
             </div>
+            @if (_expandedSections.Contains("Schedule"))
+            {
             <div class="form-body">
                 <div class="form-grid">
                     <FormGroup Label="Date" Id="date" Error="@GetFieldError(nameof(_model.Date))">
@@ -97,15 +108,21 @@
                     </FormSelect>
                 </FormGroup>
             </div>
+            }
 
             <!-- Section: Location -->
-            <div class="section-header">
+            <div class="section-header" @onclick='() => ToggleSection("Location")'>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
                     <circle cx="8" cy="6" r="1.5"/>
                 </svg>
                 Location
+                <svg class="section-chevron @(_expandedSections.Contains("Location") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4"/>
+                </svg>
             </div>
+            @if (_expandedSections.Contains("Location"))
+            {
             <div class="form-body">
                 <FormGroup Label="Location" Id="location">
                     <FormSelect Id="location"
@@ -137,15 +154,21 @@
                     </FormGroup>
                 }
             </div>
+            }
 
             <!-- Section: Notes -->
-            <div class="section-header">
+            <div class="section-header" @onclick='() => ToggleSection("Notes")'>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/>
                     <path d="M5 6h6M5 9h4"/>
                 </svg>
                 Notes
+                <svg class="section-chevron @(_expandedSections.Contains("Notes") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4"/>
+                </svg>
             </div>
+            @if (_expandedSections.Contains("Notes"))
+            {
             <div class="form-body">
                 <FormGroup Label="Appointment Notes" Id="notes">
                     <textarea id="notes"
@@ -155,6 +178,7 @@
                               placeholder="Appointment notes..."></textarea>
                 </FormGroup>
             </div>
+            }
 
             @if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -199,6 +223,13 @@
     private List<ClientDto> _clients = [];
     private bool _isSubmitting;
     private string? _errorMessage;
+    private HashSet<string> _expandedSections = ["Client", "Schedule", "Location", "Notes"];
+
+    private void ToggleSection(string section)
+    {
+        if (!_expandedSections.Remove(section))
+            _expandedSections.Add(section);
+    }
 
     protected override async Task OnInitializedAsync()
     {
