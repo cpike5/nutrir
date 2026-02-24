@@ -15,28 +15,54 @@
         <div class="clients-header-text">
             <h1 class="clients-title">Clients</h1>
         </div>
-        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">Add Client</Button>
+        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 4a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z"/>
+                <path d="M2 13.5c0-2.5 2.5-4 6-4s6 1.5 6 4"/>
+                <path d="M13 2v4M11 4h4"/>
+            </svg>
+            Add Client
+        </Button>
     </div>
 
-    <div class="clients-search">
-        <FormGroup Label="Search" Id="search">
-            <FormInput Id="search"
-                       Value="@_searchTerm"
-                       ValueChanged="OnSearchChanged"
-                       Placeholder="Search by name, email, or phone..." />
-        </FormGroup>
+    <div class="toolbar" role="search">
+        <div class="search-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.5"/>
+                <path d="m10.5 10.5 3 3"/>
+            </svg>
+            <label for="client-search" class="sr-only">Search clients</label>
+            <input type="search"
+                   id="client-search"
+                   class="search-input"
+                   placeholder="Search by name, email, or phone..."
+                   autocomplete="off"
+                   value="@_searchTerm"
+                   @oninput="OnSearchInput" />
+        </div>
+
+        <span class="client-count" aria-live="polite">
+            <strong>@(_clients?.Count ?? 0)</strong> clients
+        </span>
     </div>
 
-    <Card>
-        @if (_isLoading)
-        {
+    @if (_isLoading)
+    {
+        <div class="table-card">
             <p class="clients-loading">Loading clients...</p>
-        }
-        else if (_clients is null || _clients.Count == 0)
-        {
-            <div class="clients-empty">
-                <p class="clients-empty-title">No clients found</p>
-                <p class="clients-empty-desc">
+        </div>
+    }
+    else if (_clients is null || _clients.Count == 0)
+    {
+        <div class="table-card">
+            <div class="empty-state" role="status">
+                <svg class="empty-state-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="32" cy="24" r="10" stroke-opacity="0.5"/>
+                    <path d="M14 54c0-8 7-14 18-14s18 6 18 14" stroke-opacity="0.5"/>
+                    <path d="M44 12l8 8M52 12l-8 8" stroke-opacity="0.35"/>
+                </svg>
+                <p class="empty-state-title">No clients found</p>
+                <p class="empty-state-desc">
                     @if (string.IsNullOrEmpty(_searchTerm))
                     {
                         <span>Get started by adding your first client.</span>
@@ -47,39 +73,64 @@
                     }
                 </p>
             </div>
-        }
-        else
-        {
-            <table class="clients-table">
+        </div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="clients-table" role="grid">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Nutritionist</th>
-                        <th>Created</th>
-                        <th>Actions</th>
+                        <th scope="col" class="col-client">Client</th>
+                        <th scope="col" class="col-phone">Phone</th>
+                        <th scope="col" class="col-nutritionist">Nutritionist</th>
+                        <th scope="col" class="col-consent">Consent</th>
+                        <th scope="col" class="col-date">Created</th>
+                        <th scope="col"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var client in _clients)
                     {
-                        <tr class="clients-table-row">
-                            <td class="clients-table-name">@client.FirstName @client.LastName</td>
-                            <td class="clients-table-email">@(client.Email ?? "—")</td>
-                            <td class="clients-table-phone">@(client.Phone ?? "—")</td>
-                            <td class="clients-table-muted">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</td>
-                            <td class="clients-table-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
-                            <td class="clients-table-actions">
-                                <a href="clients/@client.Id" class="clients-action-link">View</a>
-                                <a href="clients/@client.Id/edit" class="clients-action-link">Edit</a>
+                        <tr>
+                            <td>
+                                <div class="client-identity">
+                                    <div class="client-avatar" aria-hidden="true">@GetInitials(client)</div>
+                                    <div class="client-info">
+                                        <div class="client-name">@client.FirstName @client.LastName</div>
+                                        <div class="client-email">@(client.Email ?? "—")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="col-phone cell-phone">@(client.Phone ?? "—")</td>
+                            <td class="col-nutritionist cell-nutritionist">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</td>
+                            <td class="col-consent cell-consent">
+                                @if (client.ConsentGiven)
+                                {
+                                    <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Given</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> Pending</Badge>
+                                }
+                            </td>
+                            <td class="col-date cell-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a href="clients/@client.Id" class="btn-icon" aria-label="View @client.FirstName @client.LastName">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
+                                    </a>
+                                    <a href="clients/@client.Id/edit" class="btn-icon" aria-label="Edit @client.FirstName @client.LastName">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
-        }
-    </Card>
+        </div>
+    }
 </div>
 
 @code {
@@ -100,9 +151,9 @@
         _isLoading = false;
     }
 
-    private void OnSearchChanged(string value)
+    private void OnSearchInput(ChangeEventArgs e)
     {
-        _searchTerm = value;
+        _searchTerm = e.Value?.ToString();
         _debounceTimer?.Dispose();
         _debounceTimer = new System.Threading.Timer(async _ =>
         {
@@ -112,6 +163,13 @@
                 StateHasChanged();
             });
         }, null, 300, Timeout.Infinite);
+    }
+
+    private static string GetInitials(ClientDto client)
+    {
+        var first = client.FirstName.Length > 0 ? client.FirstName[0] : '?';
+        var last = client.LastName.Length > 0 ? client.LastName[0] : '?';
+        return $"{char.ToUpper(first)}{char.ToUpper(last)}";
     }
 
     private void NavigateToCreate()
