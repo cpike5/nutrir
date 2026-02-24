@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutrir — New Appointment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design System Tokens (dark theme for prototype) ── */
+    :root {
+      --color-bg:           #0f1117;
+      --color-bg-alt:       #1a1c24;
+      --color-bg-card:      #161821;
+      --color-bg-footer:    #12141b;
+      --color-bg-input:     #1a1c24;
+      --color-text:         #e2e0e6;
+      --color-text-muted:   #8a8494;
+      --color-border:       rgba(255, 255, 255, 0.08);
+      --color-border-input: rgba(255, 255, 255, 0.12);
+      --color-border-focus: #c97b92;
+      --color-primary:      #c97b92;
+      --color-primary-muted: rgba(201, 123, 146, 0.15);
+      --color-primary-hover: #b56a82;
+      --color-secondary:    #7d6d7a;
+      --color-accent:       #a59e9d;
+      --color-error:        #c76b6b;
+      --color-success:      #5a9e6b;
+      --color-warning:      #c4882f;
+      --color-info:         #7a8fa0;
+
+      --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Outfit', var(--font-sans);
+
+      --text-xs:   0.75rem;
+      --text-sm:   0.875rem;
+      --text-base: 1rem;
+      --text-lg:   1.125rem;
+      --text-2xl:  1.5rem;
+
+      --leading-tight:  1.25;
+      --leading-normal: 1.5;
+      --tracking-wider: 0.05em;
+
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-16: 4rem;
+
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+      --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    /* ── Reset ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: var(--leading-normal);
+      color: var(--color-text);
+      background: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Page Container ───────────────────────────────────── */
+    .form-page {
+      max-width: 720px;
+      padding: var(--space-8);
+    }
+
+    /* ── Page Header ──────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: all var(--duration-fast) var(--ease-default);
+      flex-shrink: 0;
+    }
+
+    .back-link:hover {
+      background: var(--color-primary-muted);
+      color: var(--color-primary);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    /* ── Table Card (form wrapper) ─────────────────────────── */
+    .table-card {
+      background: var(--color-bg-card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+
+    /* ── Section Header ───────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-bg-alt);
+      border-bottom: 1px solid var(--color-border);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wider);
+      color: var(--color-text-muted);
+    }
+
+    .section-header svg {
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    /* ── Form Body ────────────────────────────────────────── */
+    .form-body {
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .form-body + .section-header {
+      border-top: 1px solid var(--color-border);
+    }
+
+    /* ── Form Grid ────────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    /* ── Form Group ───────────────────────────────────────── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .form-label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .form-input,
+    .form-select {
+      padding: var(--space-3) var(--space-4);
+      font-family: var(--font-sans);
+      font-size: var(--text-sm);
+      line-height: var(--leading-normal);
+      color: var(--color-text);
+      background: var(--color-bg-input);
+      border: 1px solid var(--color-border-input);
+      border-radius: var(--radius-md);
+      transition: border-color var(--duration-fast) var(--ease-default),
+                  box-shadow var(--duration-fast) var(--ease-default);
+    }
+
+    .form-input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 3px var(--color-primary-muted);
+    }
+
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      padding-right: var(--space-10);
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8494' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right var(--space-3) center;
+    }
+
+    .form-select option {
+      background: var(--color-bg-card);
+      color: var(--color-text);
+    }
+
+    /* Date input color scheme for dark theme */
+    .form-input[type="date"]::-webkit-calendar-picker-indicator,
+    .form-input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-error {
+      font-size: var(--text-xs);
+      color: var(--color-error);
+    }
+
+    .form-hint {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    /* ── Error Message ────────────────────────────────────── */
+    .error-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(199, 107, 107, 0.1);
+      border: 1px solid rgba(199, 107, 107, 0.3);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-error);
+    }
+
+    .error-banner svg {
+      flex-shrink: 0;
+    }
+
+    /* ── Form Actions ─────────────────────────────────────── */
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-6);
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg-alt);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-5);
+      font-family: var(--font-sans);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: #fff;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-default);
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .cancel-link {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color var(--duration-fast) var(--ease-default);
+    }
+
+    .cancel-link:hover {
+      color: var(--color-text);
+      text-decoration: underline;
+    }
+
+    /* ── Section Fade-In Animation ─────────────────────────── */
+    @keyframes sectionFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .table-card {
+      animation: sectionFadeIn 0.3s var(--ease-default) backwards;
+      animation-delay: 0.05s;
+    }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .form-page {
+        padding: var(--space-4);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        padding: var(--space-3) var(--space-4);
+      }
+
+      .form-body {
+        padding: var(--space-4);
+      }
+
+      .form-actions {
+        padding: var(--space-4);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="form-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <a href="#" class="back-link" aria-label="Back to appointments">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5l-5 5 5 5"/>
+      </svg>
+    </a>
+    <h1 class="page-title">New Appointment</h1>
+  </div>
+
+  <!-- Form Card -->
+  <div class="table-card">
+    <form>
+      <!-- Section: Client & Type -->
+      <div class="section-header">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="5" r="3"/>
+          <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+        </svg>
+        Client
+      </div>
+      <div class="form-body">
+        <div class="form-group">
+          <label for="clientId" class="form-label">Client</label>
+          <select id="clientId" class="form-select">
+            <option value="">Select a client...</option>
+            <option value="1">Sophie Laurent</option>
+            <option value="2">Marc Rousseau</option>
+            <option value="3">Anya Benoit</option>
+            <option value="4">David Tremblay</option>
+            <option value="5">Julie Gagnon</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="type" class="form-label">Appointment Type</label>
+          <select id="type" class="form-select">
+            <option value="InitialConsultation">Initial Consultation</option>
+            <option value="FollowUp" selected>Follow-Up</option>
+            <option value="CheckIn">Check-In</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section: Schedule -->
+      <div class="section-header">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+          <path d="M5 1v3M11 1v3M2 6.5h12"/>
+        </svg>
+        Schedule
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" id="date" class="form-input" value="2026-02-24" />
+          </div>
+          <div class="form-group">
+            <label for="time" class="form-label">Time</label>
+            <input type="time" id="time" class="form-input" value="09:00" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="duration" class="form-label">Duration</label>
+          <select id="duration" class="form-select">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+            <option value="75">75 minutes</option>
+            <option value="90">90 minutes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section: Location -->
+      <div class="section-header">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
+          <circle cx="8" cy="6" r="1.5"/>
+        </svg>
+        Location
+      </div>
+      <div class="form-body">
+        <div class="form-group">
+          <label for="location" class="form-label">Location</label>
+          <select id="location" class="form-select" onchange="toggleLocationFields(this.value)">
+            <option value="InPerson" selected>In-Person</option>
+            <option value="Virtual">Virtual</option>
+            <option value="Phone">Phone</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="locationNotesGroup">
+          <label for="locationNotes" class="form-label">Location Notes</label>
+          <input type="text" id="locationNotes" class="form-input" placeholder="Address or room number..." />
+        </div>
+
+        <div class="form-group" id="virtualUrlGroup" style="display: none;">
+          <label for="virtualUrl" class="form-label">Virtual Meeting URL</label>
+          <input type="url" id="virtualUrl" class="form-input" placeholder="https://meet.example.com/..." />
+        </div>
+      </div>
+
+      <!-- Section: Notes -->
+      <div class="section-header">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/>
+          <path d="M5 6h6M5 9h4"/>
+        </svg>
+        Notes
+      </div>
+      <div class="form-body">
+        <div class="form-group">
+          <label for="notes" class="form-label">Appointment Notes</label>
+          <textarea id="notes" class="form-input" rows="3" placeholder="Appointment notes..."></textarea>
+          <span class="form-hint">Optional. Visible to all practitioners.</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+            <path d="M5 1v3M11 1v3M2 6.5h12"/>
+            <path d="M8 9v4M6 11h4"/>
+          </svg>
+          Create Appointment
+        </button>
+        <a href="#" class="cancel-link">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleLocationFields(value) {
+    document.getElementById('locationNotesGroup').style.display = value === 'InPerson' ? '' : 'none';
+    document.getElementById('virtualUrlGroup').style.display = value === 'Virtual' ? '' : 'none';
+  }
+</script>
+
+</body>
+</html>

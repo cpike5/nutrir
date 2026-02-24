@@ -15,16 +15,29 @@
 
 <PageTitle>New Appointment — Nutrir</PageTitle>
 
-<div class="client-form-page">
-    <div class="client-form-header">
-        <h1 class="client-form-title">New Appointment</h1>
+<div class="form-page">
+    <div class="page-header">
+        <a href="/appointments" class="back-link" aria-label="Back to appointments">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5l-5 5 5 5"/>
+            </svg>
+        </a>
+        <h1 class="page-title">New Appointment</h1>
     </div>
 
-    <Card>
-        <div class="client-form-body">
-            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateAppointment">
-                <DataAnnotationsValidator />
+    <div class="table-card">
+        <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateAppointment">
+            <DataAnnotationsValidator />
 
+            <!-- Section: Client -->
+            <div class="section-header">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="8" cy="5" r="3"/>
+                    <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+                </svg>
+                Client
+            </div>
+            <div class="form-body">
                 <FormGroup Label="Client" Id="clientId" Error="@GetFieldError(nameof(_model.ClientId))">
                     <FormSelect Id="clientId"
                                 Value="@_model.ClientId"
@@ -37,7 +50,7 @@
                     </FormSelect>
                 </FormGroup>
 
-                <FormGroup Label="Type" Id="type">
+                <FormGroup Label="Appointment Type" Id="type">
                     <FormSelect Id="type"
                                 Value="@_model.Type"
                                 ValueChanged="@(v => _model.Type = v)">
@@ -46,8 +59,18 @@
                         <option value="CheckIn">Check-In</option>
                     </FormSelect>
                 </FormGroup>
+            </div>
 
-                <div class="client-form-grid">
+            <!-- Section: Schedule -->
+            <div class="section-header">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                    <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                </svg>
+                Schedule
+            </div>
+            <div class="form-body">
+                <div class="form-grid">
                     <FormGroup Label="Date" Id="date" Error="@GetFieldError(nameof(_model.Date))">
                         <FormInput Id="date" Type="date"
                                    Value="@_model.Date"
@@ -61,40 +84,38 @@
                     </FormGroup>
                 </div>
 
-                <div class="client-form-grid">
-                    <FormGroup Label="Duration" Id="duration">
-                        <FormSelect Id="duration"
-                                    Value="@_model.Duration"
-                                    ValueChanged="@(v => _model.Duration = v)">
-                            <option value="15">15 minutes</option>
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60">60 minutes</option>
-                            <option value="75">75 minutes</option>
-                            <option value="90">90 minutes</option>
-                        </FormSelect>
-                    </FormGroup>
+                <FormGroup Label="Duration" Id="duration">
+                    <FormSelect Id="duration"
+                                Value="@_model.Duration"
+                                ValueChanged="@(v => _model.Duration = v)">
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">60 minutes</option>
+                        <option value="75">75 minutes</option>
+                        <option value="90">90 minutes</option>
+                    </FormSelect>
+                </FormGroup>
+            </div>
 
-                    <FormGroup Label="Location" Id="location">
-                        <FormSelect Id="location"
-                                    Value="@_model.Location"
-                                    ValueChanged="OnLocationChanged">
-                            <option value="InPerson">In-Person</option>
-                            <option value="Virtual">Virtual</option>
-                            <option value="Phone">Phone</option>
-                        </FormSelect>
-                    </FormGroup>
-                </div>
-
-                @if (_model.Location == "Virtual")
-                {
-                    <FormGroup Label="Virtual Meeting URL" Id="virtualUrl">
-                        <FormInput Id="virtualUrl" Type="url"
-                                   Value="@_model.VirtualMeetingUrl"
-                                   ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
-                                   Placeholder="https://meet.example.com/..." />
-                    </FormGroup>
-                }
+            <!-- Section: Location -->
+            <div class="section-header">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
+                    <circle cx="8" cy="6" r="1.5"/>
+                </svg>
+                Location
+            </div>
+            <div class="form-body">
+                <FormGroup Label="Location" Id="location">
+                    <FormSelect Id="location"
+                                Value="@_model.Location"
+                                ValueChanged="OnLocationChanged">
+                        <option value="InPerson">In-Person</option>
+                        <option value="Virtual">Virtual</option>
+                        <option value="Phone">Phone</option>
+                    </FormSelect>
+                </FormGroup>
 
                 @if (_model.Location == "InPerson")
                 {
@@ -106,35 +127,67 @@
                     </FormGroup>
                 }
 
-                <FormGroup Label="Notes" Id="notes">
+                @if (_model.Location == "Virtual")
+                {
+                    <FormGroup Label="Virtual Meeting URL" Id="virtualUrl">
+                        <FormInput Id="virtualUrl" Type="url"
+                                   Value="@_model.VirtualMeetingUrl"
+                                   ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
+                                   Placeholder="https://meet.example.com/..." />
+                    </FormGroup>
+                }
+            </div>
+
+            <!-- Section: Notes -->
+            <div class="section-header">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/>
+                    <path d="M5 6h6M5 9h4"/>
+                </svg>
+                Notes
+            </div>
+            <div class="form-body">
+                <FormGroup Label="Appointment Notes" Id="notes">
                     <textarea id="notes"
                               class="form-input"
                               rows="3"
                               @bind="_model.Notes"
                               placeholder="Appointment notes..."></textarea>
                 </FormGroup>
+            </div>
 
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <p class="client-form-error">@_errorMessage</p>
-                }
-
-                <div class="client-form-actions">
-                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
-                        @if (_isSubmitting)
-                        {
-                            <span>Creating...</span>
-                        }
-                        else
-                        {
-                            <span>Create Appointment</span>
-                        }
-                    </Button>
-                    <a href="/appointments" class="client-form-cancel-link">Cancel</a>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="error-banner">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 1l7 13H1L8 1Z"/>
+                        <path d="M8 6v3M8 11.5v.5"/>
+                    </svg>
+                    @_errorMessage
                 </div>
-            </EditForm>
-        </div>
-    </Card>
+            }
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                            <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                            <path d="M8 9v4M6 11h4"/>
+                        </svg>
+                        <span>Create Appointment</span>
+                    }
+                </Button>
+                <a href="/appointments" class="cancel-link">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
 </div>
 
 @code {
