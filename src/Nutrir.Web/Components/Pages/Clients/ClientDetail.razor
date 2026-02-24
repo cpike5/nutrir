@@ -21,7 +21,7 @@
     }
     else if (_client is null)
     {
-        <Card>
+        <div class="table-card">
             <div class="client-detail-not-found">
                 <p class="client-detail-not-found-title">Client not found</p>
                 <p class="client-detail-not-found-desc">The client you are looking for does not exist or has been removed.</p>
@@ -29,180 +29,233 @@
                     <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Clients</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else
     {
-        <div class="client-detail-header">
-            <h1 class="client-detail-title">@_client.FirstName @_client.LastName</h1>
+        @* ── Hero Header ─────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="hero">
+                <div class="hero-identity">
+                    <div class="hero-avatar" aria-hidden="true">@GetInitials(_client)</div>
+                    <div class="hero-info">
+                        <h1 class="hero-name">@_client.FirstName @_client.LastName</h1>
+                        <div class="hero-contact-rows">
+                            <div class="hero-contact-row">
+                                @if (!string.IsNullOrEmpty(_client.Email))
+                                {
+                                    <span class="contact-item">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><path d="M1.5 4.5 8 9l6.5-4.5"/></svg>
+                                        @_client.Email
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(_client.Phone))
+                                {
+                                    <span class="contact-item">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 1.5h3l1.5 4-2 1.5a9 9 0 0 0 4 4l1.5-2 4 1.5v3c0 .6-.4 1-1 1C6.5 14.5 1.5 9.5 1.5 3c0-.6.4-1 1-1Z"/></svg>
+                                        @_client.Phone
+                                    </span>
+                                }
+                            </div>
+                            <div class="hero-contact-row">
+                                @if (_client.DateOfBirth.HasValue)
+                                {
+                                    <span class="contact-item">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
+                                        @_client.DateOfBirth.Value.ToString("MMMM d, yyyy")
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(_client.PrimaryNutritionistName) || !string.IsNullOrEmpty(_client.PrimaryNutritionistId))
+                                {
+                                    <span class="contact-item">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4"/></svg>
+                                        @(_client.PrimaryNutritionistName ?? _client.PrimaryNutritionistId)
+                                    </span>
+                                }
+                            </div>
+                            <div class="hero-consent-row">
+                                @if (_client.ConsentGiven)
+                                {
+                                    <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Consent Given</Badge>
+                                    @if (_client.ConsentTimestamp.HasValue || !string.IsNullOrEmpty(_client.ConsentPolicyVersion))
+                                    {
+                                        <span class="consent-meta">
+                                            @if (_client.ConsentTimestamp.HasValue)
+                                            {
+                                                @_client.ConsentTimestamp.Value.ToString("MMM d, yyyy")
+                                            }
+                                            @if (!string.IsNullOrEmpty(_client.ConsentPolicyVersion))
+                                            {
+                                                <span> · Policy v@(_client.ConsentPolicyVersion)</span>
+                                            }
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> No Consent</Badge>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                        Edit
+                    </Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = true)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+                        Delete
+                    </Button>
+                    <a href="/clients" class="hero-back-link">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+                        Back
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <Card>
-            <div class="client-detail-grid">
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Email</span>
-                    <span class="client-detail-value">@(_client.Email ?? "Not provided")</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Phone</span>
-                    <span class="client-detail-value">@(_client.Phone ?? "Not provided")</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Date of Birth</span>
-                    <span class="client-detail-value">@(_client.DateOfBirth?.ToString("MMMM d, yyyy") ?? "Not provided")</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Primary Nutritionist</span>
-                    <span class="client-detail-value">@(_client.PrimaryNutritionistName ?? _client.PrimaryNutritionistId)</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Consent</span>
-                    <span class="client-detail-value">
-                        @if (_client.ConsentGiven)
+        @* ── Delete Confirmation ─────────────────────────── *@
+        @if (_showDeleteConfirm)
+        {
+            <div class="table-card delete-card section-animate">
+                <div class="delete-confirm">
+                    <div class="delete-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 1.5 17h17Z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+                    </div>
+                    <div class="delete-content">
+                        <p class="delete-title">Confirm Deletion</p>
+                        <p class="delete-desc">
+                            Are you sure you want to delete <strong>@_client.FirstName @_client.LastName</strong>?
+                            This action will soft-delete the client record.
+                        </p>
+                        @if (!string.IsNullOrEmpty(_errorMessage))
                         {
-                            <Badge Variant="BadgeVariant.Success">Consent Given</Badge>
-                            @if (_client.ConsentTimestamp.HasValue)
-                            {
-                                <span class="client-detail-consent-meta">
-                                    @_client.ConsentTimestamp.Value.ToString("MMM d, yyyy h:mm tt") UTC
-                                </span>
-                            }
-                            @if (!string.IsNullOrEmpty(_client.ConsentPolicyVersion))
-                            {
-                                <span class="client-detail-consent-meta">
-                                    Policy v@(_client.ConsentPolicyVersion)
-                                </span>
-                            }
+                            <p class="delete-error">@_errorMessage</p>
                         }
-                        else
-                        {
-                            <Badge Variant="BadgeVariant.Warning">No Consent</Badge>
-                        }
-                    </span>
+                        <div class="delete-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmDelete" Disabled="@_isDeleting">
+                                @if (_isDeleting)
+                                {
+                                    <span>Deleting...</span>
+                                }
+                                else
+                                {
+                                    <span>Yes, Delete</span>
+                                }
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = false)">Cancel</Button>
+                        </div>
+                    </div>
                 </div>
             </div>
+        }
 
-            @if (!string.IsNullOrEmpty(_client.Notes))
+        @* ── Notes ───────────────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_client.Notes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 80ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_client.Notes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Upcoming Appointments ───────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 160ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Upcoming Appointments
+                    @if (_upcomingAppointments.Count > 0)
+                    {
+                        <span class="section-count">(@_upcomingAppointments.Count)</span>
+                    }
+                </span>
+                <a href="/appointments/new?clientId=@Id" class="section-header-action">Schedule</a>
+            </div>
+            @if (_upcomingAppointments.Count == 0)
             {
-                <Divider />
-                <div class="client-detail-notes-section">
-                    <span class="client-detail-label">Notes</span>
-                    <pre class="client-detail-notes">@_client.Notes</pre>
+                <div class="section-empty">
+                    <p>No upcoming appointments</p>
                 </div>
             }
-
-            <Divider />
-
-            <div class="client-detail-meta">
-                <span class="client-detail-meta-item">Created: @_client.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
-                @if (_client.UpdatedAt.HasValue)
-                {
-                    <span class="client-detail-meta-item">Updated: @_client.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
-                }
-            </div>
-        </Card>
-
-        <Panel Title="Upcoming Appointments" Count="@(_upcomingAppointments.Count > 0 ? _upcomingAppointments.Count : null)">
-            <HeaderExtra>
-                <a href="/appointments/new?clientId=@Id" class="cc-panel-link">Schedule</a>
-            </HeaderExtra>
-            <ChildContent>
-                @if (_upcomingAppointments.Count == 0)
-                {
-                    <div class="cc-empty-state">
-                        <p>No upcoming appointments</p>
-                    </div>
-                }
-                else
-                {
+            else
+            {
+                <div class="section-list">
                     @foreach (var appt in _upcomingAppointments)
                     {
-                        <ScheduleListItem Time="@appt.StartTime.ToLocalTime().ToString("MMM d")"
-                                          ClientName="@FormatApptType(appt.Type)"
-                                          Duration="@appt.DurationMinutes"
-                                          Type="@appt.Type"
-                                          Status="@appt.Status"
-                                          Location="@appt.Location"
-                                          Href="@($"/appointments/{appt.Id}")" />
+                        <a href="/appointments/@appt.Id" class="list-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@FormatApptType(appt.Type)</span>
+                                <span class="list-row-meta">
+                                    @appt.StartTime.ToLocalTime().ToString("MMM d, yyyy") · @appt.DurationMinutes min
+                                    <span> · @appt.Location</span>
+                                </span>
+                            </div>
+                            <Badge Variant="@GetApptStatusVariant(appt.Status)">@appt.Status</Badge>
+                        </a>
                     }
-                }
-            </ChildContent>
-        </Panel>
+                </div>
+            }
+        </div>
 
-        <Panel Title="Meal Plans" Count="@(_clientMealPlans.Count > 0 ? _clientMealPlans.Count : null)">
-            <HeaderExtra>
-                <a href="/meal-plans/new?clientId=@Id" class="cc-panel-link">Create</a>
-            </HeaderExtra>
-            <ChildContent>
-                @if (_clientMealPlans.Count == 0)
-                {
-                    <div class="cc-empty-state">
-                        <p>No meal plans</p>
-                    </div>
-                }
-                else
-                {
+        @* ── Meal Plans ──────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 240ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Meal Plans
+                    @if (_clientMealPlans.Count > 0)
+                    {
+                        <span class="section-count">(@_clientMealPlans.Count)</span>
+                    }
+                </span>
+                <a href="/meal-plans/new?clientId=@Id" class="section-header-action">Create</a>
+            </div>
+            @if (_clientMealPlans.Count == 0)
+            {
+                <div class="section-empty">
+                    <p>No meal plans</p>
+                </div>
+            }
+            else
+            {
+                <div class="section-list">
                     @foreach (var plan in _clientMealPlans)
                     {
-                        <a href="/meal-plans/@plan.Id" class="cc-list-item" style="text-decoration:none; color:inherit;">
-                            <div class="cc-list-content">
-                                <div class="cc-list-primary">@plan.Title</div>
-                                <div class="cc-list-secondary">
+                        <a href="/meal-plans/@plan.Id" class="list-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@plan.Title</span>
+                                <span class="list-row-meta">
                                     @if (plan.StartDate.HasValue)
                                     {
                                         @plan.StartDate.Value.ToString("MMM d")
                                         <span> — </span>
                                         @(plan.EndDate?.ToString("MMM d") ?? "")
                                     }
-                                </div>
+                                </span>
                             </div>
-                            <div class="cc-list-badge">
-                                <Badge Variant="@GetPlanStatusVariant(plan.Status)">@plan.Status</Badge>
-                            </div>
+                            <Badge Variant="@GetPlanStatusVariant(plan.Status)">@plan.Status</Badge>
                         </a>
                     }
-                    <a href="/meal-plans?clientId=@Id" class="cc-list-item" style="text-decoration:none; color:var(--color-primary); justify-content:center;">
+                    <a href="/meal-plans?clientId=@Id" class="list-row list-row-viewall">
                         View All
                     </a>
-                }
-            </ChildContent>
-        </Panel>
-
-        <div class="client-detail-actions">
-            <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
-            <Button Variant="ButtonVariant.Outline" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
-            <a href="/clients" class="client-detail-back-link">Back to Clients</a>
+                </div>
+            }
         </div>
 
-        @if (_showDeleteConfirm)
-        {
-            <Card>
-                <div class="client-detail-delete-confirm">
-                    <p class="client-detail-delete-title">Confirm Deletion</p>
-                    <p class="client-detail-delete-desc">
-                        Are you sure you want to delete <strong>@_client.FirstName @_client.LastName</strong>?
-                        This action will soft-delete the client record.
-                    </p>
-                    @if (!string.IsNullOrEmpty(_errorMessage))
-                    {
-                        <p class="client-detail-error">@_errorMessage</p>
-                    }
-                    <div class="client-detail-delete-actions">
-                        <Button Variant="ButtonVariant.Primary" OnClick="ConfirmDelete" Disabled="@_isDeleting">
-                            @if (_isDeleting)
-                            {
-                                <span>Deleting...</span>
-                            }
-                            else
-                            {
-                                <span>Yes, Delete</span>
-                            }
-                        </Button>
-                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = false)">Cancel</Button>
-                    </div>
-                </div>
-            </Card>
-        }
+        @* ── Metadata Footer ─────────────────────────────── *@
+        <div class="meta-footer section-animate" style="animation-delay: 320ms;">
+            <span>Created: @_client.CreatedAt.ToString("MMM d, yyyy")</span>
+            @if (_client.UpdatedAt.HasValue)
+            {
+                <span> · Updated: @_client.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+            }
+        </div>
     }
 </div>
 
@@ -227,11 +280,26 @@
         _isLoading = false;
     }
 
+    private static string GetInitials(ClientDto client)
+    {
+        var first = client.FirstName.Length > 0 ? client.FirstName[0] : '?';
+        var last = client.LastName.Length > 0 ? client.LastName[0] : '?';
+        return $"{char.ToUpper(first)}{char.ToUpper(last)}";
+    }
+
     private static BadgeVariant GetPlanStatusVariant(MealPlanStatus status) => status switch
     {
         MealPlanStatus.Draft => BadgeVariant.Secondary,
         MealPlanStatus.Active => BadgeVariant.Success,
         MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
+
+    private static BadgeVariant GetApptStatusVariant(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Completed => BadgeVariant.Success,
+        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
         _ => BadgeVariant.Primary
     };
 
