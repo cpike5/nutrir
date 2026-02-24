@@ -1,0 +1,168 @@
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@inject IProgressService ProgressService
+
+<div class="modal-backdrop" @onclick="Cancel">
+    <div class="modal-dialog" @onclick:stopPropagation>
+        <div class="modal-header">
+            <h2 class="modal-title">New Goal</h2>
+            <button class="modal-close" @onclick="Cancel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+
+        <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateGoal">
+            <DataAnnotationsValidator />
+
+            <div class="modal-body">
+                <FormGroup Label="Title" Id="goalTitle">
+                    <FormInput Id="goalTitle"
+                               Value="@_model.Title"
+                               ValueChanged="@(v => _model.Title = v)"
+                               Placeholder="e.g. Reach 75 kg" />
+                </FormGroup>
+
+                <FormGroup Label="Goal Type" Id="goalType">
+                    <FormSelect Id="goalType"
+                                Value="@_model.GoalType"
+                                ValueChanged="@(v => _model.GoalType = v)">
+                        @foreach (GoalType gt in Enum.GetValues<GoalType>())
+                        {
+                            <option value="@gt">@FormatGoalType(gt)</option>
+                        }
+                    </FormSelect>
+                </FormGroup>
+
+                <div class="form-grid">
+                    <FormGroup Label="Target Value" Id="targetValue">
+                        <FormInput Id="targetValue" Type="number"
+                                   Value="@_model.TargetValue"
+                                   ValueChanged="@(v => _model.TargetValue = v)"
+                                   Placeholder="e.g. 75" />
+                    </FormGroup>
+                    <FormGroup Label="Unit" Id="targetUnit">
+                        <FormInput Id="targetUnit"
+                                   Value="@_model.TargetUnit"
+                                   ValueChanged="@(v => _model.TargetUnit = v)"
+                                   Placeholder="e.g. kg, %" />
+                    </FormGroup>
+                </div>
+
+                <FormGroup Label="Target Date" Id="targetDate">
+                    <FormInput Id="targetDate" Type="date"
+                               Value="@_model.TargetDate"
+                               ValueChanged="@(v => _model.TargetDate = v)" />
+                </FormGroup>
+
+                <FormGroup Label="Description" Id="goalDesc">
+                    <textarea id="goalDesc"
+                              class="form-input"
+                              rows="2"
+                              @bind="_model.Description"
+                              placeholder="Additional context..."></textarea>
+                </FormGroup>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <p class="modal-error">@_errorMessage</p>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                    @(_isSubmitting ? "Saving..." : "Create Goal")
+                </Button>
+                <button type="button" class="cancel-link" @onclick="Cancel">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancelled { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private GoalFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_model.Title))
+            {
+                _errorMessage = "Title is required.";
+                return;
+            }
+
+            if (!Enum.TryParse<GoalType>(_model.GoalType, out var goalType))
+                goalType = GoalType.Weight;
+
+            decimal? targetValue = null;
+            if (!string.IsNullOrEmpty(_model.TargetValue) && decimal.TryParse(_model.TargetValue, out var tv))
+                targetValue = tv;
+
+            DateOnly? targetDate = null;
+            if (!string.IsNullOrEmpty(_model.TargetDate) && DateOnly.TryParse(_model.TargetDate, out var td))
+                targetDate = td;
+
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var dto = new CreateProgressGoalDto(
+                ClientId,
+                _model.Title!,
+                string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                goalType,
+                targetValue,
+                string.IsNullOrWhiteSpace(_model.TargetUnit) ? null : _model.TargetUnit,
+                targetDate);
+
+            await ProgressService.CreateGoalAsync(dto, userId);
+            await OnSaved.InvokeAsync();
+        }
+        catch
+        {
+            _errorMessage = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancelled.InvokeAsync();
+    }
+
+    private static string FormatGoalType(GoalType type) => type switch
+    {
+        GoalType.Weight => "Weight",
+        GoalType.BodyComposition => "Body Composition",
+        GoalType.Dietary => "Dietary",
+        GoalType.Custom => "Custom",
+        _ => type.ToString()
+    };
+
+    private class GoalFormModel
+    {
+        public string? Title { get; set; }
+        public string GoalType { get; set; } = "Weight";
+        public string? TargetValue { get; set; }
+        public string? TargetUnit { get; set; }
+        public string? TargetDate { get; set; }
+        public string? Description { get; set; }
+    }
+}

@@ -1,0 +1,178 @@
+@page "/progress/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IProgressService ProgressService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Progress Entry — Nutrir</PageTitle>
+
+<div class="detail-page">
+    @if (_isLoading)
+    {
+        <p class="detail-loading">Loading entry...</p>
+    }
+    else if (_entry is null)
+    {
+        <div class="table-card">
+            <div class="empty-state">
+                <p class="empty-state-title">Entry not found</p>
+                <p class="empty-state-desc">The progress entry does not exist or has been removed.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <Breadcrumb Items="@(new[] {
+            new BreadcrumbItem("Clients", "/clients"),
+            new BreadcrumbItem($"{_entry.ClientFirstName} {_entry.ClientLastName}", $"/clients/{_entry.ClientId}"),
+            new BreadcrumbItem("Progress", $"/clients/{_entry.ClientId}/progress"),
+            new BreadcrumbItem(_entry.EntryDate.ToString("MMM d, yyyy")) })" />
+
+        <div class="page-header">
+            <div class="page-header-left">
+                <a href="/clients/@_entry.ClientId/progress" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </a>
+                <div>
+                    <h1 class="page-title">@_entry.EntryDate.ToString("MMMM d, yyyy")</h1>
+                    <p class="page-subtitle">@_entry.ClientFirstName @_entry.ClientLastName · @(_entry.CreatedByName ?? "Unknown")</p>
+                </div>
+            </div>
+            <div class="page-actions">
+                <a href="/progress/@Id/edit" class="btn-edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    Edit
+                </a>
+                <button class="btn-delete" @onclick="@(() => _showDeleteConfirm = true)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    Delete
+                </button>
+            </div>
+        </div>
+
+        @if (_showDeleteConfirm)
+        {
+            <div class="table-card delete-card section-animate">
+                <div class="delete-confirm">
+                    <div class="delete-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2 1.5 17h17Z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+                    </div>
+                    <div class="delete-content">
+                        <p class="delete-title">Confirm Deletion</p>
+                        <p class="delete-desc">Are you sure you want to delete this progress entry from @_entry.EntryDate.ToString("MMM d, yyyy")?</p>
+                        <div class="delete-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmDelete" Disabled="@_isDeleting">
+                                @(_isDeleting ? "Deleting..." : "Yes, Delete")
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = false)">Cancel</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Measurements ──────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Measurements
+                    <span class="section-count">(@_entry.Measurements.Count)</span>
+                </span>
+            </div>
+            @if (_entry.Measurements.Count == 0)
+            {
+                <div class="section-empty">
+                    <p>No measurements recorded</p>
+                </div>
+            }
+            else
+            {
+                <div class="measurements-grid">
+                    @foreach (var m in _entry.Measurements)
+                    {
+                        <div class="measurement-card">
+                            <span class="measurement-label">@FormatMetricLabel(m.MetricType, m.CustomMetricName)</span>
+                            <span class="measurement-value">@m.Value <span class="measurement-unit">@m.Unit</span></span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ── Notes ──────────────────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_entry.Notes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 80ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_entry.Notes</pre>
+                </div>
+            </div>
+        }
+
+        <div class="meta-footer section-animate" style="animation-delay: 160ms;">
+            <span>Created: @_entry.CreatedAt.ToString("MMM d, yyyy")</span>
+            @if (_entry.UpdatedAt.HasValue)
+            {
+                <span> · Updated: @_entry.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ProgressEntryDetailDto? _entry;
+    private bool _isLoading = true;
+    private bool _showDeleteConfirm;
+    private bool _isDeleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entry = await ProgressService.GetEntryByIdAsync(Id);
+        _isLoading = false;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        _isDeleting = true;
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+            var success = await ProgressService.SoftDeleteEntryAsync(Id, userId);
+            if (success && _entry is not null)
+            {
+                NavigationManager.NavigateTo($"/clients/{_entry.ClientId}/progress");
+            }
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+
+    private static string FormatMetricLabel(MetricType type, string? customName) => type switch
+    {
+        MetricType.Custom => customName ?? "Custom",
+        MetricType.Weight => "Weight",
+        MetricType.BodyFatPercentage => "Body Fat %",
+        MetricType.WaistCircumference => "Waist",
+        MetricType.HipCircumference => "Hip",
+        MetricType.BMI => "BMI",
+        MetricType.BloodPressureSystolic => "BP Systolic",
+        MetricType.BloodPressureDiastolic => "BP Diastolic",
+        MetricType.RestingHeartRate => "Resting HR",
+        _ => type.ToString()
+    };
+}

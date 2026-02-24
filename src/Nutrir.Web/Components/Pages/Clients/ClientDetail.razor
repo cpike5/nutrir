@@ -10,6 +10,7 @@
 @inject IClientService ClientService
 @inject IAppointmentService AppointmentService
 @inject IMealPlanService MealPlanService
+@inject IProgressService ProgressService
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
@@ -246,8 +247,51 @@
             }
         </div>
 
+        @* ── Progress ───────────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 320ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Progress
+                    @if (_recentProgress.Count > 0)
+                    {
+                        <span class="section-count">(@_recentProgress.Count)</span>
+                    }
+                </span>
+                <a href="/clients/@Id/progress/create" class="section-header-action">New Entry</a>
+            </div>
+            @if (_recentProgress.Count == 0)
+            {
+                <div class="section-empty">
+                    <p>No progress entries</p>
+                </div>
+            }
+            else
+            {
+                <div class="section-list">
+                    @foreach (var entry in _recentProgress)
+                    {
+                        <a href="/progress/@entry.Id" class="list-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@entry.EntryDate.ToString("MMM d, yyyy")</span>
+                                <span class="list-row-meta">
+                                    @entry.MeasurementCount measurement@(entry.MeasurementCount != 1 ? "s" : "")
+                                    @if (!string.IsNullOrEmpty(entry.NotePreview))
+                                    {
+                                        <span> · @entry.NotePreview</span>
+                                    }
+                                </span>
+                            </div>
+                        </a>
+                    }
+                    <a href="/clients/@Id/progress" class="list-row list-row-viewall">
+                        View All
+                    </a>
+                </div>
+            }
+        </div>
+
         @* ── Metadata Footer ─────────────────────────────── *@
-        <div class="meta-footer section-animate" style="animation-delay: 320ms;">
+        <div class="meta-footer section-animate" style="animation-delay: 400ms;">
             <span>Created: @_client.CreatedAt.ToString("MMM d, yyyy")</span>
             @if (_client.UpdatedAt.HasValue)
             {
@@ -265,6 +309,7 @@
     private ClientDto? _client;
     private List<AppointmentDto> _upcomingAppointments = [];
     private List<MealPlanSummaryDto> _clientMealPlans = [];
+    private List<ProgressEntrySummaryDto> _recentProgress = [];
     private bool _isLoading = true;
     private bool _showDeleteConfirm;
     private bool _isDeleting;
@@ -275,6 +320,7 @@
         _client = await ClientService.GetByIdAsync(Id);
         _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
         _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
+        _recentProgress = await ProgressService.GetRecentByClientAsync(Id, 3);
         _isLoading = false;
     }
 

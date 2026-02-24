@@ -24,6 +24,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<MealItem> MealItems => Set<MealItem>();
 
+    public DbSet<ProgressGoal> ProgressGoals => Set<ProgressGoal>();
+
+    public DbSet<ProgressEntry> ProgressEntries => Set<ProgressEntry>();
+
+    public DbSet<ProgressMeasurement> ProgressMeasurements => Set<ProgressMeasurement>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -169,6 +175,62 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(i => i.CarbsG).HasPrecision(18, 2);
             entity.Property(i => i.FatG).HasPrecision(18, 2);
             entity.Property(i => i.Notes).HasColumnType("text");
+        });
+
+        builder.Entity<ProgressGoal>(entity =>
+        {
+            entity.HasQueryFilter(g => !g.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(g => g.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(g => g.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(g => g.GoalType).HasConversion<string>();
+            entity.Property(g => g.Status).HasConversion<string>();
+            entity.Property(g => g.Title).HasMaxLength(200);
+            entity.Property(g => g.Description).HasColumnType("text");
+            entity.Property(g => g.TargetValue).HasPrecision(18, 4);
+            entity.Property(g => g.TargetUnit).HasMaxLength(50);
+            entity.Property(g => g.IsDeleted).HasDefaultValue(false);
+            entity.Property(g => g.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<ProgressEntry>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(e => e.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.Notes).HasColumnType("text");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+
+            entity.HasMany(e => e.Measurements)
+                .WithOne()
+                .HasForeignKey(m => m.ProgressEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ProgressMeasurement>(entity =>
+        {
+            entity.Property(m => m.MetricType).HasConversion<string>();
+            entity.Property(m => m.CustomMetricName).HasMaxLength(100);
+            entity.Property(m => m.Value).HasPrecision(18, 4);
+            entity.Property(m => m.Unit).HasMaxLength(50);
         });
     }
 }
