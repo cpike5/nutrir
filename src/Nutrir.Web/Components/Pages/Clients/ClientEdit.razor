@@ -7,6 +7,7 @@
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject NavigationManager NavigationManager
@@ -15,36 +16,50 @@
 
 <Breadcrumb Items="@(new[] { new BreadcrumbItem("Clients", "/clients"), new BreadcrumbItem(_client?.FirstName + " " + _client?.LastName, $"/clients/{Id}"), new BreadcrumbItem("Edit") })" />
 
-<div class="client-form-page">
+<div class="form-page">
     @if (_isLoading)
     {
-        <p class="client-form-loading">Loading client...</p>
+        <p class="form-loading">Loading client...</p>
     }
     else if (_client is null)
     {
-        <Card>
-            <div class="client-form-not-found">
-                <p class="client-form-not-found-title">Client not found</p>
-                <p class="client-form-not-found-desc">The client you are trying to edit does not exist or has been removed.</p>
-                <div class="client-form-not-found-action">
+        <div class="table-card">
+            <div class="not-found">
+                <p class="not-found-title">Client not found</p>
+                <p class="not-found-desc">The client you are trying to edit does not exist or has been removed.</p>
+                <div class="not-found-action">
                     <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Clients</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else
     {
-        <div class="client-form-header">
-            <h1 class="client-form-title">Edit Client</h1>
-            <p class="client-form-subtitle">@_client.FirstName @_client.LastName</p>
+        <div class="page-header">
+            <a href="/clients/@Id" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m15 18-6-6 6-6"/>
+                </svg>
+            </a>
+            <div class="page-header-text">
+                <h1 class="page-title">Edit Client</h1>
+                <span class="page-subtitle">@_client.FirstName @_client.LastName</span>
+            </div>
         </div>
 
-        <Card>
-            <div class="client-form-body">
-                <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditClient">
-                    <DataAnnotationsValidator />
+        <div class="table-card">
+            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditClient">
+                <DataAnnotationsValidator />
 
-                    <div class="client-form-grid">
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                        <path d="M22 3.5 16.5 9 14 6.5"/>
+                    </svg>
+                    <span class="section-header-label">Client Details</span>
+                </div>
+                <div class="form-body">
+                    <div class="form-grid">
                         <FormGroup Label="First Name" Id="firstName" Error="@GetFieldError(nameof(_model.FirstName))">
                             <FormInput Id="firstName"
                                        Value="@_model.FirstName"
@@ -60,7 +75,7 @@
                         </FormGroup>
                     </div>
 
-                    <div class="client-form-grid">
+                    <div class="form-grid">
                         <FormGroup Label="Email" Id="email">
                             <FormInput Id="email"
                                        Type="email"
@@ -78,7 +93,7 @@
                         </FormGroup>
                     </div>
 
-                    <div class="client-form-grid">
+                    <div class="form-grid">
                         <FormGroup Label="Date of Birth" Id="dateOfBirth">
                             <FormInput Id="dateOfBirth"
                                        Type="date"
@@ -102,33 +117,36 @@
                                   placeholder="Additional notes about the client..."></textarea>
                     </FormGroup>
 
-                    <div class="client-form-consent">
+                    <div class="consent-row">
                         <FormCheckbox Label="Client has given consent to data collection"
                                       Value="@_model.ConsentGiven"
                                       ValueChanged="OnConsentChanged" />
                     </div>
+                </div>
 
-                    @if (!string.IsNullOrEmpty(_errorMessage))
-                    {
-                        <p class="client-form-error">@_errorMessage</p>
-                    }
-
-                    <div class="client-form-actions">
-                        <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
-                            @if (_isSubmitting)
-                            {
-                                <span>Saving...</span>
-                            }
-                            else
-                            {
-                                <span>Save Changes</span>
-                            }
-                        </Button>
-                        <a href="/clients/@Id" class="client-form-cancel-link">Cancel</a>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="error-banner">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                        @_errorMessage
                     </div>
-                </EditForm>
-            </div>
-        </Card>
+                }
+
+                <div class="form-actions">
+                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Save Changes</span>
+                        }
+                    </Button>
+                    <a href="/clients/@Id" class="cancel-link">Cancel</a>
+                </div>
+            </EditForm>
+        </div>
     }
 </div>
 

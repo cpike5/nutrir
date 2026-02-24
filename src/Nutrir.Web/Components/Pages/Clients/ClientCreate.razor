@@ -7,23 +7,37 @@
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject NavigationManager NavigationManager
 
 <PageTitle>New Client — Nutrir</PageTitle>
 
-<div class="client-form-page">
-    <div class="client-form-header">
-        <h1 class="client-form-title">New Client</h1>
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Clients", "/clients"), new BreadcrumbItem("New Client") })" />
+
+<div class="form-page">
+    <div class="page-header">
+        <a href="/clients" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <h1 class="page-title">New Client</h1>
     </div>
 
-    <Card>
-        <div class="client-form-body">
-            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateClient">
-                <DataAnnotationsValidator />
+    <div class="table-card">
+        <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateClient">
+            <DataAnnotationsValidator />
 
-                <div class="client-form-grid">
+            <div class="section-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>
+                </svg>
+                <span class="section-header-label">Client Details</span>
+            </div>
+            <div class="form-body">
+                <div class="form-grid">
                     <FormGroup Label="First Name" Id="firstName" Error="@GetFieldError(nameof(_model.FirstName))">
                         <FormInput Id="firstName"
                                    Value="@_model.FirstName"
@@ -39,7 +53,7 @@
                     </FormGroup>
                 </div>
 
-                <div class="client-form-grid">
+                <div class="form-grid">
                     <FormGroup Label="Email" Id="email">
                         <FormInput Id="email"
                                    Type="email"
@@ -57,15 +71,13 @@
                     </FormGroup>
                 </div>
 
-                <div class="client-form-grid">
+                <div class="form-grid">
                     <FormGroup Label="Date of Birth" Id="dateOfBirth">
                         <FormInput Id="dateOfBirth"
                                    Type="date"
                                    Value="@_model.DateOfBirth"
                                    ValueChanged="@(v => _model.DateOfBirth = v)" />
                     </FormGroup>
-
-                    @* PrimaryNutritionistId is auto-assigned to the current user *@
                 </div>
 
                 <FormGroup Label="Notes" Id="notes">
@@ -76,33 +88,36 @@
                               placeholder="Additional notes about the client..."></textarea>
                 </FormGroup>
 
-                <div class="client-form-consent">
+                <div class="consent-row">
                     <FormCheckbox Label="Client has given consent to data collection"
                                   Value="@_model.ConsentGiven"
                                   ValueChanged="OnConsentChanged" />
                 </div>
+            </div>
 
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <p class="client-form-error">@_errorMessage</p>
-                }
-
-                <div class="client-form-actions">
-                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
-                        @if (_isSubmitting)
-                        {
-                            <span>Creating...</span>
-                        }
-                        else
-                        {
-                            <span>Create Client</span>
-                        }
-                    </Button>
-                    <a href="/clients" class="client-form-cancel-link">Cancel</a>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="error-banner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    @_errorMessage
                 </div>
-            </EditForm>
-        </div>
-    </Card>
+            }
+
+            <div class="form-actions">
+                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <span>Create Client</span>
+                    }
+                </Button>
+                <a href="/clients" class="cancel-link">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
 </div>
 
 @code {
