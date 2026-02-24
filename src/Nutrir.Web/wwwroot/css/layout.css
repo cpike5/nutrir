@@ -165,6 +165,8 @@
   background: var(--color-bg-card);
   border-bottom: 1px solid var(--color-border);
   animation: fadeIn 300ms var(--ease-default) both;
+  position: relative;
+  z-index: 100;
 }
 
 .cc-topbar-left {
