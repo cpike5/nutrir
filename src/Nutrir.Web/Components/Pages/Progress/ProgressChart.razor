@@ -1,0 +1,76 @@
+@rendermode InteractiveServer
+@using Nutrir.Core.DTOs
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="chart-wrapper">
+    @if (ChartData is null || ChartData.Points.Count == 0)
+    {
+        <div class="chart-empty">
+            <p>No data for this metric yet</p>
+        </div>
+    }
+    else
+    {
+        <canvas id="@_canvasId"></canvas>
+    }
+</div>
+
+@code {
+    [Parameter] public ProgressChartDataDto? ChartData { get; set; }
+
+    private string _canvasId = $"progress-chart-{Guid.NewGuid():N}";
+    private bool _chartRendered;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ChartData is not null && ChartData.Points.Count > 0)
+        {
+            await RenderChart();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_chartRendered)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("progressChart.destroy", _canvasId);
+                _chartRendered = false;
+            }
+            catch (JSException) { }
+        }
+    }
+
+    private async Task RenderChart()
+    {
+        if (ChartData is null) return;
+
+        var labels = ChartData.Points.Select(p => p.Date.ToString("MMM d")).ToArray();
+        var values = ChartData.Points.Select(p => (double)p.Value).ToArray();
+        var label = ChartData.Label;
+        if (!string.IsNullOrEmpty(ChartData.Unit))
+            label += $" ({ChartData.Unit})";
+
+        try
+        {
+            await JS.InvokeVoidAsync("progressChart.create", _canvasId, labels, values, label);
+            _chartRendered = true;
+        }
+        catch (JSException) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_chartRendered)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("progressChart.destroy", _canvasId);
+            }
+            catch (JSException) { }
+        }
+    }
+}

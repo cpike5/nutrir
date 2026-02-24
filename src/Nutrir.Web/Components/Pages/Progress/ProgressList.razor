@@ -1,0 +1,288 @@
+@page "/clients/{ClientId:int}/progress"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IProgressService ProgressService
+@inject IClientService ClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Progress — @(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] {
+    new BreadcrumbItem("Clients", "/clients"),
+    new BreadcrumbItem(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client", $"/clients/{ClientId}"),
+    new BreadcrumbItem("Progress") })" />
+
+<div class="progress-page">
+    @if (_isLoading)
+    {
+        <p class="progress-loading">Loading progress...</p>
+    }
+    else if (_client is null)
+    {
+        <div class="table-card">
+            <div class="empty-state">
+                <p class="empty-state-title">Client not found</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="page-header">
+            <div class="page-header-left">
+                <a href="/clients/@ClientId" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </a>
+                <h1 class="page-title">Progress — @_client.FirstName @_client.LastName</h1>
+            </div>
+            <a href="/clients/@ClientId/progress/create" class="btn-new-entry">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                New Entry
+            </a>
+        </div>
+
+        @* ── Goals Section ──────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Goals
+                    @if (_goals.Count > 0)
+                    {
+                        <span class="section-count">(@_goals.Count)</span>
+                    }
+                </span>
+                <button class="section-header-action" @onclick="OpenGoalModal">Add Goal</button>
+            </div>
+            @if (_goals.Count == 0)
+            {
+                <div class="section-empty">
+                    <p>No goals set yet</p>
+                </div>
+            }
+            else
+            {
+                <div class="section-list">
+                    @foreach (var goal in _goals)
+                    {
+                        <div class="list-row goal-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@goal.Title</span>
+                                <span class="list-row-meta">
+                                    @FormatGoalType(goal.GoalType)
+                                    @if (goal.TargetValue.HasValue)
+                                    {
+                                        <span> · Target: @goal.TargetValue.Value @goal.TargetUnit</span>
+                                    }
+                                    @if (goal.TargetDate.HasValue)
+                                    {
+                                        <span> · By @goal.TargetDate.Value.ToString("MMM d, yyyy")</span>
+                                    }
+                                </span>
+                            </div>
+                            <div class="goal-actions">
+                                <Badge Variant="@GetGoalStatusVariant(goal.Status)">@goal.Status</Badge>
+                                @if (goal.Status == GoalStatus.Active)
+                                {
+                                    <button class="btn-icon" title="Mark Achieved" @onclick="@(() => UpdateGoalStatus(goal.Id, GoalStatus.Achieved))">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    </button>
+                                    <button class="btn-icon" title="Abandon" @onclick="@(() => UpdateGoalStatus(goal.Id, GoalStatus.Abandoned))">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    </button>
+                                }
+                                <button class="btn-icon btn-icon-danger" title="Delete" @onclick="@(() => DeleteGoal(goal.Id))">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ── Chart Section ──────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 80ms;">
+            <div class="section-header">
+                <span class="section-header-label">Trend</span>
+                <div class="chart-metric-picker">
+                    <select class="filter-select" value="@_selectedMetric" @onchange="OnMetricChanged">
+                        @foreach (MetricType mt in Enum.GetValues<MetricType>())
+                        {
+                            <option value="@mt">@FormatMetricLabel(mt)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <ProgressChart ChartData="@_chartData" />
+            </div>
+        </div>
+
+        @* ── Entries Table ──────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 160ms;">
+            <div class="section-header">
+                <span class="section-header-label">
+                    Entries
+                    @if (_entries.Count > 0)
+                    {
+                        <span class="section-count">(@_entries.Count)</span>
+                    }
+                </span>
+            </div>
+            @if (_entries.Count == 0)
+            {
+                <div class="empty-state">
+                    <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    <p class="empty-state-title">No progress entries yet</p>
+                    <p class="empty-state-desc">Create your first entry to start tracking.</p>
+                </div>
+            }
+            else
+            {
+                <table class="entries-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Measurements</th>
+                            <th>Notes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in _entries)
+                        {
+                            <tr>
+                                <td class="cell-title">
+                                    <a href="/progress/@entry.Id">@entry.EntryDate.ToString("MMM d, yyyy")</a>
+                                </td>
+                                <td class="cell-muted">@entry.MeasurementCount measurement@(entry.MeasurementCount != 1 ? "s" : "")</td>
+                                <td class="cell-muted cell-notes">@(entry.NotePreview ?? "—")</td>
+                                <td>
+                                    <div class="row-actions">
+                                        <a href="/progress/@entry.Id/edit" class="btn-icon" title="Edit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                        </a>
+                                        <button class="btn-icon btn-icon-danger" title="Delete" @onclick="@(() => DeleteEntry(entry.Id))">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        @* ── Goal Modal ─────────────────────────────────────── *@
+        @if (_showGoalModal)
+        {
+            <ProgressGoalModal ClientId="@ClientId"
+                               OnSaved="OnGoalSaved"
+                               OnCancelled="@(() => _showGoalModal = false)" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ClientDto? _client;
+    private List<ProgressEntrySummaryDto> _entries = [];
+    private List<ProgressGoalSummaryDto> _goals = [];
+    private ProgressChartDataDto? _chartData;
+    private MetricType _selectedMetric = MetricType.Weight;
+    private bool _isLoading = true;
+    private bool _showGoalModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = await ClientService.GetByIdAsync(ClientId);
+        _entries = await ProgressService.GetEntriesByClientAsync(ClientId);
+        _goals = await ProgressService.GetGoalsByClientAsync(ClientId);
+        _chartData = await ProgressService.GetChartDataAsync(ClientId, _selectedMetric);
+        _isLoading = false;
+    }
+
+    private async Task OnMetricChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<MetricType>(e.Value?.ToString(), out var mt))
+        {
+            _selectedMetric = mt;
+            _chartData = await ProgressService.GetChartDataAsync(ClientId, _selectedMetric);
+        }
+    }
+
+    private void OpenGoalModal()
+    {
+        _showGoalModal = true;
+    }
+
+    private async Task OnGoalSaved()
+    {
+        _showGoalModal = false;
+        _goals = await ProgressService.GetGoalsByClientAsync(ClientId);
+    }
+
+    private async Task UpdateGoalStatus(int goalId, GoalStatus newStatus)
+    {
+        var authState = await AuthState;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        await ProgressService.UpdateGoalStatusAsync(goalId, newStatus, userId);
+        _goals = await ProgressService.GetGoalsByClientAsync(ClientId);
+    }
+
+    private async Task DeleteGoal(int goalId)
+    {
+        var authState = await AuthState;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        await ProgressService.SoftDeleteGoalAsync(goalId, userId);
+        _goals = await ProgressService.GetGoalsByClientAsync(ClientId);
+    }
+
+    private async Task DeleteEntry(int entryId)
+    {
+        var authState = await AuthState;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        await ProgressService.SoftDeleteEntryAsync(entryId, userId);
+        _entries = await ProgressService.GetEntriesByClientAsync(ClientId);
+        _chartData = await ProgressService.GetChartDataAsync(ClientId, _selectedMetric);
+    }
+
+    private static BadgeVariant GetGoalStatusVariant(GoalStatus status) => status switch
+    {
+        GoalStatus.Active => BadgeVariant.Primary,
+        GoalStatus.Achieved => BadgeVariant.Success,
+        GoalStatus.Abandoned => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+
+    private static string FormatGoalType(GoalType type) => type switch
+    {
+        GoalType.Weight => "Weight",
+        GoalType.BodyComposition => "Body Composition",
+        GoalType.Dietary => "Dietary",
+        GoalType.Custom => "Custom",
+        _ => type.ToString()
+    };
+
+    private static string FormatMetricLabel(MetricType type) => type switch
+    {
+        MetricType.Weight => "Weight",
+        MetricType.BodyFatPercentage => "Body Fat %",
+        MetricType.WaistCircumference => "Waist",
+        MetricType.HipCircumference => "Hip",
+        MetricType.BMI => "BMI",
+        MetricType.BloodPressureSystolic => "BP Systolic",
+        MetricType.BloodPressureDiastolic => "BP Diastolic",
+        MetricType.RestingHeartRate => "Resting HR",
+        MetricType.Custom => "Custom",
+        _ => type.ToString()
+    };
+}

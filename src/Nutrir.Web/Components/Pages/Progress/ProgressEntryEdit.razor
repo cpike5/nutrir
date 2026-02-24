@@ -1,0 +1,265 @@
+@page "/progress/{Id:int}/edit"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IProgressService ProgressService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Progress Entry — Nutrir</PageTitle>
+
+<div class="form-page">
+    <div class="page-header">
+        <a href="/progress/@Id" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <h1 class="page-title">Edit Progress Entry</h1>
+    </div>
+
+    @if (_isLoading)
+    {
+        <p class="form-loading">Loading...</p>
+    }
+    else if (_entry is null)
+    {
+        <div class="table-card">
+            <div class="empty-state">
+                <p>Entry not found</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-card">
+            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditProgressEntry">
+                <DataAnnotationsValidator />
+
+                <div class="form-body">
+                    <FormGroup Label="Date" Id="entryDate">
+                        <FormInput Id="entryDate" Type="date"
+                                   Value="@_model.EntryDate"
+                                   ValueChanged="@(v => _model.EntryDate = v)" />
+                    </FormGroup>
+                </div>
+
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    Measurements
+                </div>
+                <div class="form-body">
+                    @for (var i = 0; i < _model.Measurements.Count; i++)
+                    {
+                        var idx = i;
+                        <div class="measurement-row">
+                            <div class="measurement-fields">
+                                <FormGroup Label="Metric" Id="@($"metric-{idx}")">
+                                    <FormSelect Id="@($"metric-{idx}")"
+                                                Value="@_model.Measurements[idx].MetricType"
+                                                ValueChanged="@(v => _model.Measurements[idx].MetricType = v)">
+                                        @foreach (MetricType mt in Enum.GetValues<MetricType>())
+                                        {
+                                            <option value="@mt">@FormatMetricLabel(mt)</option>
+                                        }
+                                    </FormSelect>
+                                </FormGroup>
+                                @if (_model.Measurements[idx].MetricType == MetricType.Custom.ToString())
+                                {
+                                    <FormGroup Label="Custom Name" Id="@($"custom-{idx}")">
+                                        <FormInput Id="@($"custom-{idx}")"
+                                                   Value="@_model.Measurements[idx].CustomMetricName"
+                                                   ValueChanged="@(v => _model.Measurements[idx].CustomMetricName = v)" />
+                                    </FormGroup>
+                                }
+                                <div class="form-grid">
+                                    <FormGroup Label="Value" Id="@($"value-{idx}")">
+                                        <FormInput Id="@($"value-{idx}")" Type="number"
+                                                   Value="@_model.Measurements[idx].Value"
+                                                   ValueChanged="@(v => _model.Measurements[idx].Value = v)" />
+                                    </FormGroup>
+                                    <FormGroup Label="Unit" Id="@($"unit-{idx}")">
+                                        <FormInput Id="@($"unit-{idx}")"
+                                                   Value="@_model.Measurements[idx].Unit"
+                                                   ValueChanged="@(v => _model.Measurements[idx].Unit = v)" />
+                                    </FormGroup>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-remove" @onclick="@(() => RemoveMeasurement(idx))" title="Remove">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                    }
+
+                    <button type="button" class="btn-add-measurement" @onclick="AddMeasurement">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        Add Measurement
+                    </button>
+                </div>
+
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    Notes
+                </div>
+                <div class="form-body">
+                    <FormGroup Label="Notes" Id="notes">
+                        <textarea id="notes"
+                                  class="form-input"
+                                  rows="3"
+                                  @bind="_model.Notes"
+                                  placeholder="Observations, context..."></textarea>
+                    </FormGroup>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="error-banner">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                        @_errorMessage
+                    </div>
+                }
+
+                <div class="form-actions">
+                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </Button>
+                    <a href="/progress/@Id" class="cancel-link">Cancel</a>
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ProgressEntryDetailDto? _entry;
+    private EntryFormModel _model = new();
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entry = await ProgressService.GetEntryByIdAsync(Id);
+        if (_entry is not null)
+        {
+            _model.EntryDate = _entry.EntryDate.ToString("yyyy-MM-dd");
+            _model.Notes = _entry.Notes;
+            _model.Measurements = _entry.Measurements.Select(m => new MeasurementFormModel
+            {
+                MetricType = m.MetricType.ToString(),
+                CustomMetricName = m.CustomMetricName,
+                Value = m.Value.ToString(),
+                Unit = m.Unit
+            }).ToList();
+        }
+        _isLoading = false;
+    }
+
+    private void AddMeasurement()
+    {
+        _model.Measurements.Add(new MeasurementFormModel { MetricType = MetricType.Weight.ToString() });
+    }
+
+    private void RemoveMeasurement(int index)
+    {
+        if (_model.Measurements.Count > 0)
+        {
+            _model.Measurements.RemoveAt(index);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            if (string.IsNullOrEmpty(_model.EntryDate) || !DateOnly.TryParse(_model.EntryDate, out var entryDate))
+            {
+                _errorMessage = "Please enter a valid date.";
+                return;
+            }
+
+            var measurements = new List<CreateProgressMeasurementDto>();
+            foreach (var m in _model.Measurements)
+            {
+                if (!Enum.TryParse<MetricType>(m.MetricType, out var metricType))
+                    continue;
+
+                if (string.IsNullOrEmpty(m.Value) || !decimal.TryParse(m.Value, out var value))
+                {
+                    _errorMessage = "All measurements must have a numeric value.";
+                    return;
+                }
+
+                measurements.Add(new CreateProgressMeasurementDto(
+                    metricType,
+                    metricType == MetricType.Custom ? m.CustomMetricName : null,
+                    value,
+                    string.IsNullOrWhiteSpace(m.Unit) ? null : m.Unit));
+            }
+
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var dto = new UpdateProgressEntryDto(
+                entryDate,
+                string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
+                measurements);
+
+            var success = await ProgressService.UpdateEntryAsync(Id, dto, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo($"/progress/{Id}");
+            }
+            else
+            {
+                _errorMessage = "Failed to save changes. Please try again.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while saving. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string FormatMetricLabel(MetricType type) => type switch
+    {
+        MetricType.Weight => "Weight",
+        MetricType.BodyFatPercentage => "Body Fat %",
+        MetricType.WaistCircumference => "Waist Circumference",
+        MetricType.HipCircumference => "Hip Circumference",
+        MetricType.BMI => "BMI",
+        MetricType.BloodPressureSystolic => "BP Systolic",
+        MetricType.BloodPressureDiastolic => "BP Diastolic",
+        MetricType.RestingHeartRate => "Resting Heart Rate",
+        MetricType.Custom => "Custom",
+        _ => type.ToString()
+    };
+
+    private class EntryFormModel
+    {
+        public string? EntryDate { get; set; }
+        public string? Notes { get; set; }
+        public List<MeasurementFormModel> Measurements { get; set; } = [];
+    }
+
+    private class MeasurementFormModel
+    {
+        public string MetricType { get; set; } = "Weight";
+        public string? CustomMetricName { get; set; }
+        public string? Value { get; set; }
+        public string? Unit { get; set; }
+    }
+}
