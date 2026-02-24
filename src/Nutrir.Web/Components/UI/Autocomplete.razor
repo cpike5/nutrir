@@ -1,0 +1,189 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="autocomplete-wrapper" @onfocusout="HandleFocusOut">
+    <input id="@Id"
+           type="text"
+           class="form-input"
+           value="@_searchText"
+           placeholder="@Placeholder"
+           autocomplete="off"
+           role="combobox"
+           aria-expanded="@_isOpen.ToString().ToLower()"
+           aria-autocomplete="list"
+           aria-controls="@($"{Id}-listbox")"
+           @oninput="HandleInput"
+           @onfocusin="HandleFocusIn"
+           @onkeydown="HandleKeyDown"
+           @attributes="AdditionalAttributes" />
+
+    @if (_isOpen && _filteredOptions.Count > 0)
+    {
+        <ul class="autocomplete-dropdown" id="@($"{Id}-listbox")" role="listbox" aria-label="@Placeholder">
+            @for (var i = 0; i < _filteredOptions.Count; i++)
+            {
+                var option = _filteredOptions[i];
+                var index = i;
+                var isSelected = option.Value == Value;
+                var isFocused = index == _highlightedIndex;
+                <li class="autocomplete-option @(isSelected ? "selected" : "") @(isFocused ? "focused" : "")"
+                    role="option"
+                    aria-selected="@(isSelected ? "true" : "false")"
+                    @onmousedown="() => SelectOption(option)"
+                    @onmousedown:preventDefault>
+                    @option.Text
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public IReadOnlyList<AutocompleteOption> Options { get; set; } = [];
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string? DisplayText { get; set; }
+    [Parameter] public EventCallback<string> DisplayTextChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string _searchText = string.Empty;
+    private bool _isOpen;
+    private bool _autoSelected;
+    private int _highlightedIndex = -1;
+    private List<AutocompleteOption> _filteredOptions = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Sync display text from parent when not actively searching
+        if (!_isOpen && !string.IsNullOrEmpty(DisplayText))
+        {
+            _searchText = DisplayText;
+        }
+        else if (!_isOpen && !string.IsNullOrEmpty(Value))
+        {
+            // Fall back to finding display text from options
+            var match = Options.FirstOrDefault(o => o.Value == Value);
+            if (match is not null)
+            {
+                _searchText = match.Text;
+            }
+        }
+
+        // Auto-select if only one option (once only)
+        if (Options.Count == 1 && string.IsNullOrEmpty(Value) && !_autoSelected)
+        {
+            _autoSelected = true;
+            await SelectOption(Options[0]);
+        }
+    }
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? string.Empty;
+        _isOpen = true;
+        _highlightedIndex = -1;
+        FilterOptions();
+    }
+
+    private void HandleFocusIn()
+    {
+        _isOpen = true;
+        _highlightedIndex = -1;
+        FilterOptions();
+    }
+
+    private async Task HandleFocusOut()
+    {
+        // Small delay to allow click on dropdown item to register
+        await Task.Delay(200);
+        _isOpen = false;
+        _highlightedIndex = -1;
+
+        if (string.IsNullOrEmpty(_searchText))
+        {
+            // Empty text on blur clears the selection
+            await ValueChanged.InvokeAsync(string.Empty);
+            await DisplayTextChanged.InvokeAsync(string.Empty);
+        }
+        else
+        {
+            // If the current text doesn't match a selected option, revert
+            var match = Options.FirstOrDefault(o =>
+                o.Text.Equals(_searchText, StringComparison.OrdinalIgnoreCase));
+            if (match is null && !string.IsNullOrEmpty(Value))
+            {
+                // Text was changed but doesn't match any option - revert to selected display
+                var selected = Options.FirstOrDefault(o => o.Value == Value);
+                _searchText = selected?.Text ?? string.Empty;
+            }
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!_isOpen && e.Key is "ArrowDown" or "ArrowUp")
+        {
+            _isOpen = true;
+            FilterOptions();
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (_filteredOptions.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % _filteredOptions.Count;
+                }
+                break;
+
+            case "ArrowUp":
+                if (_filteredOptions.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0
+                        ? _filteredOptions.Count - 1
+                        : _highlightedIndex - 1;
+                }
+                break;
+
+            case "Enter":
+                if (_highlightedIndex >= 0 && _highlightedIndex < _filteredOptions.Count)
+                {
+                    await SelectOption(_filteredOptions[_highlightedIndex]);
+                }
+                break;
+
+            case "Escape":
+                _isOpen = false;
+                _highlightedIndex = -1;
+                break;
+        }
+    }
+
+    private async Task SelectOption(AutocompleteOption option)
+    {
+        _searchText = option.Text;
+        _isOpen = false;
+        _highlightedIndex = -1;
+
+        await ValueChanged.InvokeAsync(option.Value);
+        await DisplayTextChanged.InvokeAsync(option.Text);
+    }
+
+    private void FilterOptions()
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _filteredOptions = Options.ToList();
+        }
+        else
+        {
+            _filteredOptions = Options
+                .Where(o => o.Text.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    public record AutocompleteOption(string Value, string Text);
+}
