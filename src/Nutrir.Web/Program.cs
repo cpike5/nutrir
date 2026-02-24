@@ -54,6 +54,22 @@ try
 
     builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
+
+    builder.Services.AddHsts(options =>
+    {
+        options.MaxAge = TimeSpan.FromDays(365);
+        options.IncludeSubDomains = true;
+        options.Preload = true;
+    });
+
     var app = builder.Build();
 
     // Apply pending migrations and seed roles/admin user on startup.
@@ -82,6 +98,7 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseMiddleware<MfaEnforcementMiddleware>();
     app.UseMiddleware<MaintenanceModeMiddleware>();
 
     app.UseStatusCodePagesWithReExecute("/error/{0}");

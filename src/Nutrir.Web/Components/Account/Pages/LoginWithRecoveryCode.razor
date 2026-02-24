@@ -5,10 +5,13 @@
 @using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
 
+@using Nutrir.Core.Interfaces
+
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWithRecoveryCode> Logger
+@inject IAuditLogService AuditLogService
 
 <PageTitle>Recovery code verification</PageTitle>
 
@@ -67,16 +70,19 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User with ID '{UserId}' logged in with a recovery code.", userId);
+            await AuditLogService.LogAsync(userId, "RecoveryCodeUsed", "Authentication", details: "Recovery code used successfully");
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User account locked out.");
+            await AuditLogService.LogAsync(userId, "RecoveryCodeFailed", "Authentication", details: "Recovery code failed - account locked out");
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
             Logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", userId);
+            await AuditLogService.LogAsync(userId, "RecoveryCodeFailed", "Authentication", details: "Invalid recovery code entered");
             message = "Error: Invalid recovery code entered.";
         }
     }

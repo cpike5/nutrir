@@ -9,6 +9,7 @@ using Microsoft.Extensions.Primitives;
 using Nutrir.Web.Components.Account.Pages;
 using Nutrir.Web.Components.Account.Pages.Manage;
 using Nutrir.Core.Entities;
+using Nutrir.Core.Interfaces;
 
 namespace Microsoft.AspNetCore.Routing;
 
@@ -43,8 +44,11 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         accountGroup.MapPost("/Logout", async (
             ClaimsPrincipal user,
             [FromServices] SignInManager<ApplicationUser> signInManager,
+            [FromServices] IAuditLogService auditLogService,
             [FromForm] string returnUrl) =>
         {
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await auditLogService.LogAsync(userId, "Logout", "Authentication", details: "User logged out");
             await signInManager.SignOutAsync();
             return TypedResults.LocalRedirect($"~/{returnUrl}");
         });

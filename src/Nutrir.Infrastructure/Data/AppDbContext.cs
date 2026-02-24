@@ -30,6 +30,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ProgressMeasurement> ProgressMeasurements => Set<ProgressMeasurement>();
 
+    public DbSet<ConsentEvent> ConsentEvents => Set<ConsentEvent>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -232,5 +234,35 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(m => m.Value).HasPrecision(18, 4);
             entity.Property(m => m.Unit).HasMaxLength(50);
         });
+
+        builder.Entity<ConsentEvent>(entity =>
+        {
+            // No soft-delete, no query filter — append-only
+            entity.HasOne<Client>()
+                .WithMany(c => c.ConsentEvents)
+                .HasForeignKey(ce => ce.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(ce => ce.EventType).HasConversion<string>();
+            entity.Property(ce => ce.ConsentPurpose).HasMaxLength(200);
+            entity.Property(ce => ce.PolicyVersion).HasMaxLength(50);
+            entity.Property(ce => ce.RecordedByUserId).HasMaxLength(450);
+            entity.Property(ce => ce.Notes).HasColumnType("text");
+            entity.Property(ce => ce.Timestamp).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries<AuditLogEntry>())
+        {
+            if (entry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                throw new InvalidOperationException(
+                    "AuditLogEntry records are immutable and cannot be modified or deleted.");
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
     }
 }

@@ -169,6 +169,7 @@ public class AppointmentService : IAppointmentService
 
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;
+        entity.DeletedBy = userId;
 
         await _dbContext.SaveChangesAsync();
 

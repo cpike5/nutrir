@@ -40,5 +40,7 @@ public class MealPlan
 
     public DateTime? DeletedAt { get; set; }
 
+    public string? DeletedBy { get; set; }
+
     public List<MealPlanDay> Days { get; set; } = [];
 }

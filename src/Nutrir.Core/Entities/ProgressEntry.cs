@@ -20,5 +20,7 @@ public class ProgressEntry
 
     public DateTime? DeletedAt { get; set; }
 
+    public string? DeletedBy { get; set; }
+
     public List<ProgressMeasurement> Measurements { get; set; } = [];
 }

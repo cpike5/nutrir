@@ -31,4 +31,8 @@ public class Client
     public DateTime? UpdatedAt { get; set; }
 
     public DateTime? DeletedAt { get; set; }
+
+    public string? DeletedBy { get; set; }
+
+    public List<ConsentEvent> ConsentEvents { get; set; } = [];
 }

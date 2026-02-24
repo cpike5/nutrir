@@ -103,7 +103,7 @@ public class MealPlanService : IMealPlanService
             "MealPlanCreated",
             "MealPlan",
             entity.Id.ToString(),
-            $"Created meal plan \"{entity.Title}\" for client {entity.ClientId}");
+            $"Created meal plan for client {entity.ClientId}");
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -138,7 +138,7 @@ public class MealPlanService : IMealPlanService
             "MealPlanUpdated",
             "MealPlan",
             id.ToString(),
-            $"Updated meal plan \"{entity.Title}\"");
+            "Updated meal plan metadata");
 
         return true;
     }
@@ -217,7 +217,7 @@ public class MealPlanService : IMealPlanService
             "MealPlanContentSaved",
             "MealPlan",
             dto.MealPlanId.ToString(),
-            $"Saved content for meal plan {dto.MealPlanId}");
+            "Saved content for meal plan");
 
         return true;
     }
@@ -326,7 +326,7 @@ public class MealPlanService : IMealPlanService
             "MealPlanDuplicated",
             "MealPlan",
             copy.Id.ToString(),
-            $"Duplicated meal plan {id} as \"{copy.Title}\"");
+            $"Duplicated meal plan from source {id}");
 
         return true;
     }
@@ -338,6 +338,7 @@ public class MealPlanService : IMealPlanService
 
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;
+        entity.DeletedBy = userId;
 
         await _dbContext.SaveChangesAsync();
 
@@ -348,7 +349,7 @@ public class MealPlanService : IMealPlanService
             "MealPlanSoftDeleted",
             "MealPlan",
             id.ToString(),
-            $"Soft-deleted meal plan \"{entity.Title}\"");
+            "Soft-deleted meal plan");
 
         return true;
     }
