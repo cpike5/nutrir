@@ -121,11 +121,13 @@ docs/
 ├── design-system/    # Component API docs, tokens, guidelines
 ├── infrastructure/   # Docker, deployment, DB, logging
 ├── compliance/       # Privacy, regulatory
+├── worklog/          # Development session notes
 └── temp/             # Drafts — move to proper folder when done
 ```
 
 - **Feature specs:** `domain/feature-name.md`
 - **Architecture decisions:** `domain/adr-NNNN-title.md`
+- **Worklog entries:** `worklog/YYYY-MM-DD-short-description.md` — post-session notes capturing changes, design decisions, and lessons learned
 - **Cross-cutting docs:** Place in the most relevant domain, link from others
 - Do NOT put docs at the `docs/` root — use the domain folders
 - Keep `docs/README.md` index updated when adding new documents
