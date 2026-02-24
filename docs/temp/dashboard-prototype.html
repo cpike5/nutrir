@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrir — Dashboard Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design Tokens (from design-system.css) ──────────────── */
+    :root {
+      --color-bg:        #f8f5f0;
+      --color-text:      #282828;
+      --color-primary:   #4a6741;
+      --color-secondary: #9a6c41;
+      --color-accent:    #b6b697;
+
+      --rgb-bg:        248, 245, 240;
+      --rgb-text:      40, 40, 40;
+      --rgb-primary:   74, 103, 65;
+      --rgb-secondary: 154, 108, 65;
+      --rgb-accent:    182, 182, 151;
+
+      --color-bg-alt:      #f1eee9;
+      --color-bg-card:     #ffffff;
+      --color-bg-elevated: #ffffff;
+      --color-bg-footer:   #ece9e4;
+      --color-bg-input:    #ffffff;
+
+      --color-text-muted:    #6b6b6b;
+      --color-text-on-primary: #ffffff;
+      --color-text-on-secondary: #ffffff;
+
+      --color-primary-hover:   #3d5736;
+      --color-primary-muted:   rgba(74, 103, 65, 0.12);
+      --color-secondary-hover: #885f39;
+      --color-secondary-muted: rgba(154, 108, 65, 0.12);
+      --color-accent-hover:    #a0a085;
+      --color-accent-muted:    rgba(182, 182, 151, 0.15);
+
+      --color-border:       rgba(0, 0, 0, 0.08);
+      --color-border-input: rgba(0, 0, 0, 0.12);
+      --color-border-focus: var(--color-primary);
+
+      --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.10);
+
+      --color-success:  #3d8b4f;
+      --color-warning:  #c4882f;
+      --color-error:    #c14a3d;
+      --color-info:     #4a7e8b;
+
+      --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Outfit', var(--font-sans);
+
+      --text-xs:   0.75rem;
+      --text-sm:   0.875rem;
+      --text-base: 1rem;
+      --text-lg:   1.125rem;
+      --text-xl:   1.25rem;
+      --text-2xl:  1.5rem;
+
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-full: 9999px;
+
+      --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration-fast:   150ms;
+      --duration-normal: 250ms;
+      --duration-slow:   400ms;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.65;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+    }
+    a { color: var(--color-primary); text-decoration: none; }
+
+    /* ── Animations ──────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Layout Shell ────────────────────────────────────────── */
+    .cc-layout {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── Icon Rail ────────────────────────────────────────────── */
+    .icon-rail {
+      background: var(--color-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-4) 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      animation: slideInLeft 400ms var(--ease-default) both;
+    }
+
+    .rail-brand {
+      width: 32px; height: 32px;
+      margin-bottom: var(--space-6);
+      color: rgba(255, 255, 255, 0.9);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .rail-nav {
+      display: flex; flex-direction: column;
+      align-items: center; gap: var(--space-1);
+      flex: 1;
+    }
+
+    .rail-item {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-lg);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-default);
+      position: relative;
+      background: none; border: none;
+    }
+    .rail-item:hover { color: rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.08); }
+    .rail-item.active { color: white; background: rgba(255, 255, 255, 0.12); }
+    .rail-item.active::after {
+      content: ''; position: absolute; left: -2px; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 18px; background: white; border-radius: 0 2px 2px 0;
+    }
+
+    .rail-sep {
+      width: 24px; height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: var(--space-2) 0;
+    }
+
+    .rail-footer {
+      margin-top: auto;
+      display: flex; flex-direction: column;
+      align-items: center; gap: var(--space-2);
+    }
+
+    .rail-avatar {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: var(--text-xs);
+      font-weight: 600; font-family: var(--font-display);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-default);
+    }
+    .rail-avatar:hover { background: rgba(255, 255, 255, 0.25); }
+
+    /* ── Main Area ────────────────────────────────────────────── */
+    .cc-main {
+      display: flex; flex-direction: column;
+      background: var(--color-bg);
+    }
+
+    /* ── Top Bar ──────────────────────────────────────────────── */
+    .cc-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      animation: fadeIn 300ms var(--ease-default) both;
+    }
+    .cc-topbar-left { display: flex; align-items: center; gap: var(--space-4); }
+    .cc-breadcrumb {
+      display: flex; align-items: center; gap: var(--space-2);
+      font-size: var(--text-sm); color: var(--color-text-muted);
+    }
+    .cc-breadcrumb strong { color: var(--color-text); font-weight: 500; }
+    .cc-breadcrumb-sep { color: var(--color-accent); font-size: var(--text-xs); }
+
+    .cc-search { position: relative; }
+    .cc-search svg {
+      position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%);
+      color: var(--color-accent); pointer-events: none;
+    }
+    .cc-search input {
+      padding: 6px var(--space-3) 6px 2rem;
+      font-family: var(--font-sans); font-size: var(--text-xs);
+      color: var(--color-text); background: var(--color-bg);
+      border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      width: 200px; transition: all var(--duration-fast) var(--ease-default);
+    }
+    .cc-search input::placeholder { color: var(--color-accent); }
+    .cc-search input:focus {
+      outline: none; border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(74, 103, 65, 0.08);
+      width: 260px;
+    }
+
+    /* ── Dashboard Body ──────────────────────────────────────── */
+    .cc-body {
+      flex: 1;
+      padding: var(--space-4) var(--space-6);
+      overflow-y: auto;
+    }
+
+    /* ── Greeting Header ─────────────────────────────────────── */
+    .dash-greeting {
+      margin-bottom: var(--space-4);
+      animation: fadeUp 400ms var(--ease-default) both;
+    }
+    .dash-greeting h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+    .dash-greeting p {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1);
+    }
+    .dash-greeting-date {
+      font-weight: 500;
+      color: var(--color-secondary);
+    }
+
+    /* ── Metrics Bar ─────────────────────────────────────────── */
+    .cc-metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      animation: fadeUp 400ms var(--ease-default) both;
+      animation-delay: 100ms;
+    }
+    .cc-metric {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3) var(--space-4);
+      transition: box-shadow var(--duration-fast) var(--ease-default);
+    }
+    .cc-metric:hover { box-shadow: var(--shadow-sm); }
+    .cc-metric-row { display: flex; align-items: center; justify-content: space-between; }
+    .cc-metric-label {
+      font-size: 0.625rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+    .cc-metric-value {
+      font-family: var(--font-display);
+      font-size: var(--text-xl); font-weight: 700;
+      color: var(--color-text); line-height: 1;
+      margin-top: var(--space-1);
+    }
+    .cc-metric-delta {
+      font-size: 0.625rem; font-weight: 600;
+      padding: 1px 5px; border-radius: var(--radius-sm);
+    }
+    .cc-metric-delta.up { color: var(--color-success); background: rgba(90, 158, 107, 0.1); }
+    .cc-metric-delta.down { color: var(--color-error); background: rgba(176, 92, 92, 0.1); }
+    .cc-metric-delta.flat { color: var(--color-text-muted); background: rgba(182, 182, 151, 0.12); }
+
+    /* ── Dense Grid ──────────────────────────────────────────── */
+    .cc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 0.8fr;
+      gap: var(--space-4);
+    }
+
+    /* ── Panel ────────────────────────────────────────────────── */
+    .cc-panel {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: fadeUp 400ms var(--ease-default) both;
+    }
+    .cc-panel:nth-child(1) { animation-delay: 200ms; }
+    .cc-panel:nth-child(2) { animation-delay: 250ms; }
+    .cc-panel:nth-child(3) { animation-delay: 300ms; }
+
+    .cc-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      background: rgba(182, 182, 151, 0.04);
+    }
+    .cc-panel-title {
+      font-size: var(--text-xs); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--color-text);
+    }
+    .cc-panel-count {
+      font-size: 0.625rem; font-weight: 600;
+      color: var(--color-text-muted);
+      background: var(--color-bg); padding: 1px 6px;
+      border-radius: var(--radius-sm);
+    }
+    .cc-panel-body { padding: 0; }
+    .cc-panel-link {
+      font-size: var(--text-xs); font-weight: 500;
+      color: var(--color-primary);
+      cursor: pointer;
+      transition: color var(--duration-fast) var(--ease-default);
+    }
+    .cc-panel-link:hover { color: var(--color-primary-hover); }
+
+    /* ── Table-style List (Appointments) ──────────────────────── */
+    .cc-list-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+      transition: background var(--duration-fast) var(--ease-default);
+      cursor: pointer; font-size: var(--text-sm);
+    }
+    .cc-list-item:last-child { border-bottom: none; }
+    .cc-list-item:hover { background: rgba(74, 103, 65, 0.03); }
+
+    .cc-list-time {
+      font-size: var(--text-xs); font-weight: 600;
+      font-family: var(--font-display);
+      color: var(--color-primary);
+      width: 48px; flex-shrink: 0;
+    }
+    .cc-list-indicator {
+      width: 3px; height: 24px;
+      border-radius: 2px; flex-shrink: 0;
+    }
+    .cc-list-indicator.type-initial  { background: var(--color-primary); }
+    .cc-list-indicator.type-followup { background: var(--color-secondary); }
+    .cc-list-indicator.type-review   { background: var(--color-accent); }
+    .cc-list-indicator.type-check    { background: var(--color-success); }
+
+    .cc-list-content { flex: 1; min-width: 0; }
+    .cc-list-primary {
+      font-size: var(--text-sm); font-weight: 500; color: var(--color-text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cc-list-secondary { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .cc-list-badge { flex-shrink: 0; }
+
+    /* ── Client List Dense ────────────────────────────────────── */
+    .cc-client-row {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-2) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-default);
+    }
+    .cc-client-row:last-child { border-bottom: none; }
+    .cc-client-row:hover { background: rgba(74, 103, 65, 0.03); }
+
+    .cc-client-avatar {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--color-bg-alt);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.625rem; font-weight: 600;
+      color: var(--color-secondary); flex-shrink: 0;
+    }
+    .cc-client-info { flex: 1; min-width: 0; }
+    .cc-client-name { font-size: var(--text-xs); font-weight: 500; color: var(--color-text); }
+    .cc-client-meta { font-size: 0.625rem; color: var(--color-text-muted); }
+
+    /* ── Activity Dense ──────────────────────────────────────── */
+    .cc-activity-item {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+    }
+    .cc-activity-item:last-child { border-bottom: none; }
+
+    .cc-activity-row { display: flex; align-items: flex-start; gap: var(--space-2); }
+    .cc-activity-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 5px;
+    }
+    .cc-activity-dot.dot-note   { background: var(--color-primary); }
+    .cc-activity-dot.dot-plan   { background: var(--color-success); }
+    .cc-activity-dot.dot-appt   { background: var(--color-secondary); }
+    .cc-activity-dot.dot-client { background: var(--color-accent); }
+
+    .cc-activity-text {
+      font-size: var(--text-xs); color: var(--color-text-muted);
+      line-height: 1.5; flex: 1;
+    }
+    .cc-activity-text strong { color: var(--color-text); font-weight: 500; }
+    .cc-activity-ago {
+      font-size: 0.625rem; color: var(--color-accent);
+      flex-shrink: 0; padding-top: 1px;
+    }
+
+    /* ── Badges ───────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: var(--space-1);
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--text-xs); font-weight: 500;
+      border-radius: var(--radius-full); line-height: 1.4;
+    }
+    .badge-primary   { background: rgba(74, 103, 65, 0.12); color: var(--color-primary); }
+    .badge-secondary { background: rgba(154, 108, 65, 0.12); color: var(--color-secondary); }
+    .badge-accent    { background: rgba(182, 182, 151, 0.15); color: var(--color-text-muted); }
+    .badge-success   { background: rgba(61, 139, 79, 0.12); color: var(--color-success); }
+    .badge-warning   { background: rgba(196, 136, 47, 0.12); color: var(--color-warning); }
+    .badge-error     { background: rgba(193, 74, 61, 0.12); color: var(--color-error); }
+
+    /* ── Status Bar ──────────────────────────────────────────── */
+    .cc-status-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-2) var(--space-6);
+      background: var(--color-bg-card);
+      border-top: 1px solid var(--color-border);
+      font-size: 0.625rem; color: var(--color-text-muted);
+    }
+    .cc-status-left { display: flex; align-items: center; gap: var(--space-4); }
+    .cc-status-indicator { display: flex; align-items: center; gap: var(--space-1); }
+    .cc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-success); }
+    .cc-status-right { display: flex; align-items: center; gap: var(--space-4); }
+
+    /* ── Quick Actions Row ────────────────────────────────────── */
+    .dash-actions {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      animation: fadeUp 400ms var(--ease-default) both;
+      animation-delay: 50ms;
+    }
+    .dash-action-btn {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      padding: 6px var(--space-4);
+      font-family: var(--font-sans);
+      font-size: var(--text-xs); font-weight: 500;
+      color: var(--color-text-muted);
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-default);
+    }
+    .dash-action-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .dash-action-btn.primary {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+    .dash-action-btn.primary:hover {
+      background: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+    }
+    .dash-action-btn svg { flex-shrink: 0; }
+
+    /* ── Second Grid Row ─────────────────────────────────────── */
+    .cc-grid-secondary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+    .cc-grid-secondary .cc-panel:nth-child(1) { animation-delay: 350ms; }
+    .cc-grid-secondary .cc-panel:nth-child(2) { animation-delay: 400ms; }
+
+    /* ── Consent Alerts ──────────────────────────────────────── */
+    .cc-alert-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-default);
+    }
+    .cc-alert-item:last-child { border-bottom: none; }
+    .cc-alert-item:hover { background: rgba(74, 103, 65, 0.03); }
+
+    .cc-alert-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-full);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: var(--text-xs);
+    }
+    .cc-alert-icon.warn { background: rgba(196, 136, 47, 0.12); color: var(--color-warning); }
+    .cc-alert-icon.err  { background: rgba(193, 74, 61, 0.12); color: var(--color-error); }
+    .cc-alert-icon.info { background: rgba(74, 126, 139, 0.12); color: var(--color-info); }
+
+    .cc-alert-content { flex: 1; min-width: 0; }
+    .cc-alert-text { font-size: var(--text-xs); font-weight: 500; color: var(--color-text); }
+    .cc-alert-sub  { font-size: 0.625rem; color: var(--color-text-muted); }
+
+    /* ── Progress Bars (for goals) ─────────────────────────────── */
+    .cc-goal-item {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid rgba(182, 182, 151, 0.08);
+    }
+    .cc-goal-item:last-child { border-bottom: none; }
+
+    .cc-goal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+    .cc-goal-client { font-size: var(--text-xs); font-weight: 500; color: var(--color-text); }
+    .cc-goal-label  { font-size: 0.625rem; color: var(--color-text-muted); }
+    .cc-goal-track {
+      height: 4px;
+      background: var(--color-bg-alt);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .cc-goal-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 800ms var(--ease-default);
+    }
+    .cc-goal-fill.green  { background: var(--color-success); }
+    .cc-goal-fill.amber  { background: var(--color-warning); }
+    .cc-goal-fill.red    { background: var(--color-error); }
+    .cc-goal-fill.sage   { background: var(--color-primary); }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .cc-grid { grid-template-columns: 1fr 1fr; }
+      .cc-metrics-bar { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .cc-layout { grid-template-columns: 1fr; }
+      .icon-rail { display: none; }
+      .cc-body { padding: var(--space-3) var(--space-4); }
+      .cc-grid { grid-template-columns: 1fr; }
+      .cc-grid-secondary { grid-template-columns: 1fr; }
+      .cc-metrics-bar { grid-template-columns: repeat(2, 1fr); }
+      .dash-actions { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cc-layout">
+
+  <!-- ── Icon Rail Sidebar ────────────────────────────────────── -->
+  <nav class="icon-rail">
+    <div class="rail-brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+
+    <div class="rail-nav">
+      <a class="rail-item active" title="Dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </a>
+      <a class="rail-item" title="Clients">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </a>
+      <a class="rail-item" title="Schedule">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </a>
+      <a class="rail-item" title="Meal Plans">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </a>
+      <div class="rail-sep"></div>
+      <a class="rail-item" title="Staff">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </a>
+      <a class="rail-item" title="Invite Codes">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="rail-footer">
+      <a class="rail-item" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <a class="rail-item" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </a>
+      <div class="rail-avatar" title="Dr. Sarah Chen">SC</div>
+    </div>
+  </nav>
+
+  <!-- ── Main Content ─────────────────────────────────────────── -->
+  <div class="cc-main">
+
+    <!-- Top Bar -->
+    <header class="cc-topbar">
+      <div class="cc-topbar-left">
+        <div class="cc-breadcrumb">
+          <span>Nutrir</span>
+          <span class="cc-breadcrumb-sep">/</span>
+          <strong>Dashboard</strong>
+        </div>
+      </div>
+      <div class="cc-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="Search clients, plans...">
+      </div>
+    </header>
+
+    <!-- Dashboard Body -->
+    <main class="cc-body">
+
+      <!-- Greeting -->
+      <div class="dash-greeting">
+        <h2>Good morning, Sarah</h2>
+        <p><span class="dash-greeting-date">Friday, February 21, 2026</span> &middot; You have 6 appointments today</p>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="dash-actions">
+        <button class="dash-action-btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Client
+        </button>
+        <button class="dash-action-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Book Appointment
+        </button>
+        <button class="dash-action-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+          Create Meal Plan
+        </button>
+      </div>
+
+      <!-- Metrics Bar -->
+      <div class="cc-metrics-bar">
+        <div class="cc-metric">
+          <div class="cc-metric-row">
+            <span class="cc-metric-label">Active Clients</span>
+            <span class="cc-metric-delta up">+3</span>
+          </div>
+          <div class="cc-metric-value">47</div>
+        </div>
+        <div class="cc-metric">
+          <div class="cc-metric-row">
+            <span class="cc-metric-label">Today's Appts</span>
+            <span class="cc-metric-delta flat">0</span>
+          </div>
+          <div class="cc-metric-value">6</div>
+        </div>
+        <div class="cc-metric">
+          <div class="cc-metric-row">
+            <span class="cc-metric-label">This Week</span>
+            <span class="cc-metric-delta up">+2</span>
+          </div>
+          <div class="cc-metric-value">24</div>
+        </div>
+        <div class="cc-metric">
+          <div class="cc-metric-row">
+            <span class="cc-metric-label">Active Plans</span>
+            <span class="cc-metric-delta up">+1</span>
+          </div>
+          <div class="cc-metric-value">31</div>
+        </div>
+        <div class="cc-metric">
+          <div class="cc-metric-row">
+            <span class="cc-metric-label">Pending Consent</span>
+            <span class="cc-metric-delta down">2</span>
+          </div>
+          <div class="cc-metric-value">2</div>
+        </div>
+      </div>
+
+      <!-- Main 3-Column Grid -->
+      <div class="cc-grid">
+
+        <!-- Panel 1: Today's Schedule -->
+        <div class="cc-panel">
+          <div class="cc-panel-header">
+            <span class="cc-panel-title">Today's Schedule</span>
+            <span class="cc-panel-count">6</span>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-list-item">
+              <span class="cc-list-time">8:00</span>
+              <div class="cc-list-indicator type-initial"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">Maria Santos</div>
+                <div class="cc-list-secondary">Initial consultation</div>
+              </div>
+              <span class="badge badge-primary">New</span>
+            </div>
+            <div class="cc-list-item">
+              <span class="cc-list-time">9:30</span>
+              <div class="cc-list-indicator type-followup"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">James Whitfield</div>
+                <div class="cc-list-secondary">Follow-up &middot; Week 4</div>
+              </div>
+              <span class="badge badge-secondary">Follow-up</span>
+            </div>
+            <div class="cc-list-item">
+              <span class="cc-list-time">11:00</span>
+              <div class="cc-list-indicator type-review"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">Anika Patel</div>
+                <div class="cc-list-secondary">Meal plan review</div>
+              </div>
+              <span class="badge badge-accent">Review</span>
+            </div>
+            <div class="cc-list-item">
+              <span class="cc-list-time">13:00</span>
+              <div class="cc-list-indicator type-followup"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">David Kim</div>
+                <div class="cc-list-secondary">Follow-up &middot; Week 8</div>
+              </div>
+              <span class="badge badge-secondary">Follow-up</span>
+            </div>
+            <div class="cc-list-item">
+              <span class="cc-list-time">14:30</span>
+              <div class="cc-list-indicator type-check"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">Lisa Tremblay</div>
+                <div class="cc-list-secondary">Progress check-in</div>
+              </div>
+              <span class="badge badge-success">Check-in</span>
+            </div>
+            <div class="cc-list-item">
+              <span class="cc-list-time">16:00</span>
+              <div class="cc-list-indicator type-initial"></div>
+              <div class="cc-list-content">
+                <div class="cc-list-primary">Robert Nguyen</div>
+                <div class="cc-list-secondary">Initial consultation</div>
+              </div>
+              <span class="badge badge-primary">New</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Recent Clients -->
+        <div class="cc-panel">
+          <div class="cc-panel-header">
+            <span class="cc-panel-title">Recent Clients</span>
+            <a class="cc-panel-link">View All</a>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">MS</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">Maria Santos</div>
+                <div class="cc-client-meta">Added today &middot; Consent pending</div>
+              </div>
+              <span class="badge badge-warning">Pending</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">JW</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">James Whitfield</div>
+                <div class="cc-client-meta">Last visit Feb 14 &middot; Weight loss program</div>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">AP</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">Anika Patel</div>
+                <div class="cc-client-meta">Last visit Feb 12 &middot; Diabetes management</div>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">DK</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">David Kim</div>
+                <div class="cc-client-meta">Last visit Feb 7 &middot; Sports nutrition</div>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">LT</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">Lisa Tremblay</div>
+                <div class="cc-client-meta">Last visit Feb 5 &middot; Prenatal nutrition</div>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">RN</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">Robert Nguyen</div>
+                <div class="cc-client-meta">Added Feb 19 &middot; Consent pending</div>
+              </div>
+              <span class="badge badge-warning">Pending</span>
+            </div>
+            <div class="cc-client-row">
+              <div class="cc-client-avatar">EM</div>
+              <div class="cc-client-info">
+                <div class="cc-client-name">Elena Morales</div>
+                <div class="cc-client-meta">Last visit Jan 30 &middot; IBS management</div>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Activity -->
+        <div class="cc-panel">
+          <div class="cc-panel-header">
+            <span class="cc-panel-title">Activity</span>
+            <span class="cc-panel-count">Recent</span>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-client"></div>
+                <div class="cc-activity-text">
+                  <strong>Maria Santos</strong> added as new client
+                </div>
+                <span class="cc-activity-ago">2h</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-plan"></div>
+                <div class="cc-activity-text">
+                  Meal plan created for <strong>James Whitfield</strong>
+                </div>
+                <span class="cc-activity-ago">3h</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-note"></div>
+                <div class="cc-activity-text">
+                  Progress note added for <strong>Anika Patel</strong>
+                </div>
+                <span class="cc-activity-ago">5h</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-appt"></div>
+                <div class="cc-activity-text">
+                  Appointment rescheduled for <strong>David Kim</strong>
+                </div>
+                <span class="cc-activity-ago">6h</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-plan"></div>
+                <div class="cc-activity-text">
+                  Meal plan updated for <strong>Lisa Tremblay</strong>
+                </div>
+                <span class="cc-activity-ago">1d</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-client"></div>
+                <div class="cc-activity-text">
+                  <strong>Robert Nguyen</strong> added as new client
+                </div>
+                <span class="cc-activity-ago">2d</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-note"></div>
+                <div class="cc-activity-text">
+                  Consent recorded for <strong>Elena Morales</strong>
+                </div>
+                <span class="cc-activity-ago">2d</span>
+              </div>
+            </div>
+            <div class="cc-activity-item">
+              <div class="cc-activity-row">
+                <div class="cc-activity-dot dot-appt"></div>
+                <div class="cc-activity-text">
+                  3 appointments booked for next week
+                </div>
+                <span class="cc-activity-ago">3d</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cc-grid -->
+
+      <!-- Secondary Row: Alerts + Client Goals -->
+      <div class="cc-grid-secondary">
+
+        <!-- Panel: Alerts & Reminders -->
+        <div class="cc-panel">
+          <div class="cc-panel-header">
+            <span class="cc-panel-title">Alerts & Reminders</span>
+            <span class="cc-panel-count">4</span>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-alert-item">
+              <div class="cc-alert-icon warn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="cc-alert-content">
+                <div class="cc-alert-text">Maria Santos &mdash; consent not yet recorded</div>
+                <div class="cc-alert-sub">Client intake form received today</div>
+              </div>
+            </div>
+            <div class="cc-alert-item">
+              <div class="cc-alert-icon warn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="cc-alert-content">
+                <div class="cc-alert-text">Robert Nguyen &mdash; consent not yet recorded</div>
+                <div class="cc-alert-sub">Added 2 days ago, initial consult today</div>
+              </div>
+            </div>
+            <div class="cc-alert-item">
+              <div class="cc-alert-icon info">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="cc-alert-content">
+                <div class="cc-alert-text">James Whitfield &mdash; meal plan expires in 3 days</div>
+                <div class="cc-alert-sub">Current plan: 1800 cal / weight loss &middot; Ends Feb 24</div>
+              </div>
+            </div>
+            <div class="cc-alert-item">
+              <div class="cc-alert-icon info">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="cc-alert-content">
+                <div class="cc-alert-text">Elena Morales &mdash; no visit in 3+ weeks</div>
+                <div class="cc-alert-sub">Last appointment: Jan 30 &middot; Consider follow-up</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: Client Goals Progress -->
+        <div class="cc-panel">
+          <div class="cc-panel-header">
+            <span class="cc-panel-title">Client Goals</span>
+            <a class="cc-panel-link">View All</a>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-goal-item">
+              <div class="cc-goal-header">
+                <span class="cc-goal-client">James Whitfield</span>
+                <span class="cc-goal-label">Weight: 82kg / 75kg target &middot; 68%</span>
+              </div>
+              <div class="cc-goal-track">
+                <div class="cc-goal-fill green" style="width: 68%"></div>
+              </div>
+            </div>
+            <div class="cc-goal-item">
+              <div class="cc-goal-header">
+                <span class="cc-goal-client">Anika Patel</span>
+                <span class="cc-goal-label">HbA1c: 7.2 / 6.5 target &middot; 55%</span>
+              </div>
+              <div class="cc-goal-track">
+                <div class="cc-goal-fill amber" style="width: 55%"></div>
+              </div>
+            </div>
+            <div class="cc-goal-item">
+              <div class="cc-goal-header">
+                <span class="cc-goal-client">David Kim</span>
+                <span class="cc-goal-label">Protein intake: 140g / 160g target &middot; 88%</span>
+              </div>
+              <div class="cc-goal-track">
+                <div class="cc-goal-fill sage" style="width: 88%"></div>
+              </div>
+            </div>
+            <div class="cc-goal-item">
+              <div class="cc-goal-header">
+                <span class="cc-goal-client">Lisa Tremblay</span>
+                <span class="cc-goal-label">Iron levels: 11 / 12 target &middot; 75%</span>
+              </div>
+              <div class="cc-goal-track">
+                <div class="cc-goal-fill green" style="width: 75%"></div>
+              </div>
+            </div>
+            <div class="cc-goal-item">
+              <div class="cc-goal-header">
+                <span class="cc-goal-client">Elena Morales</span>
+                <span class="cc-goal-label">Symptom-free days: 18/30 &middot; 60%</span>
+              </div>
+              <div class="cc-goal-track">
+                <div class="cc-goal-fill amber" style="width: 60%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cc-grid-secondary -->
+
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="cc-status-bar">
+      <div class="cc-status-left">
+        <div class="cc-status-indicator">
+          <div class="cc-status-dot"></div>
+          <span>Online</span>
+        </div>
+        <span>47 clients &middot; 31 active plans</span>
+      </div>
+      <div class="cc-status-right">
+        <span>Nutrir v0.1.0</span>
+      </div>
+    </footer>
+
+  </div><!-- /cc-main -->
+
+</div><!-- /cc-layout -->
+
+</body>
+</html>
