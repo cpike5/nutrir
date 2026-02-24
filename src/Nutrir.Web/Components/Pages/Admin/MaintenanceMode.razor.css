@@ -1,93 +1,252 @@
-.maintenance-page {
+/* ── Page Layout ──────────────────────────────────────── */
+.maint-page {
     max-width: 960px;
     padding: var(--space-8);
 }
 
-.maintenance-header {
+/* ── Page Header ─────────────────────────────────────── */
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
     margin-bottom: var(--space-6);
 }
 
-.maintenance-title {
+.page-title {
     font-family: var(--font-display);
     font-size: var(--text-2xl);
     font-weight: 600;
     color: var(--color-text);
-    margin-bottom: var(--space-2);
 }
 
-.maintenance-subtitle {
+.page-subtitle {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
 }
 
-.section-title {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-text);
-    margin-bottom: var(--space-4);
+/* ── Table Card ──────────────────────────────────────── */
+.table-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    margin-bottom: var(--space-6);
 }
 
-.status-section {
+/* ── Section Header ──────────────────────────────────── */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--color-text-muted);
+    user-select: none;
+}
+
+.section-header svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.section-header-label {
+    flex: 1;
+}
+
+/* ── Status Body (Active) ────────────────────────────── */
+.status-body {
     padding: var(--space-6);
 }
 
-.status-badge-row {
-    margin-bottom: var(--space-4);
+.status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
 }
 
-.status-details {
+.status-field {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    background-color: var(--color-bg-alt, var(--color-bg-input));
-    border: 1px solid var(--color-border-input);
-    border-radius: var(--radius-md);
+    gap: var(--space-1);
 }
 
-.status-detail {
-    display: flex;
-    gap: var(--space-3);
-    font-size: var(--text-sm);
+.status-field-full {
+    grid-column: 1 / -1;
 }
 
-.status-detail-label {
+.status-label {
+    font-size: var(--text-xs);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
     color: var(--color-text-muted);
-    min-width: 120px;
 }
 
-.status-detail-value {
+.status-value {
+    font-size: var(--text-sm);
     color: var(--color-text);
 }
 
-.controls-section {
+/* ── Status Inactive ─────────────────────────────────── */
+.status-inactive {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--color-success);
+}
+
+.status-inactive svg {
+    flex-shrink: 0;
+}
+
+/* ── Controls Body ───────────────────────────────────── */
+.controls-body {
     padding: var(--space-6);
 }
 
-.enable-form-fields {
+/* ── Enable Fields ───────────────────────────────────── */
+.enable-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1;
+}
+
+.field-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--color-text-muted);
+}
+
+.field-input {
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text);
+    background: var(--color-bg-input);
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    transition: border-color var(--duration-fast) var(--ease-default),
+                box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-muted);
+}
+
+.field-action {
+    padding-bottom: 1px;
+    flex-shrink: 0;
+}
+
+/* ── Disable Section ─────────────────────────────────── */
+.disable-section {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    margin-bottom: var(--space-4);
 }
 
-.controls-action {
-    margin-top: var(--space-2);
-}
-
-.controls-info {
+.active-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-4);
+    color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent);
+    border-radius: var(--radius-md);
 }
 
-.controls-error {
-    margin-top: var(--space-3);
-    padding: var(--space-3);
+.active-notice svg {
+    flex-shrink: 0;
+}
+
+/* ── Error Banner ────────────────────────────────────── */
+.error-banner {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     font-size: var(--text-sm);
     color: var(--color-error);
-    background-color: color-mix(in srgb, var(--color-error) 8%, transparent);
+    background: color-mix(in srgb, var(--color-error) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-error) 20%, transparent);
     border-radius: var(--radius-md);
+}
+
+.error-banner svg {
+    flex-shrink: 0;
+}
+
+/* ── Section Entrance Animation ──────────────────────── */
+@keyframes sectionFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.section-animate {
+    animation: sectionFadeIn 0.35s var(--ease-default) backwards;
+}
+
+/* ── Accessibility ───────────────────────────────────── */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 600px) {
+    .maint-page {
+        padding: var(--space-4);
+    }
+
+    .enable-fields {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .status-body,
+    .controls-body {
+        padding: var(--space-4);
+    }
+
+    .status-inactive {
+        padding: var(--space-4);
+    }
 }

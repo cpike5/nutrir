@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
 @using System.Security.Claims
 @attribute [Authorize(Roles = "Admin,Nutritionist")]
 @inject IInviteCodeService InviteCodeService
@@ -11,118 +12,158 @@
 
 <PageTitle>Invite Codes — Nutrir</PageTitle>
 
-<div class="invite-codes-page">
-    <div class="invite-codes-header">
-        <h1 class="invite-codes-title">Invite Codes</h1>
-        <p class="invite-codes-subtitle">Generate and manage invite codes for staff registration.</p>
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Admin"), new BreadcrumbItem("Invite Codes") })" />
+
+<div class="invite-page">
+    <div class="page-header">
+        <h1 class="page-title">Invite Codes</h1>
+        <span class="page-subtitle">Generate and manage invite codes for staff registration.</span>
     </div>
 
-    <Card>
-        <div class="generate-section">
-            <h2 class="section-title">Generate Invite Code</h2>
-            <div class="generate-form">
-                <div class="generate-form-fields">
-                    <FormGroup Label="Target Role" Id="target-role">
-                        <FormSelect Id="target-role"
-                                    Value="@_targetRole"
-                                    ValueChanged="(string v) => _targetRole = v">
-                            <option value="Nutritionist">Nutritionist</option>
-                            <option value="Assistant">Assistant</option>
-                        </FormSelect>
-                    </FormGroup>
-                    <FormGroup Label="Expiration (days)" Id="expiration-days">
-                        <FormInput Id="expiration-days"
-                                   Type="number"
-                                   Value="@_expirationDays"
-                                   ValueChanged="(string v) => _expirationDays = v" />
-                    </FormGroup>
-                    <div class="generate-form-action">
-                        <Button Variant="ButtonVariant.Primary"
-                                Disabled="@_isGenerating"
-                                OnClick="GenerateCode">
-                            @(_isGenerating ? "Generating..." : "Generate Code")
-                        </Button>
-                    </div>
+    <!-- Generate Section -->
+    <div class="table-card section-animate">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+            </svg>
+            <span class="section-header-label">Generate Code</span>
+        </div>
+        <div class="generate-body">
+            <div class="generate-fields">
+                <div class="field-group">
+                    <label class="field-label" for="target-role">Target Role</label>
+                    <select id="target-role" class="field-select" @bind="_targetRole">
+                        <option value="Nutritionist">Nutritionist</option>
+                        <option value="Assistant">Assistant</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="expiration-days">Expires In (days)</label>
+                    <input id="expiration-days" type="number" class="field-input" @bind="_expirationDays" min="1" />
+                </div>
+                <div class="field-action">
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@_isGenerating"
+                            OnClick="GenerateCode">
+                        @if (_isGenerating)
+                        {
+                            <span>Generating...</span>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -2px;">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            <span>Generate</span>
+                        }
+                    </Button>
                 </div>
             </div>
 
             @if (_generatedCode is not null)
             {
-                <div class="generated-code-box">
-                    <span class="generated-code-label">Generated Code</span>
-                    <div class="generated-code-display">
-                        <span class="generated-code-value">@_generatedCode.Code</span>
-                        <Button Variant="ButtonVariant.Outline"
-                                Size="ButtonSize.Small"
-                                OnClick="CopyCodeToClipboard">
-                            @(_copied ? "Copied!" : "Copy")
-                        </Button>
+                <div class="code-result">
+                    <div class="code-result-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span>Code Generated</span>
                     </div>
-                    <span class="generated-code-meta">
-                        Role: @_generatedCode.TargetRole — Expires: @_generatedCode.ExpiresAt.ToString("MMM d, yyyy")
+                    <div class="code-display">
+                        <span class="code-value">@_generatedCode.Code</span>
+                        <button class="copy-btn" @onclick="CopyCodeToClipboard" title="Copy to clipboard">
+                            @if (_copied)
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Copied</span>
+                            }
+                            else
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                <span>Copy</span>
+                            }
+                        </button>
+                    </div>
+                    <span class="code-meta">
+                        <Badge Variant="BadgeVariant.Primary">@_generatedCode.TargetRole</Badge>
+                        <span class="meta-sep">·</span>
+                        Expires @_generatedCode.ExpiresAt.ToString("MMM d, yyyy")
                     </span>
                 </div>
             }
 
             @if (_generateError is not null)
             {
-                <div class="generate-error">@_generateError</div>
-            }
-        </div>
-    </Card>
-
-    <Card>
-        <div class="list-section">
-            <h2 class="section-title">Invite Codes</h2>
-
-            @if (_isLoading)
-            {
-                <p class="codes-loading">Loading invite codes...</p>
-            }
-            else if (_inviteCodes is null || _inviteCodes.Count == 0)
-            {
-                <div class="codes-empty">
-                    <p class="codes-empty-title">No invite codes found</p>
-                    <p class="codes-empty-desc">Generate your first invite code above.</p>
+                <div class="error-banner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    @_generateError
                 </div>
             }
-            else
+        </div>
+    </div>
+
+    <!-- Codes Table -->
+    <div class="table-card section-animate" style="animation-delay: 0.08s;">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span class="section-header-label">All Codes</span>
+            @if (_inviteCodes is not null && _inviteCodes.Count > 0)
             {
-                <table class="codes-table">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Target Role</th>
-                            <th>Status</th>
-                            <th>Created By</th>
-                            <th>Created At</th>
-                            <th>Redeemed By</th>
-                            <th>Expires At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in _inviteCodes)
-                        {
-                            <tr>
-                                <td class="codes-table-code">@item.Code</td>
-                                <td>
-                                    <Badge Variant="BadgeVariant.Primary">@item.TargetRole</Badge>
-                                </td>
-                                <td>
-                                    @{ var status = GetStatus(item); }
-                                    <Badge Variant="@status.Variant">@status.Label</Badge>
-                                </td>
-                                <td>@item.CreatedByName</td>
-                                <td class="codes-table-date">@item.CreatedAt.ToString("MMM d, yyyy")</td>
-                                <td>@(item.RedeemedByName ?? "—")</td>
-                                <td class="codes-table-date">@item.ExpiresAt.ToString("MMM d, yyyy")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <span class="codes-count">
+                    <span class="badge-dot"></span>
+                    @_inviteCodes.Count code@(_inviteCodes.Count != 1 ? "s" : "")
+                </span>
             }
         </div>
-    </Card>
+
+        @if (_isLoading)
+        {
+            <p class="codes-loading">Loading invite codes...</p>
+        }
+        else if (_inviteCodes is null || _inviteCodes.Count == 0)
+        {
+            <div class="empty-state">
+                <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                </svg>
+                <p class="empty-state-title">No invite codes yet</p>
+                <p class="empty-state-desc">Generate your first invite code above to allow staff to register.</p>
+            </div>
+        }
+        else
+        {
+            <table class="codes-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th class="col-created-by">Created By</th>
+                        <th class="col-created">Created</th>
+                        <th class="col-redeemed">Redeemed By</th>
+                        <th>Expires</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _inviteCodes)
+                    {
+                        var status = GetStatus(item);
+                        <tr>
+                            <td class="cell-code">@item.Code</td>
+                            <td><Badge Variant="BadgeVariant.Primary">@item.TargetRole</Badge></td>
+                            <td><Badge Variant="@status.Variant">@status.Label</Badge></td>
+                            <td class="col-created-by">@item.CreatedByName</td>
+                            <td class="cell-muted col-created">@item.CreatedAt.ToString("MMM d, yyyy")</td>
+                            <td class="col-redeemed">@(item.RedeemedByName ?? "—")</td>
+                            <td class="cell-muted">@item.ExpiresAt.ToString("MMM d, yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </div>
 
 @code {

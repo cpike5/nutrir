@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.Interfaces
 @using Nutrir.Core.Models
+@using Nutrir.Web.Components.UI
 @using System.Security.Claims
 @attribute [Authorize(Roles = "Admin,Nutritionist")]
 @inject IMaintenanceService MaintenanceService
@@ -10,115 +11,156 @@
 
 <PageTitle>Maintenance Mode — Nutrir</PageTitle>
 
-<div class="maintenance-page">
-    <div class="maintenance-header">
-        <h1 class="maintenance-title">Maintenance Mode</h1>
-        <p class="maintenance-subtitle">Take the application offline for scheduled maintenance.</p>
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Admin"), new BreadcrumbItem("Maintenance") })" />
+
+<div class="maint-page">
+    <div class="page-header">
+        <h1 class="page-title">Maintenance Mode</h1>
+        <span class="page-subtitle">Take the application offline for scheduled maintenance.</span>
     </div>
 
-    <Card>
-        <div class="status-section">
-            <h2 class="section-title">Current Status</h2>
-            <div class="status-display">
-                <div class="status-badge-row">
-                    @if (_state.IsEnabled)
+    <!-- Status Card -->
+    <div class="table-card section-animate">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <span class="section-header-label">Current Status</span>
+            @if (_state.IsEnabled)
+            {
+                <Badge Variant="BadgeVariant.Warning">Active</Badge>
+            }
+            else
+            {
+                <Badge Variant="BadgeVariant.Success">Inactive</Badge>
+            }
+        </div>
+
+        @if (_state.IsEnabled)
+        {
+            <div class="status-body">
+                <div class="status-grid">
+                    @if (!string.IsNullOrEmpty(_state.EnabledBy))
                     {
-                        <Badge Variant="BadgeVariant.Warning">Active</Badge>
+                        <div class="status-field">
+                            <span class="status-label">Enabled by</span>
+                            <span class="status-value">@_state.EnabledBy</span>
+                        </div>
                     }
-                    else
+                    @if (_state.StartedAt.HasValue)
                     {
-                        <Badge Variant="BadgeVariant.Success">Inactive</Badge>
+                        <div class="status-field">
+                            <span class="status-label">Started at</span>
+                            <span class="status-value">@_state.StartedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                        </div>
+                    }
+                    @if (_state.EstimatedEndAt.HasValue)
+                    {
+                        <div class="status-field">
+                            <span class="status-label">Estimated end</span>
+                            <span class="status-value">@_state.EstimatedEndAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_state.Message))
+                    {
+                        <div class="status-field status-field-full">
+                            <span class="status-label">Message</span>
+                            <span class="status-value">@_state.Message</span>
+                        </div>
                     }
                 </div>
-
-                @if (_state.IsEnabled)
-                {
-                    <div class="status-details">
-                        @if (!string.IsNullOrEmpty(_state.EnabledBy))
-                        {
-                            <div class="status-detail">
-                                <span class="status-detail-label">Enabled by</span>
-                                <span class="status-detail-value">@_state.EnabledBy</span>
-                            </div>
-                        }
-                        @if (_state.StartedAt.HasValue)
-                        {
-                            <div class="status-detail">
-                                <span class="status-detail-label">Started at</span>
-                                <span class="status-detail-value">@_state.StartedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
-                            </div>
-                        }
-                        @if (_state.EstimatedEndAt.HasValue)
-                        {
-                            <div class="status-detail">
-                                <span class="status-detail-label">Estimated end</span>
-                                <span class="status-detail-value">@_state.EstimatedEndAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(_state.Message))
-                        {
-                            <div class="status-detail">
-                                <span class="status-detail-label">Message</span>
-                                <span class="status-detail-value">@_state.Message</span>
-                            </div>
-                        }
-                    </div>
-                }
             </div>
+        }
+        else
+        {
+            <div class="status-inactive">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Application is running normally. All users have access.</span>
+            </div>
+        }
+    </div>
+
+    <!-- Controls Card -->
+    <div class="table-card section-animate" style="animation-delay: 0.08s;">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span class="section-header-label">Controls</span>
         </div>
-    </Card>
 
-    <Card>
-        <div class="controls-section">
-            <h2 class="section-title">Controls</h2>
-
+        <div class="controls-body">
             @if (!_state.IsEnabled)
             {
-                <div class="enable-form">
-                    <div class="enable-form-fields">
-                        <FormGroup Label="Message (optional)" Id="maintenance-message">
-                            <FormInput Id="maintenance-message"
-                                       Placeholder="e.g. Upgrading database schema"
-                                       Value="@_message"
-                                       ValueChanged="(string v) => _message = v" />
-                        </FormGroup>
-                        <FormGroup Label="Estimated minutes (optional)" Id="estimated-minutes">
-                            <FormInput Id="estimated-minutes"
-                                       Type="number"
-                                       Placeholder="e.g. 30"
-                                       Value="@_estimatedMinutes"
-                                       ValueChanged="(string v) => _estimatedMinutes = v" />
-                        </FormGroup>
+                <div class="enable-fields">
+                    <div class="field-group">
+                        <label class="field-label" for="maintenance-message">Message (optional)</label>
+                        <input id="maintenance-message"
+                               type="text"
+                               class="field-input"
+                               placeholder="e.g. Upgrading database schema"
+                               @bind="_message" />
                     </div>
-                    <div class="controls-action">
+                    <div class="field-group">
+                        <label class="field-label" for="estimated-minutes">Estimated Minutes (optional)</label>
+                        <input id="estimated-minutes"
+                               type="number"
+                               class="field-input"
+                               placeholder="e.g. 30"
+                               min="1"
+                               @bind="_estimatedMinutes" />
+                    </div>
+                    <div class="field-action">
                         <Button Variant="ButtonVariant.Secondary"
                                 Disabled="@_isSubmitting"
                                 OnClick="EnableMaintenance">
-                            @(_isSubmitting ? "Enabling..." : "Enable Maintenance Mode")
+                            @if (_isSubmitting)
+                            {
+                                <span>Enabling...</span>
+                            }
+                            else
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -2px;">
+                                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/>
+                                </svg>
+                                <span>Enable Maintenance</span>
+                            }
                         </Button>
                     </div>
                 </div>
             }
             else
             {
-                <p class="controls-info">
-                    Maintenance mode is currently active. Non-admin users are seeing the 503 maintenance page.
-                </p>
-                <div class="controls-action">
-                    <Button Variant="ButtonVariant.Primary"
-                            Disabled="@_isSubmitting"
-                            OnClick="DisableMaintenance">
-                        @(_isSubmitting ? "Disabling..." : "Disable Maintenance Mode")
-                    </Button>
+                <div class="disable-section">
+                    <div class="active-notice">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                        </svg>
+                        <span>Maintenance mode is active. Non-admin users are seeing the 503 maintenance page.</span>
+                    </div>
+                    <div class="field-action">
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@_isSubmitting"
+                                OnClick="DisableMaintenance">
+                            @(_isSubmitting ? "Disabling..." : "Disable Maintenance Mode")
+                        </Button>
+                    </div>
                 </div>
             }
 
             @if (_error is not null)
             {
-                <div class="controls-error">@_error</div>
+                <div class="error-banner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    @_error
+                </div>
             }
         </div>
-    </Card>
+    </div>
 </div>
 
 @code {
