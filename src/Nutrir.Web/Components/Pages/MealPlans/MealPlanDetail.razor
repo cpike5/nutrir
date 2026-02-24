@@ -13,6 +13,8 @@
 
 <PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
 
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Meal Plans", "/meal-plans"), new BreadcrumbItem(_plan?.Title ?? "Meal Plan") })" />
+
 <div class="client-detail-page">
     @if (_isLoading)
     {
@@ -214,7 +216,6 @@
                 <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
                 <Button Variant="ButtonVariant.Ghost" OnClick="ReactivatePlan">Reactivate</Button>
             }
-            <a href="/meal-plans" class="client-detail-back-link">Back to Meal Plans</a>
         </div>
 
         @if (_showDeleteConfirm)

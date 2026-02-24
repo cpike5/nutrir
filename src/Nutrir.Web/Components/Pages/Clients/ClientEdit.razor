@@ -13,6 +13,8 @@
 
 <PageTitle>Edit Client — Nutrir</PageTitle>
 
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Clients", "/clients"), new BreadcrumbItem(_client?.FirstName + " " + _client?.LastName, $"/clients/{Id}"), new BreadcrumbItem("Edit") })" />
+
 <div class="client-form-page">
     @if (_isLoading)
     {

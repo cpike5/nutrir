@@ -12,6 +12,8 @@
 
 <PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
 
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Appointments", "/appointments"), new BreadcrumbItem(_appointment is not null ? $"{_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") })" />
+
 <div class="client-detail-page">
     @if (_isLoading)
     {
@@ -144,13 +146,11 @@
                     <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">Edit</Button>
                     <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">Cancel</Button>
                 }
-                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
             </div>
         }
         else
         {
             <div class="client-detail-actions">
-                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
             </div>
         }
 

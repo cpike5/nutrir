@@ -13,6 +13,8 @@
 
 <PageTitle>Edit Meal Plan — Nutrir</PageTitle>
 
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Meal Plans", "/meal-plans"), new BreadcrumbItem(_plan?.Title ?? "Meal Plan", $"/meal-plans/{Id}"), new BreadcrumbItem("Edit") })" />
+
 <div class="client-detail-page">
     @if (_isLoading)
     {
@@ -213,7 +215,6 @@
             <Button Variant="ButtonVariant.Primary" OnClick="SaveContent" Disabled="@_isSaving">
                 @(_isSaving ? "Saving..." : "Save Meal Plan")
             </Button>
-            <a href="/meal-plans/@Id" class="client-detail-back-link">Back to Detail</a>
         </div>
 
         @if (!string.IsNullOrEmpty(_successMessage))

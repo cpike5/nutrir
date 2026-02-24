@@ -180,7 +180,17 @@
   color: var(--color-text-muted);
 }
 
-.cc-breadcrumb strong {
+.cc-breadcrumb-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.cc-breadcrumb-link:hover {
+  color: var(--color-text);
+}
+
+.cc-breadcrumb-current {
   color: var(--color-text);
   font-weight: 500;
 }
