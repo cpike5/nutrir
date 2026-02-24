@@ -78,20 +78,13 @@ try
         app.UseHsts();
     }
 
-    app.UseExceptionHandler(errorApp =>
-    {
-        errorApp.Run(context =>
-        {
-            context.Response.Redirect("/error/500");
-            return Task.CompletedTask;
-        });
-    });
+    app.UseExceptionHandler("/error/500");
 
     app.UseHttpsRedirection();
 
     app.UseMiddleware<MaintenanceModeMiddleware>();
 
-    app.UseStatusCodePagesWithRedirects("/error/{0}");
+    app.UseStatusCodePagesWithReExecute("/error/{0}");
 
     app.UseAntiforgery();
 
