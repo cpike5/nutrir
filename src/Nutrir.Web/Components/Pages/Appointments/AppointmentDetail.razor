@@ -12,174 +12,237 @@
 
 <PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
 
-<div class="client-detail-page">
+<div class="appt-detail-page">
     @if (_isLoading)
     {
-        <p class="client-detail-loading">Loading appointment...</p>
+        <p class="appt-loading">Loading appointment...</p>
     }
     else if (_appointment is null)
     {
-        <Card>
-            <div class="client-detail-not-found">
-                <p class="client-detail-not-found-title">Appointment not found</p>
-                <p class="client-detail-not-found-desc">The appointment you are looking for does not exist or has been removed.</p>
-                <div class="client-detail-not-found-action">
+        <div class="table-card">
+            <div class="appt-not-found">
+                <svg class="not-found-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="10" y="12" width="44" height="44" rx="6"/>
+                    <path d="M22 6v12M42 6v12"/>
+                    <path d="M10 24h44"/>
+                    <path d="M28 36h8M32 32v8" stroke-opacity="0.5"/>
+                </svg>
+                <p class="not-found-title">Appointment not found</p>
+                <p class="not-found-desc">The appointment you are looking for does not exist or has been removed.</p>
+                <div class="not-found-action">
                     <Button Variant="ButtonVariant.Outline" OnClick="NavigateToList">Back to Appointments</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else
     {
-        <div class="client-detail-header">
-            <h1 class="client-detail-title">
-                Appointment with @_appointment.ClientFirstName @_appointment.ClientLastName
-            </h1>
-            <Badge Variant="@GetStatusVariant(_appointment.Status)">@FormatStatus(_appointment.Status)</Badge>
+        @* ── Hero Header ─────────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="hero">
+                <div class="hero-identity">
+                    <div class="hero-avatar" aria-hidden="true">@GetInitials()</div>
+                    <div class="hero-info">
+                        <div class="hero-title-row">
+                            <h1 class="hero-name">@FormatType(_appointment.Type)</h1>
+                            <Badge Variant="@GetStatusVariant(_appointment.Status)"><span class="badge-dot"></span> @FormatStatus(_appointment.Status)</Badge>
+                        </div>
+                        <div class="hero-meta-rows">
+                            <div class="hero-meta-row">
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4"/></svg>
+                                    <a href="/clients/@_appointment.ClientId" class="client-link">@_appointment.ClientFirstName @_appointment.ClientLastName</a>
+                                </span>
+                            </div>
+                            <div class="hero-meta-row">
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
+                                    @_appointment.StartTime.ToLocalTime().ToString("dddd, MMMM d, yyyy")
+                                </span>
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l3 2"/></svg>
+                                    @_appointment.StartTime.ToLocalTime().ToString("h:mm") — @_appointment.EndTime.ToLocalTime().ToString("h:mm tt")
+                                    <span class="duration-label">(@_appointment.DurationMinutes min)</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    @if (IsActionable())
+                    {
+                        @if (_appointment.Status == AppointmentStatus.Scheduled)
+                        {
+                            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmAppointment" Disabled="@_isProcessing">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                                Confirm
+                            </Button>
+                        }
+                        else if (_appointment.Status == AppointmentStatus.Confirmed)
+                        {
+                            <Button Variant="ButtonVariant.Primary" OnClick="CompleteAppointment" Disabled="@_isProcessing">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                                Complete
+                            </Button>
+                            <Button Variant="ButtonVariant.Outline" OnClick="MarkNoShow" Disabled="@_isProcessing">No-Show</Button>
+                        }
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                            Edit
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg>
+                            Cancel
+                        </Button>
+                    }
+                    <a href="/appointments" class="hero-back-link">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+                        Back
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <Card>
-            <div class="client-detail-grid">
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Client</span>
-                    <span class="client-detail-value">
-                        <a href="/clients/@_appointment.ClientId">@_appointment.ClientFirstName @_appointment.ClientLastName</a>
+        @* ── Cancel Confirmation ──────────────────────────── *@
+        @if (_showCancelForm)
+        {
+            <div class="table-card cancel-card section-animate">
+                <div class="cancel-confirm">
+                    <div class="cancel-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 1.5 17h17Z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+                    </div>
+                    <div class="cancel-content">
+                        <p class="cancel-title">Cancel Appointment</p>
+                        <p class="cancel-desc">
+                            Are you sure you want to cancel this appointment with <strong>@_appointment.ClientFirstName @_appointment.ClientLastName</strong>?
+                        </p>
+                        <FormGroup Label="Reason" Id="cancelReason">
+                            <textarea id="cancelReason"
+                                      class="form-input"
+                                      rows="2"
+                                      @bind="_cancellationReason"
+                                      placeholder="Cancellation reason..."></textarea>
+                        </FormGroup>
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <p class="cancel-error">@_errorMessage</p>
+                        }
+                        <div class="cancel-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="CancelAppointment" Disabled="@_isProcessing">
+                                @(_isProcessing ? "Cancelling..." : "Confirm Cancellation")
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = false)">Go Back</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Details Section ──────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 80ms;">
+            <div class="section-header">
+                <span class="section-header-label">Details</span>
+            </div>
+            <div class="detail-grid">
+                <div class="detail-field">
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">
+                        <span class="location-tag">
+                            @if (_appointment.Location == AppointmentLocation.InPerson)
+                            {
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
+                            }
+                            else if (_appointment.Location == AppointmentLocation.Virtual)
+                            {
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="M5 15h6M8 12.5V15"/></svg>
+                            }
+                            else
+                            {
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 11.5c0 .5-.2 1-.5 1.4a7.4 7.4 0 0 1-2.3 1.8c-.3.2-.7.3-1 .3-.5 0-1-.1-1.5-.4A18 18 0 0 1 1.4 6.8c-.3-.5-.4-1-.4-1.5 0-.3.1-.7.3-1A7.4 7.4 0 0 1 3.1 2c.4-.3.9-.5 1.4-.5.2 0 .4 0 .6.1.2.1.3.2.4.4l1.8 2.5c.1.2.2.3.2.5s0 .3-.1.5l-.8 1.1c-.1.1-.1.3-.1.4 0 .1 0 .2.1.3.1.3.4.6.8 1 .4.5.8.8 1.1.9.1.1.2.1.3.1s.3 0 .4-.1l1.1-.8c.1-.1.3-.2.5-.2s.3 0 .5.1l2.5 1.8c.2.1.3.3.4.5.1.1.1.3.1.5Z"/></svg>
+                            }
+                            @FormatLocation(_appointment.Location)
+                        </span>
                     </span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Type</span>
-                    <span class="client-detail-value">@FormatType(_appointment.Type)</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Date & Time</span>
-                    <span class="client-detail-value">@_appointment.StartTime.ToLocalTime().ToString("dddd, MMMM d, yyyy h:mm tt")</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Duration</span>
-                    <span class="client-detail-value">@_appointment.DurationMinutes minutes (@_appointment.StartTime.ToLocalTime().ToString("h:mm") — @_appointment.EndTime.ToLocalTime().ToString("h:mm tt"))</span>
-                </div>
-                <div class="client-detail-field">
-                    <span class="client-detail-label">Location</span>
-                    <span class="client-detail-value">@FormatLocation(_appointment.Location)</span>
                 </div>
 
                 @if (_appointment.Location == AppointmentLocation.Virtual && !string.IsNullOrEmpty(_appointment.VirtualMeetingUrl))
                 {
-                    <div class="client-detail-field">
-                        <span class="client-detail-label">Meeting URL</span>
-                        <span class="client-detail-value">
-                            <a href="@_appointment.VirtualMeetingUrl" target="_blank" rel="noopener">@_appointment.VirtualMeetingUrl</a>
+                    <div class="detail-field">
+                        <span class="detail-label">Meeting URL</span>
+                        <span class="detail-value">
+                            <a href="@_appointment.VirtualMeetingUrl" target="_blank" rel="noopener" class="meeting-link">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8.5a3 3 0 0 0 4.2.3l2-2a3 3 0 0 0-4.2-4.3L6.5 4"/><path d="M10 7.5a3 3 0 0 0-4.2-.3l-2 2a3 3 0 0 0 4.2 4.3L9.5 12"/></svg>
+                                @_appointment.VirtualMeetingUrl
+                            </a>
                         </span>
                     </div>
                 }
 
                 @if (_appointment.Location == AppointmentLocation.InPerson && !string.IsNullOrEmpty(_appointment.LocationNotes))
                 {
-                    <div class="client-detail-field">
-                        <span class="client-detail-label">Location Details</span>
-                        <span class="client-detail-value">@_appointment.LocationNotes</span>
+                    <div class="detail-field">
+                        <span class="detail-label">Location Details</span>
+                        <span class="detail-value">@_appointment.LocationNotes</span>
                     </div>
                 }
 
                 @if (!string.IsNullOrEmpty(_appointment.NutritionistName))
                 {
-                    <div class="client-detail-field">
-                        <span class="client-detail-label">Nutritionist</span>
-                        <span class="client-detail-value">@_appointment.NutritionistName</span>
+                    <div class="detail-field">
+                        <span class="detail-label">Nutritionist</span>
+                        <span class="detail-value">@_appointment.NutritionistName</span>
                     </div>
                 }
             </div>
+        </div>
 
-            @if (!string.IsNullOrEmpty(_appointment.Notes))
-            {
-                <Divider />
-                <div class="client-detail-notes-section">
-                    <span class="client-detail-label">Notes</span>
-                    <pre class="client-detail-notes">@_appointment.Notes</pre>
-                </div>
-            }
-
-            @if (_appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
-            {
-                <Divider />
-                <div class="client-detail-notes-section">
-                    <span class="client-detail-label">Cancellation</span>
-                    <p class="client-detail-value">
-                        @if (_appointment.CancelledAt.HasValue)
-                        {
-                            <span>Cancelled on @_appointment.CancelledAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
-                        }
-                        @if (!string.IsNullOrEmpty(_appointment.CancellationReason))
-                        {
-                            <br />
-                            <span>Reason: @_appointment.CancellationReason</span>
-                        }
-                    </p>
-                </div>
-            }
-
-            <Divider />
-            <div class="client-detail-meta">
-                <span class="client-detail-meta-item">Created: @_appointment.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
-                @if (_appointment.UpdatedAt.HasValue)
-                {
-                    <span class="client-detail-meta-item">Updated: @_appointment.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
-                }
-            </div>
-        </Card>
-
-        @if (IsActionable())
+        @* ── Notes ───────────────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_appointment.Notes))
         {
-            <div class="client-detail-actions cc-appointment-actions">
-                @if (_appointment.Status == AppointmentStatus.Scheduled)
-                {
-                    <Button Variant="ButtonVariant.Primary" OnClick="ConfirmAppointment">Confirm</Button>
-                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">Edit</Button>
-                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">Cancel</Button>
-                }
-                else if (_appointment.Status == AppointmentStatus.Confirmed)
-                {
-                    <Button Variant="ButtonVariant.Primary" OnClick="CompleteAppointment">Complete</Button>
-                    <Button Variant="ButtonVariant.Outline" OnClick="MarkNoShow">No-Show</Button>
-                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/edit"))">Edit</Button>
-                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = true)">Cancel</Button>
-                }
-                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
-            </div>
-        }
-        else
-        {
-            <div class="client-detail-actions">
-                <a href="/appointments" class="client-detail-back-link">Back to Appointments</a>
+            <div class="table-card section-animate" style="animation-delay: 160ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_appointment.Notes</pre>
+                </div>
             </div>
         }
 
-        @if (_showCancelForm)
+        @* ── Cancellation Info ───────────────────────────── *@
+        @if (_appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
         {
-            <Card>
-                <div class="client-detail-delete-confirm cc-cancel-form">
-                    <p class="client-detail-delete-title">Cancel Appointment</p>
-                    <p class="client-detail-delete-desc">Please provide a reason for cancellation.</p>
-                    <FormGroup Label="Reason" Id="cancelReason">
-                        <textarea id="cancelReason"
-                                  class="form-input"
-                                  rows="2"
-                                  @bind="_cancellationReason"
-                                  placeholder="Cancellation reason..."></textarea>
-                    </FormGroup>
-                    @if (!string.IsNullOrEmpty(_errorMessage))
+            <div class="table-card cancel-info-card section-animate" style="animation-delay: 240ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Cancellation</span>
+                </div>
+                <div class="cancel-info-body">
+                    @if (_appointment.CancelledAt.HasValue)
                     {
-                        <p class="client-detail-error">@_errorMessage</p>
+                        <div class="cancel-info-row">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
+                            Cancelled on @_appointment.CancelledAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                        </div>
                     }
-                    <div class="client-detail-delete-actions">
-                        <Button Variant="ButtonVariant.Primary" OnClick="CancelAppointment" Disabled="@_isProcessing">
-                            @(_isProcessing ? "Cancelling..." : "Confirm Cancellation")
-                        </Button>
-                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = false)">Go Back</Button>
-                    </div>
+                    @if (!string.IsNullOrEmpty(_appointment.CancellationReason))
+                    {
+                        <div class="cancel-info-row">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/><path d="M5 6h6M5 9h4"/></svg>
+                            @_appointment.CancellationReason
+                        </div>
+                    }
                 </div>
-            </Card>
+            </div>
         }
+
+        @* ── Metadata Footer ─────────────────────────────── *@
+        <div class="meta-footer section-animate" style="animation-delay: 320ms;">
+            <span>Created: @_appointment.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
+            @if (_appointment.UpdatedAt.HasValue)
+            {
+                <span> · Updated: @_appointment.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
+            }
+        </div>
     }
 </div>
 
@@ -202,6 +265,14 @@
 
     private bool IsActionable() =>
         _appointment?.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed;
+
+    private string GetInitials()
+    {
+        if (_appointment is null) return "??";
+        var first = _appointment.ClientFirstName.Length > 0 ? _appointment.ClientFirstName[0] : '?';
+        var last = _appointment.ClientLastName.Length > 0 ? _appointment.ClientLastName[0] : '?';
+        return $"{char.ToUpper(first)}{char.ToUpper(last)}";
+    }
 
     private async Task<string> GetUserId()
     {

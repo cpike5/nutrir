@@ -59,11 +59,28 @@
     text-transform: uppercase;
     letter-spacing: var(--tracking-wider);
     color: var(--color-text-muted);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.section-header:hover {
+    background: color-mix(in srgb, var(--color-bg-alt) 80%, var(--color-primary-muted));
 }
 
 .section-header svg {
     flex-shrink: 0;
     opacity: 0.7;
+}
+
+/* ── Section Chevron ─────────────────────────────────── */
+.section-chevron {
+    margin-left: auto;
+    transition: transform var(--duration-fast) var(--ease-default);
+}
+
+.section-chevron.collapsed {
+    transform: rotate(-90deg);
 }
 
 /* Add top border between sections (after a form-body) */
