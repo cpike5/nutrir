@@ -33,6 +33,13 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Blazor SSR Forms](design-system/blazor-ssr-forms.md) | SSR form patterns, the conditional `<EditForm>` gotcha, and multi-step wizard solution |
 | [Data Tables](design-system/data-tables.md) | Table styling conventions — card wrapper, identity cells, badges, row hover, responsive breakpoints |
 
+## Compliance Documents
+
+| Document | Description |
+|----------|-------------|
+| [Privacy Research](compliance/privacy-research.md) | Canadian privacy law analysis — PIPEDA, PHIPA, HIA, provincial frameworks, and technical recommendations |
+| [Compliance Requirements](compliance/requirements.md) | Actionable application-level requirements (v1 must-have, v2 should-have) distilled from the legal research |
+
 ## Architecture Decision Records
 
 | ADR | Domain | Title |
