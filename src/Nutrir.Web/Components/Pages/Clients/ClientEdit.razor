@@ -88,7 +88,7 @@
                             <FormInput Id="phone"
                                        Type="tel"
                                        Value="@_model.Phone"
-                                       ValueChanged="@(v => _model.Phone = v)"
+                                       ValueChanged="OnPhoneChanged"
                                        Placeholder="(555) 123-4567" />
                         </FormGroup>
                     </div>
@@ -173,7 +173,7 @@
                 FirstName = _client.FirstName,
                 LastName = _client.LastName,
                 Email = _client.Email,
-                Phone = _client.Phone,
+                Phone = PhoneFormatter.Format(_client.Phone),
                 DateOfBirth = _client.DateOfBirth?.ToString("yyyy-MM-dd"),
                 PrimaryNutritionistId = _client.PrimaryNutritionistId,
                 ConsentGiven = _client.ConsentGiven,
@@ -183,6 +183,11 @@
         }
 
         _isLoading = false;
+    }
+
+    private void OnPhoneChanged(string value)
+    {
+        _model.Phone = PhoneFormatter.Format(value);
     }
 
     private void OnConsentChanged(bool value)
@@ -229,7 +234,7 @@
                 FirstName: _model.FirstName!,
                 LastName: _model.LastName!,
                 Email: string.IsNullOrWhiteSpace(_model.Email) ? null : _model.Email,
-                Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : _model.Phone,
+                Phone: string.IsNullOrWhiteSpace(_model.Phone) ? null : PhoneFormatter.ToDigits(_model.Phone),
                 DateOfBirth: dob,
                 PrimaryNutritionistId: _model.PrimaryNutritionistId ?? string.Empty,
                 PrimaryNutritionistName: null,

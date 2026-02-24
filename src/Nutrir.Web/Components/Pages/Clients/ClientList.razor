@@ -104,7 +104,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="col-phone cell-phone">@(client.Phone ?? "—")</td>
+                            <td class="col-phone cell-phone">@(PhoneFormatter.FormatOrNull(client.Phone) ?? "—")</td>
                             <td class="col-nutritionist cell-nutritionist">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</td>
                             <td class="col-consent cell-consent">
                                 @if (client.ConsentGiven)
