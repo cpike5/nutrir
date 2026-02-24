@@ -1,17 +1,20 @@
 # Nutrir
 
-A CRM-style application for a solo nutritionist/dietician, focused on client tracking, scheduling, and meal planning.
+A compliance-first CRM for a solo nutritionist/dietitian, focused on client tracking, scheduling, meal planning, and progress monitoring.
 
 ## Overview
 
-Built for a freelance nutritionist practicing in Canada. The initial version supports a single practitioner managing clients, with plans to later open client-facing registration via invite codes.
+Built for a freelance nutritionist practicing in Canada. The initial version supports a single practitioner managing clients, with plans to later open client-facing registration via invite codes. Designed to meet Canadian privacy requirements (PIPEDA, PHIPA, HIA).
 
 ## Core Features (v1)
 
-- **Client Management** — Basic client profiles, contact info, health history, dietary restrictions
+- **Client Management** — Profiles, contact info, health history, dietary restrictions, consent capture
 - **Scheduling** — Appointment booking and session tracking
 - **Meal Plans** — Create and assign meal plans to clients
-- **Progress Tracking** — Track client goals and progress over time
+- **Progress Tracking** — Goals, measurements, and progress charting over time
+- **Global Search** — Search across clients, appointments, and meal plans
+- **User Management** — Admin user administration with invite codes
+- **Compliance** — Consent tracking, audit logging, MFA enforcement, HTTPS/HSTS, soft-delete, secure cookies
 
 ### Out of Scope (v1)
 
@@ -28,8 +31,8 @@ Built for a freelance nutritionist practicing in Canada. The initial version sup
 | **API** | ASP.NET Core |
 | **Domain** | Three-layer architecture (Core → Infrastructure → App) |
 | **Data** | EF Core + PostgreSQL |
-| **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) |
-| **Logging** | Serilog → Seq (dev), Elastic (prod) |
+| **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) + TOTP MFA |
+| **Logging** | Serilog → Seq (dev), Elastic APM (prod) |
 | **Hosting** | Self-hosted Linux VPS, Docker |
 
 ## Architecture
@@ -53,8 +56,9 @@ Built for a freelance nutritionist practicing in Canada. The initial version sup
 ## Infrastructure
 
 - **Docker Compose** — App + PostgreSQL + Seq (dev)
-- **Elastic** — Production logging and APM (external cluster, not managed by this project)
+- **Elastic APM** — Production logging, tracing, and APM (external cluster, not managed by this project)
 - **OAuth** — Providers registered dynamically based on configuration; unconfigured providers are skipped
+- **Maintenance Mode** — Admin-toggleable maintenance mode with 503 page and API endpoints
 
 ## Localization
 
@@ -87,7 +91,7 @@ English (en-CA) only for v1. Application structure supports future localization 
    dotnet run --project src/Nutrir.Web
    ```
 
-4. **Access the app** at `https://localhost:5001` and **Seq logs** at `http://localhost:7101` (admin / `SeqDev123!`).
+4. **Access the app** at `https://localhost:7084` and **Seq logs** at `http://localhost:7101` (admin / `SeqDev123!`).
 
 ### Full Docker Setup
 
@@ -104,7 +108,22 @@ The app will be available at `http://localhost:7100`.
 
 | Port | Service |
 |------|---------|
+| `7084` | App (local HTTPS) |
 | `7100` | App (Docker) |
 | `7101` | Seq UI |
 | `7102` | Seq ingestion |
 | `7103` | PostgreSQL |
+
+## Project Structure
+
+```
+src/
+├── Nutrir.Core/           # Domain entities, interfaces, enums, DTOs
+├── Nutrir.Infrastructure/  # EF Core, repositories, services
+└── Nutrir.Web/            # Blazor Server UI, components, pages, auth
+docs/                       # Domain-organized documentation (see docs/README.md)
+```
+
+## Documentation
+
+See [`docs/README.md`](docs/README.md) for the full documentation index, organized by domain.
