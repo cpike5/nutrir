@@ -4,15 +4,45 @@
 @inject SignInManager<ApplicationUser> SignInManager
 
 <nav class="manage-nav">
-    <NavLink href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
-    <NavLink href="Account/Manage/Email">Email</NavLink>
-    <NavLink href="Account/Manage/ChangePassword">Password</NavLink>
+    <NavLink href="Account/Manage" Match="NavLinkMatch.All" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profile</span>
+    </NavLink>
+    <NavLink href="Account/Manage/Email" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+        </svg>
+        <span>Email</span>
+    </NavLink>
+    <NavLink href="Account/Manage/ChangePassword" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>
+        </svg>
+        <span>Password</span>
+    </NavLink>
     @if (hasExternalLogins)
     {
-        <NavLink href="Account/Manage/ExternalLogins">External logins</NavLink>
+        <NavLink href="Account/Manage/ExternalLogins" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            <span>External logins</span>
+        </NavLink>
     }
-    <NavLink href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
-    <NavLink href="Account/Manage/PersonalData">Personal data</NavLink>
+    <NavLink href="Account/Manage/TwoFactorAuthentication" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+        </svg>
+        <span>Two-factor authentication</span>
+    </NavLink>
+    <NavLink href="Account/Manage/PersonalData" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>
+        </svg>
+        <span>Personal data</span>
+    </NavLink>
 </nav>
 
 @code {

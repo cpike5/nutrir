@@ -1,16 +1,18 @@
 @inherits LayoutComponentBase
 @layout Nutrir.Web.Components.Layout.MainLayout
 
-<div class="manage-layout">
-    <div class="manage-layout-header">
-        <h1>Manage your account</h1>
-        <p class="text-muted">Change your account settings</p>
+<div class="manage-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Account Settings</h1>
+            <p class="page-subtitle">Manage your account preferences and security</p>
+        </div>
     </div>
-    <div class="manage-layout-body">
-        <div class="manage-layout-sidebar">
+    <div class="manage-body">
+        <div class="manage-sidebar">
             <ManageNavMenu />
         </div>
-        <div class="manage-layout-content">
+        <div class="manage-content">
             @Body
         </div>
     </div>

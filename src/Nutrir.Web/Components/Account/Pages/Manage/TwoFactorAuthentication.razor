@@ -11,93 +11,111 @@
 
 <PageTitle>Two-factor authentication (2FA)</PageTitle>
 
-<div class="manage-section-header">
-    <h3>Two-factor authentication (2FA)</h3>
-    <p class="text-muted">Manage your two-factor authentication settings</p>
-</div>
-
 <StatusMessage />
 
 @if (canTrack)
 {
-    @if (is2faEnabled)
-    {
-        <div class="card card-flat mb-6">
-            <div class="flex items-center gap-2 mb-4">
-                <h5>Status</h5>
-                <span class="badge badge-success">Enabled</span>
-            </div>
+    <div class="table-card">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            </svg>
+            <span>Two-Factor Authentication</span>
+        </div>
+        <div class="card-body">
+            @if (is2faEnabled)
+            {
+                <div class="flex items-center gap-2 mb-4">
+                    <h5>Status</h5>
+                    <span class="badge badge-success">Enabled</span>
+                </div>
 
-            @if (recoveryCodesLeft == 0)
-            {
-                <div class="alert alert-error mb-4" role="alert">
-                    <strong>You have no recovery codes left.</strong>
-                    <p>You must <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
-                </div>
-            }
-            else if (recoveryCodesLeft == 1)
-            {
-                <div class="alert alert-error mb-4" role="alert">
-                    <strong>You have 1 recovery code left.</strong>
-                    <p>You can <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
-                </div>
-            }
-            else if (recoveryCodesLeft <= 3)
-            {
-                <div class="alert alert-warning mb-4" role="alert">
-                    <strong>You have @recoveryCodesLeft recovery codes left.</strong>
-                    <p>You should <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
-                </div>
-            }
-            else
-            {
-                <p class="text-sm text-muted mb-4">You have <strong>@recoveryCodesLeft</strong> recovery codes remaining.</p>
-            }
-
-            <div class="flex gap-2 flex-wrap">
-                @if (isMachineRemembered)
+                @if (recoveryCodesLeft == 0)
                 {
-                    <form @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
-                        <AntiforgeryToken />
-                        <button type="submit" class="btn btn-outline btn-sm">Forget this browser</button>
-                    </form>
+                    <div class="alert alert-error mb-4" role="alert">
+                        <strong>You have no recovery codes left.</strong>
+                        <p>You must <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
+                    </div>
                 }
-                <a href="Account/Manage/Disable2fa" class="btn btn-outline btn-sm">Disable 2FA</a>
-                <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-outline btn-sm">Reset recovery codes</a>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="card card-flat mb-6">
-            <div class="flex items-center gap-2 mb-4">
-                <h5>Status</h5>
-                <span class="badge badge-warning">Disabled</span>
-            </div>
-            <p class="text-sm text-muted">Two-factor authentication adds an additional layer of security to your account.</p>
-        </div>
-    }
+                else if (recoveryCodesLeft == 1)
+                {
+                    <div class="alert alert-error mb-4" role="alert">
+                        <strong>You have 1 recovery code left.</strong>
+                        <p>You can <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
+                    </div>
+                }
+                else if (recoveryCodesLeft <= 3)
+                {
+                    <div class="alert alert-warning mb-4" role="alert">
+                        <strong>You have @recoveryCodesLeft recovery codes left.</strong>
+                        <p>You should <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-muted mb-4">You have <strong>@recoveryCodesLeft</strong> recovery codes remaining.</p>
+                }
 
-    <div class="card card-flat">
-        <h5 class="mb-4">Authenticator app</h5>
-        <div class="flex gap-2 flex-wrap">
-            @if (!hasAuthenticator)
-            {
-                <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary btn-sm">Add authenticator app</a>
+                <div class="flex gap-2 flex-wrap">
+                    @if (isMachineRemembered)
+                    {
+                        <form @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
+                            <AntiforgeryToken />
+                            <button type="submit" class="btn btn-outline btn-sm">Forget this browser</button>
+                        </form>
+                    }
+                    <a href="Account/Manage/Disable2fa" class="btn btn-outline btn-sm">Disable 2FA</a>
+                    <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-outline btn-sm">Reset recovery codes</a>
+                </div>
             }
             else
             {
-                <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary btn-sm">Set up authenticator app</a>
-                <a href="Account/Manage/ResetAuthenticator" class="btn btn-outline btn-sm">Reset authenticator app</a>
+                <div class="flex items-center gap-2 mb-4">
+                    <h5>Status</h5>
+                    <span class="badge badge-warning">Disabled</span>
+                </div>
+                <p class="text-sm text-muted">Two-factor authentication adds an additional layer of security to your account.</p>
             }
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            </svg>
+            <span>Authenticator App</span>
+        </div>
+        <div class="card-body">
+            <div class="flex gap-2 flex-wrap">
+                @if (!hasAuthenticator)
+                {
+                    <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary btn-sm">Add authenticator app</a>
+                }
+                else
+                {
+                    <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary btn-sm">Set up authenticator app</a>
+                    <a href="Account/Manage/ResetAuthenticator" class="btn btn-outline btn-sm">Reset authenticator app</a>
+                }
+            </div>
         </div>
     </div>
 }
 else
 {
-    <div class="alert alert-error" role="alert">
-        <strong>Privacy and cookie policy have not been accepted.</strong>
-        <p>You must accept the policy before you can enable two factor authentication.</p>
+    <div class="table-card">
+        <div class="section-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            </svg>
+            <span>Two-Factor Authentication</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-error" role="alert">
+                <strong>Privacy and cookie policy have not been accepted.</strong>
+                <p>You must accept the policy before you can enable two factor authentication.</p>
+            </div>
+        </div>
     </div>
 }
 

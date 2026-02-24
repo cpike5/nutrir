@@ -14,27 +14,29 @@
 
 <h2>Recovery code verification</h2>
 
-<StatusMessage Message="@message" />
-<p class="text-sm text-muted mb-4">
-    Enter one of your recovery codes to sign in. This login will not be remembered until you provide
-    an authenticator app code at sign in or disable 2FA.
-</p>
+<div class="auth-form-section">
+    <StatusMessage Message="@message" />
+    <p class="text-sm text-muted">
+        Enter one of your recovery codes to sign in. This login will not be remembered until you provide
+        an authenticator app code at sign in or disable 2FA.
+    </p>
 
-<EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <DataAnnotationsValidator />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="flex flex-col gap-4">
-        <div class="form-group">
-            <label for="Input.RecoveryCode" class="form-label">Recovery Code</label>
-            <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-input" autocomplete="off" placeholder="XXXXX-XXXXX" />
-            <ValidationMessage For="() => Input.RecoveryCode" class="form-error" />
+    <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        <div class="flex flex-col gap-4">
+            <div class="form-group">
+                <label for="Input.RecoveryCode" class="form-label">Recovery Code</label>
+                <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-input" autocomplete="off" placeholder="XXXXX-XXXXX" />
+                <ValidationMessage For="() => Input.RecoveryCode" class="form-error" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
-    </div>
-</EditForm>
+    </EditForm>
 
-<div class="text-center mt-6">
-    <a href="Account/LoginWith2fa" class="text-sm">Back to authenticator code</a>
+    <div class="text-center mt-6">
+        <a href="Account/LoginWith2fa" class="text-sm">Back to authenticator code</a>
+    </div>
 </div>
 
 @code {

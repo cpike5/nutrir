@@ -14,33 +14,35 @@
 
 <h2>Two-factor authentication</h2>
 
-<StatusMessage Message="@message" />
-<p class="text-sm text-muted mb-4">Your login is protected with an authenticator app. Enter your authenticator code below.</p>
+<div class="auth-form-section">
+    <StatusMessage Message="@message" />
+    <p class="text-sm text-muted">Your login is protected with an authenticator app. Enter your authenticator code below.</p>
 
-<EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-    <input type="hidden" name="RememberMe" value="@RememberMe" />
-    <DataAnnotationsValidator />
-    <ValidationSummary class="form-error" role="alert" />
-    <div class="flex flex-col gap-4">
-        <div class="form-group">
-            <label for="Input.TwoFactorCode" class="form-label">Authenticator code</label>
-            <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-input" autocomplete="off" />
-            <ValidationMessage For="() => Input.TwoFactorCode" class="form-error" />
+    <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+        <input type="hidden" name="RememberMe" value="@RememberMe" />
+        <DataAnnotationsValidator />
+        <ValidationSummary class="form-error" role="alert" />
+        <div class="flex flex-col gap-4">
+            <div class="form-group">
+                <label for="Input.TwoFactorCode" class="form-label">Authenticator code</label>
+                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-input" autocomplete="off" />
+                <ValidationMessage For="() => Input.TwoFactorCode" class="form-error" />
+            </div>
+            <div class="form-checkbox">
+                <InputCheckbox @bind-Value="Input.RememberMachine" id="Input.RememberMachine" />
+                <label for="Input.RememberMachine">Remember this machine</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
         </div>
-        <div class="form-checkbox">
-            <InputCheckbox @bind-Value="Input.RememberMachine" id="Input.RememberMachine" />
-            <label for="Input.RememberMachine">Remember this machine</label>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
+    </EditForm>
+
+    <div class="text-center mt-6">
+        <span class="text-sm text-muted">
+            Don't have access to your authenticator device?
+            <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">Use a recovery code</a>
+        </span>
     </div>
-</EditForm>
-
-<div class="text-center mt-6">
-    <span class="text-sm text-muted">
-        Don't have access to your authenticator device?
-        <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">Use a recovery code</a>
-    </span>
 </div>
 
 @code {
