@@ -1,9 +1,8 @@
-/* Dropdown container */
+/* Dropdown container — uses fixed positioning to escape any parent stacking context */
 .search-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: var(--space-2);
+    position: fixed;
+    top: 52px;
+    right: var(--space-6);
     min-width: 420px;
     max-width: 560px;
     max-height: 480px;
@@ -12,14 +11,14 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    z-index: 1000;
+    z-index: 1001;
 }
 
 /* Transparent backdrop for click-outside */
 .search-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 999;
+    z-index: 1000;
     background: transparent;
 }
 
