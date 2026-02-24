@@ -12,37 +12,51 @@
 
 <Breadcrumb Items="@(new[] { new BreadcrumbItem("Meal Plans") })" />
 
-<div class="clients-page">
-    <div class="clients-header">
-        <div class="clients-header-text">
-            <h1 class="clients-title">Meal Plans</h1>
-        </div>
-        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">New Meal Plan</Button>
+<div class="mp-list-page">
+    <div class="page-header">
+        <h1 class="page-title">Meal Plans</h1>
+        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -2px;">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            New Meal Plan
+        </Button>
     </div>
 
-    <div class="appt-filters">
-        <FormGroup Label="Status" Id="statusFilter">
-            <FormSelect Id="statusFilter"
-                        Value="@_statusFilter"
-                        ValueChanged="OnStatusChanged">
+    <div class="toolbar">
+        <div class="filter-group">
+            <span class="filter-label">Status</span>
+            <select class="filter-select" @onchange="OnStatusChanged">
                 <option value="">All Statuses</option>
-                <option value="Draft">Draft</option>
-                <option value="Active">Active</option>
-                <option value="Archived">Archived</option>
-            </FormSelect>
-        </FormGroup>
+                <option value="Draft" selected="@(_statusFilter == "Draft")">Draft</option>
+                <option value="Active" selected="@(_statusFilter == "Active")">Active</option>
+                <option value="Archived" selected="@(_statusFilter == "Archived")">Archived</option>
+            </select>
+        </div>
+        @if (_mealPlans is not null && _mealPlans.Count > 0)
+        {
+            <span class="mp-count">
+                <span class="badge-dot" style="background: var(--color-primary);"></span>
+                @_mealPlans.Count plan@(_mealPlans.Count != 1 ? "s" : "")
+            </span>
+        }
     </div>
 
-    <Card>
+    <div class="table-card">
         @if (_isLoading)
         {
-            <p class="clients-loading">Loading meal plans...</p>
+            <p class="mp-loading">Loading meal plans...</p>
         }
         else if (_mealPlans is null || _mealPlans.Count == 0)
         {
-            <div class="clients-empty">
-                <p class="clients-empty-title">No meal plans found</p>
-                <p class="clients-empty-desc">
+            <div class="empty-state">
+                <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                    <path d="M7 2v20" />
+                    <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                </svg>
+                <p class="empty-state-title">No meal plans found</p>
+                <p class="empty-state-desc">
                     @if (string.IsNullOrEmpty(_statusFilter))
                     {
                         <span>Create your first meal plan to get started.</span>
@@ -56,41 +70,49 @@
         }
         else
         {
-            <table class="clients-table">
+            <table class="mp-table">
                 <thead>
                     <tr>
                         <th>Title</th>
                         <th>Client</th>
                         <th>Status</th>
-                        <th>Days</th>
-                        <th>Start Date</th>
-                        <th>Created</th>
+                        <th class="col-days">Days</th>
+                        <th class="col-start-date">Start Date</th>
+                        <th class="col-created">Created</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var plan in _mealPlans)
                     {
-                        <tr class="clients-table-row">
-                            <td class="clients-table-name">@plan.Title</td>
+                        <tr>
+                            <td class="cell-title">@plan.Title</td>
                             <td>@plan.ClientFirstName @plan.ClientLastName</td>
                             <td><Badge Variant="@GetStatusVariant(plan.Status)">@plan.Status</Badge></td>
-                            <td class="clients-table-muted">@plan.DayCount</td>
-                            <td class="clients-table-muted">@(plan.StartDate?.ToString("MMM d, yyyy") ?? "—")</td>
-                            <td class="clients-table-muted">@plan.CreatedAt.ToString("MMM d")</td>
-                            <td class="clients-table-actions">
-                                <a href="meal-plans/@plan.Id" class="clients-action-link">View</a>
-                                @if (plan.Status is MealPlanStatus.Draft or MealPlanStatus.Active)
-                                {
-                                    <a href="meal-plans/@plan.Id/edit" class="clients-action-link">Edit</a>
-                                }
+                            <td class="cell-muted col-days">@plan.DayCount</td>
+                            <td class="cell-muted col-start-date">@(plan.StartDate?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td class="cell-muted col-created">@plan.CreatedAt.ToString("MMM d")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a href="meal-plans/@plan.Id" class="btn-icon" title="View">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <span class="sr-only">View</span>
+                                    </a>
+                                    @if (plan.Status is MealPlanStatus.Draft or MealPlanStatus.Active)
+                                    {
+                                        <a href="meal-plans/@plan.Id/edit" class="btn-icon" title="Edit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                            <span class="sr-only">Edit</span>
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         }
-    </Card>
+    </div>
 </div>
 
 @code {
@@ -117,11 +139,10 @@
         _isLoading = false;
     }
 
-    private async void OnStatusChanged(string value)
+    private async Task OnStatusChanged(ChangeEventArgs e)
     {
-        _statusFilter = value;
+        _statusFilter = e.Value?.ToString();
         await LoadMealPlansAsync();
-        StateHasChanged();
     }
 
     private void NavigateToCreate()

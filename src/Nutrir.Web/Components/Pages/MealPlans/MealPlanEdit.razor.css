@@ -1,0 +1,400 @@
+/* ── Page Container ──────────────────────────────────── */
+.mp-edit-page {
+    max-width: 960px;
+    padding: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* ── Page Header ─────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.page-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* ── Badge Dot ───────────────────────────────────────── */
+.badge-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+}
+
+/* ── Loading / Not Found ─────────────────────────────── */
+.mp-loading {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+.table-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.mp-not-found {
+    padding: var(--space-16) var(--space-6);
+    text-align: center;
+}
+
+.not-found-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+}
+
+.not-found-action {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-4);
+}
+
+/* ── Targets Bar ─────────────────────────────────────── */
+.targets-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    background: rgba(var(--rgb-accent), 0.06);
+    border-radius: var(--radius-md);
+}
+
+.targets-label {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ── Day Tabs ────────────────────────────────────────── */
+.day-tabs {
+    display: flex;
+    gap: var(--space-1);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-2);
+}
+
+.day-tab {
+    padding: var(--space-2) var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-default);
+}
+
+.day-tab:hover {
+    color: var(--color-text);
+    background: rgba(var(--rgb-primary), 0.05);
+}
+
+.day-tab.active {
+    color: var(--color-primary);
+    background: var(--color-bg-card);
+    border-color: var(--color-border);
+    border-bottom-color: var(--color-bg-card);
+    font-weight: 600;
+}
+
+/* ── Day Totals Bar ──────────────────────────────────── */
+.day-totals {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.day-totals.on-target {
+    border-color: var(--color-success);
+    background: rgba(90, 158, 107, 0.05);
+}
+
+.day-totals.over {
+    border-color: var(--color-warning);
+    background: rgba(196, 136, 47, 0.05);
+}
+
+.day-totals.under {
+    border-color: var(--color-info);
+    background: rgba(74, 126, 139, 0.05);
+}
+
+.totals-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+}
+
+.target-diff {
+    font-weight: 600;
+    font-size: var(--text-xs);
+}
+
+.target-diff.over {
+    color: var(--color-warning);
+}
+
+.target-diff.under {
+    color: var(--color-info);
+}
+
+.target-diff.on-target {
+    color: var(--color-success);
+}
+
+/* ── Slot Card ───────────────────────────────────────── */
+.slot-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.slot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: rgba(var(--rgb-accent), 0.04);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.slot-name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.slot-totals {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.slot-remove {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--text-lg);
+    padding: 0 var(--space-2);
+    transition: color var(--duration-fast);
+}
+
+.slot-remove:hover {
+    color: var(--color-error);
+}
+
+/* ── Items Table ─────────────────────────────────────── */
+.items-table {
+    width: 100%;
+    font-size: var(--text-xs);
+    border-collapse: collapse;
+}
+
+.items-table th {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.items-table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid rgba(var(--rgb-accent), 0.08);
+    color: var(--color-text);
+}
+
+.items-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.item-remove {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    padding: 0;
+}
+
+.item-remove:hover {
+    color: var(--color-error);
+}
+
+/* ── Item Form ───────────────────────────────────────── */
+.item-form {
+    padding: var(--space-3) var(--space-4);
+    background: rgba(var(--rgb-primary), 0.02);
+    border-top: 1px solid var(--color-border);
+}
+
+.item-form-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.item-form-row > * {
+    flex: 1;
+}
+
+.item-form-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+/* ── Add Buttons ─────────────────────────────────────── */
+.add-item-btn {
+    display: block;
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-primary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--duration-fast);
+}
+
+.add-item-btn:hover {
+    background: rgba(var(--rgb-primary), 0.05);
+}
+
+.add-slot-btn {
+    display: block;
+    width: 100%;
+    padding: var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-primary);
+    background: transparent;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    text-align: center;
+    transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+
+.add-slot-btn:hover {
+    background: rgba(var(--rgb-primary), 0.05);
+    border-color: var(--color-primary);
+}
+
+.add-slot-form {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-card);
+}
+
+/* ── Save Bar ────────────────────────────────────────── */
+.save-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ── Messages ────────────────────────────────────────── */
+.success-msg {
+    padding: var(--space-3) var(--space-4);
+    background: rgba(90, 158, 107, 0.1);
+    color: var(--color-success);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.error-msg {
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    padding: var(--space-2) 0;
+}
+
+/* ── Entrance Animation ──────────────────────────────── */
+@keyframes slotFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.slot-card {
+    animation: slotFadeIn 0.25s var(--ease-default) backwards;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+    .item-form-row {
+        flex-wrap: wrap;
+    }
+
+    .item-form-row > * {
+        flex: 1 1 calc(50% - var(--space-1));
+        min-width: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .mp-edit-page {
+        padding: var(--space-4);
+    }
+
+    .day-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .day-tab {
+        white-space: nowrap;
+    }
+
+    .item-form-row > * {
+        flex: 1 1 100%;
+    }
+
+    .slot-header {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+}

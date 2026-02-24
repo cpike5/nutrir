@@ -15,33 +15,33 @@
 
 <Breadcrumb Items="@(new[] { new BreadcrumbItem("Meal Plans", "/meal-plans"), new BreadcrumbItem(_plan?.Title ?? "Meal Plan", $"/meal-plans/{Id}"), new BreadcrumbItem("Edit") })" />
 
-<div class="client-detail-page">
+<div class="mp-edit-page">
     @if (_isLoading)
     {
-        <p class="client-detail-loading">Loading meal plan...</p>
+        <p class="mp-loading">Loading meal plan...</p>
     }
     else if (_plan is null)
     {
-        <Card>
-            <div class="client-detail-not-found">
-                <p class="client-detail-not-found-title">Meal plan not found</p>
-                <div class="client-detail-not-found-action">
+        <div class="table-card">
+            <div class="mp-not-found">
+                <p class="not-found-title">Meal plan not found</p>
+                <div class="not-found-action">
                     <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/meal-plans"))">Back to Meal Plans</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else
     {
-        <div class="client-detail-header">
-            <h1 class="client-detail-title">@_plan.Title</h1>
+        <div class="page-header">
+            <h1 class="page-title">@_plan.Title</h1>
             <Badge Variant="@GetStatusVariant(_plan.Status)">@_plan.Status</Badge>
         </div>
 
         @if (_plan.CalorieTarget.HasValue || _plan.ProteinTargetG.HasValue)
         {
-            <div class="mp-targets-bar">
-                <span class="mp-targets-label">Daily Targets:</span>
+            <div class="targets-bar">
+                <span class="targets-label">Daily Targets:</span>
                 @if (_plan.CalorieTarget.HasValue) { <span>@_plan.CalorieTarget.Value.ToString("N0") kcal</span> }
                 @if (_plan.ProteinTargetG.HasValue) { <span>· @_plan.ProteinTargetG.Value.ToString("N0")g P</span> }
                 @if (_plan.CarbsTargetG.HasValue) { <span>· @_plan.CarbsTargetG.Value.ToString("N0")g C</span> }
@@ -50,10 +50,10 @@
         }
 
         <!-- Day Tabs -->
-        <div class="mp-day-tabs">
+        <div class="day-tabs">
             @foreach (var day in _days)
             {
-                <button class="mp-day-tab @(day.DayNumber == _selectedDay ? "active" : "")"
+                <button class="day-tab @(day.DayNumber == _selectedDay ? "active" : "")"
                         @onclick="@(() => SelectDay(day.DayNumber))">
                     @(day.Label ?? $"Day {day.DayNumber}")
                 </button>
@@ -64,8 +64,8 @@
         @if (GetCurrentDay() is { } currentDay)
         {
             <!-- Day Summary Bar -->
-            <div class="mp-totals @GetDayTotalsClass(currentDay)">
-                <span class="mp-totals-label">Day Total:</span>
+            <div class="day-totals @GetDayTotalsClass(currentDay)">
+                <span class="totals-label">Day Total:</span>
                 <span>@GetDayCalories(currentDay).ToString("N0") kcal</span>
                 <span>· @GetDayProtein(currentDay).ToString("N0")g P</span>
                 <span>· @GetDayCarbs(currentDay).ToString("N0")g C</span>
@@ -73,7 +73,7 @@
                 @if (_plan.CalorieTarget.HasValue)
                 {
                     var diff = GetDayCalories(currentDay) - _plan.CalorieTarget.Value;
-                    <span class="mp-target-compare @(diff > 50 ? "over" : diff < -50 ? "under" : "on-target")">
+                    <span class="target-diff @(diff > 50 ? "over" : diff < -50 ? "under" : "on-target")">
                         (@(diff >= 0 ? "+" : "")@diff.ToString("N0") kcal)
                     </span>
                 }
@@ -82,20 +82,20 @@
             <!-- Meal Slots -->
             @foreach (var slot in currentDay.MealSlots.OrderBy(s => s.SortOrder))
             {
-                <div class="mp-slot">
-                    <div class="mp-slot-header">
-                        <span class="mp-slot-name">@(slot.CustomName ?? FormatMealType(slot.MealType))</span>
-                        <span class="mp-slot-totals">
+                <div class="slot-card">
+                    <div class="slot-header">
+                        <span class="slot-name">@(slot.CustomName ?? FormatMealType(slot.MealType))</span>
+                        <span class="slot-totals">
                             @GetSlotCalories(slot).ToString("N0") kcal · @GetSlotProtein(slot).ToString("N0")g P
                         </span>
-                        <button class="mp-slot-remove" title="Remove meal slot"
+                        <button class="slot-remove" title="Remove meal slot"
                                 @onclick="@(() => RemoveSlot(currentDay, slot))">×</button>
                     </div>
 
                     <!-- Items Table -->
                     @if (slot.Items.Count > 0)
                     {
-                        <table class="mp-items-table">
+                        <table class="items-table">
                             <thead>
                                 <tr>
                                     <th>Food</th>
@@ -111,7 +111,7 @@
                             <tbody>
                                 @foreach (var item in slot.Items.OrderBy(i => i.SortOrder))
                                 {
-                                    <tr class="mp-item">
+                                    <tr>
                                         <td>@item.FoodName</td>
                                         <td>@item.Quantity</td>
                                         <td>@item.Unit</td>
@@ -120,7 +120,7 @@
                                         <td>@item.CarbsG.ToString("N0")</td>
                                         <td>@item.FatG.ToString("N0")</td>
                                         <td>
-                                            <button class="mp-item-remove" @onclick="@(() => RemoveItem(slot, item))">×</button>
+                                            <button class="item-remove" @onclick="@(() => RemoveItem(slot, item))">×</button>
                                         </td>
                                     </tr>
                                 }
@@ -131,8 +131,8 @@
                     <!-- Add Item Form -->
                     @if (_addingToSlot == slot)
                     {
-                        <div class="mp-item-form">
-                            <div class="mp-item-form-row">
+                        <div class="item-form">
+                            <div class="item-form-row">
                                 <FormInput Id="@($"food-{slot.GetHashCode()}")"
                                            Placeholder="Food name"
                                            Value="@_newItem.FoodName"
@@ -155,7 +155,7 @@
                                     <option value="ml">ml</option>
                                 </FormSelect>
                             </div>
-                            <div class="mp-item-form-row">
+                            <div class="item-form-row">
                                 <FormInput Id="@($"cal-{slot.GetHashCode()}")"
                                            Type="number" Placeholder="Cal"
                                            Value="@_newItem.Calories"
@@ -173,7 +173,7 @@
                                            Value="@_newItem.Fat"
                                            ValueChanged="@(v => _newItem.Fat = v)" />
                             </div>
-                            <div class="mp-item-form-actions">
+                            <div class="item-form-actions">
                                 <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="@(() => AddItem(slot))">Add Item</Button>
                                 <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="@(() => _addingToSlot = null)">Cancel</Button>
                             </div>
@@ -181,7 +181,7 @@
                     }
                     else
                     {
-                        <button class="mp-add-item-btn" @onclick="@(() => StartAddItem(slot))">+ Add food item</button>
+                        <button class="add-item-btn" @onclick="@(() => StartAddItem(slot))">+ Add food item</button>
                     }
                 </div>
             }
@@ -189,7 +189,7 @@
             <!-- Add Meal Slot -->
             @if (_addingSlot)
             {
-                <div class="mp-add-slot-form">
+                <div class="add-slot-form">
                     <FormSelect Id="newSlotType"
                                 Value="@_newSlotType"
                                 ValueChanged="@(v => _newSlotType = v)">
@@ -206,12 +206,12 @@
             }
             else
             {
-                <button class="mp-add-slot-btn" @onclick="@(() => { _addingSlot = true; _newSlotType = "Breakfast"; })">+ Add meal slot</button>
+                <button class="add-slot-btn" @onclick="@(() => { _addingSlot = true; _newSlotType = "Breakfast"; })">+ Add meal slot</button>
             }
         }
 
-        <!-- Save / Back -->
-        <div class="client-detail-actions">
+        <!-- Save / Messages -->
+        <div class="save-bar">
             <Button Variant="ButtonVariant.Primary" OnClick="SaveContent" Disabled="@_isSaving">
                 @(_isSaving ? "Saving..." : "Save Meal Plan")
             </Button>
@@ -219,11 +219,11 @@
 
         @if (!string.IsNullOrEmpty(_successMessage))
         {
-            <div class="mp-success-message">@_successMessage</div>
+            <div class="success-msg">@_successMessage</div>
         }
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
-            <p class="client-form-error">@_errorMessage</p>
+            <p class="error-msg">@_errorMessage</p>
         }
     }
 </div>

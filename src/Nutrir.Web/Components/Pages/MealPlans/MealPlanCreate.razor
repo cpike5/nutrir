@@ -14,135 +14,183 @@
 
 <PageTitle>New Meal Plan — Nutrir</PageTitle>
 
-<div class="client-form-page">
-    <div class="client-form-header">
-        <h1 class="client-form-title">New Meal Plan</h1>
+<div class="form-page">
+    <div class="page-header">
+        <a href="/meal-plans" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <h1 class="page-title">New Meal Plan</h1>
     </div>
 
-    <Card>
-        <div class="client-form-body">
-            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateMealPlan">
-                <DataAnnotationsValidator />
+    <div class="table-card">
+        <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateMealPlan">
+            <DataAnnotationsValidator />
 
-                <FormGroup Label="Client" Id="clientId" Error="@GetFieldError(nameof(_model.ClientId))">
-                    <FormSelect Id="clientId"
-                                Value="@_model.ClientId"
-                                ValueChanged="@(v => _model.ClientId = v)">
-                        <option value="">Select a client...</option>
-                        @foreach (var client in _clients)
-                        {
-                            <option value="@client.Id">@client.FirstName @client.LastName</option>
-                        }
-                    </FormSelect>
-                </FormGroup>
-
-                <FormGroup Label="Title" Id="title" Error="@GetFieldError(nameof(_model.Title))">
-                    <FormInput Id="title"
-                               Value="@_model.Title"
-                               ValueChanged="@(v => _model.Title = v)"
-                               Placeholder="e.g. Week 1 — Weight Loss" />
-                </FormGroup>
-
-                <FormGroup Label="Description" Id="description">
-                    <textarea id="description"
-                              class="form-input"
-                              rows="2"
-                              @bind="_model.Description"
-                              placeholder="Overview or goals..."></textarea>
-                </FormGroup>
-
-                <div class="client-form-grid">
-                    <FormGroup Label="Start Date" Id="startDate">
-                        <FormInput Id="startDate" Type="date"
-                                   Value="@_model.StartDate"
-                                   ValueChanged="@(v => _model.StartDate = v)" />
+            <div class="section-header" @onclick="@(() => _planDetailsOpen = !_planDetailsOpen)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+                </svg>
+                Plan Details
+                <svg class="section-chevron @(_planDetailsOpen ? "" : "collapsed")" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+            @if (_planDetailsOpen)
+            {
+                <div class="form-body">
+                    <FormGroup Label="Client" Id="clientId" Error="@GetFieldError(nameof(_model.ClientId))">
+                        <FormSelect Id="clientId"
+                                    Value="@_model.ClientId"
+                                    ValueChanged="@(v => _model.ClientId = v)">
+                            <option value="">Select a client...</option>
+                            @foreach (var client in _clients)
+                            {
+                                <option value="@client.Id">@client.FirstName @client.LastName</option>
+                            }
+                        </FormSelect>
                     </FormGroup>
 
-                    <FormGroup Label="End Date" Id="endDate">
-                        <FormInput Id="endDate" Type="date"
-                                   Value="@_model.EndDate"
-                                   ValueChanged="@(v => _model.EndDate = v)" />
+                    <FormGroup Label="Title" Id="title" Error="@GetFieldError(nameof(_model.Title))">
+                        <FormInput Id="title"
+                                   Value="@_model.Title"
+                                   ValueChanged="@(v => _model.Title = v)"
+                                   Placeholder="e.g. Week 1 — Weight Loss" />
                     </FormGroup>
-                </div>
 
-                <FormGroup Label="Number of Days" Id="days">
-                    <FormSelect Id="days"
-                                Value="@_model.NumberOfDays"
-                                ValueChanged="@(v => _model.NumberOfDays = v)">
-                        @for (var i = 1; i <= 7; i++)
-                        {
-                            <option value="@i">@i @(i == 1 ? "day" : "days")</option>
-                        }
-                    </FormSelect>
-                </FormGroup>
-
-                <div class="client-form-grid">
-                    <FormGroup Label="Calorie Target (kcal)" Id="calories">
-                        <FormInput Id="calories" Type="number"
-                                   Value="@_model.CalorieTarget"
-                                   ValueChanged="@(v => _model.CalorieTarget = v)"
-                                   Placeholder="e.g. 2000" />
+                    <FormGroup Label="Description" Id="description">
+                        <textarea id="description"
+                                  class="form-input"
+                                  rows="2"
+                                  @bind="_model.Description"
+                                  placeholder="Overview or goals..."></textarea>
                     </FormGroup>
-                    <FormGroup Label="Protein Target (g)" Id="protein">
-                        <FormInput Id="protein" Type="number"
-                                   Value="@_model.ProteinTarget"
-                                   ValueChanged="@(v => _model.ProteinTarget = v)"
-                                   Placeholder="e.g. 150" />
+
+                    <div class="form-grid">
+                        <FormGroup Label="Start Date" Id="startDate">
+                            <FormInput Id="startDate" Type="date"
+                                       Value="@_model.StartDate"
+                                       ValueChanged="@(v => _model.StartDate = v)" />
+                        </FormGroup>
+
+                        <FormGroup Label="End Date" Id="endDate">
+                            <FormInput Id="endDate" Type="date"
+                                       Value="@_model.EndDate"
+                                       ValueChanged="@(v => _model.EndDate = v)" />
+                        </FormGroup>
+                    </div>
+
+                    <FormGroup Label="Number of Days" Id="days">
+                        <FormSelect Id="days"
+                                    Value="@_model.NumberOfDays"
+                                    ValueChanged="@(v => _model.NumberOfDays = v)">
+                            @for (var i = 1; i <= 7; i++)
+                            {
+                                <option value="@i">@i @(i == 1 ? "day" : "days")</option>
+                            }
+                        </FormSelect>
                     </FormGroup>
                 </div>
+            }
 
-                <div class="client-form-grid">
-                    <FormGroup Label="Carbs Target (g)" Id="carbs">
-                        <FormInput Id="carbs" Type="number"
-                                   Value="@_model.CarbsTarget"
-                                   ValueChanged="@(v => _model.CarbsTarget = v)"
-                                   Placeholder="e.g. 200" />
+            <div class="section-header" @onclick="@(() => _nutritionOpen = !_nutritionOpen)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12h20"/><path d="M12 2v20"/><circle cx="12" cy="12" r="10"/>
+                </svg>
+                Nutrition Targets
+                <svg class="section-chevron @(_nutritionOpen ? "" : "collapsed")" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+            @if (_nutritionOpen)
+            {
+                <div class="form-body">
+                    <div class="form-grid">
+                        <FormGroup Label="Calorie Target (kcal)" Id="calories">
+                            <FormInput Id="calories" Type="number"
+                                       Value="@_model.CalorieTarget"
+                                       ValueChanged="@(v => _model.CalorieTarget = v)"
+                                       Placeholder="e.g. 2000" />
+                        </FormGroup>
+                        <FormGroup Label="Protein Target (g)" Id="protein">
+                            <FormInput Id="protein" Type="number"
+                                       Value="@_model.ProteinTarget"
+                                       ValueChanged="@(v => _model.ProteinTarget = v)"
+                                       Placeholder="e.g. 150" />
+                        </FormGroup>
+                    </div>
+
+                    <div class="form-grid">
+                        <FormGroup Label="Carbs Target (g)" Id="carbs">
+                            <FormInput Id="carbs" Type="number"
+                                       Value="@_model.CarbsTarget"
+                                       ValueChanged="@(v => _model.CarbsTarget = v)"
+                                       Placeholder="e.g. 200" />
+                        </FormGroup>
+                        <FormGroup Label="Fat Target (g)" Id="fat">
+                            <FormInput Id="fat" Type="number"
+                                       Value="@_model.FatTarget"
+                                       ValueChanged="@(v => _model.FatTarget = v)"
+                                       Placeholder="e.g. 67" />
+                        </FormGroup>
+                    </div>
+                </div>
+            }
+
+            <div class="section-header" @onclick="@(() => _notesOpen = !_notesOpen)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+                Notes
+                <svg class="section-chevron @(_notesOpen ? "" : "collapsed")" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+            @if (_notesOpen)
+            {
+                <div class="form-body">
+                    <FormGroup Label="Internal Notes" Id="notes">
+                        <textarea id="notes"
+                                  class="form-input"
+                                  rows="2"
+                                  @bind="_model.Notes"
+                                  placeholder="Practitioner notes..."></textarea>
                     </FormGroup>
-                    <FormGroup Label="Fat Target (g)" Id="fat">
-                        <FormInput Id="fat" Type="number"
-                                   Value="@_model.FatTarget"
-                                   ValueChanged="@(v => _model.FatTarget = v)"
-                                   Placeholder="e.g. 67" />
+
+                    <FormGroup Label="Client Instructions" Id="instructions">
+                        <textarea id="instructions"
+                                  class="form-input"
+                                  rows="2"
+                                  @bind="_model.Instructions"
+                                  placeholder="Instructions for the client..."></textarea>
                     </FormGroup>
                 </div>
+            }
 
-                <FormGroup Label="Internal Notes" Id="notes">
-                    <textarea id="notes"
-                              class="form-input"
-                              rows="2"
-                              @bind="_model.Notes"
-                              placeholder="Practitioner notes..."></textarea>
-                </FormGroup>
-
-                <FormGroup Label="Client Instructions" Id="instructions">
-                    <textarea id="instructions"
-                              class="form-input"
-                              rows="2"
-                              @bind="_model.Instructions"
-                              placeholder="Instructions for the client..."></textarea>
-                </FormGroup>
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <p class="client-form-error">@_errorMessage</p>
-                }
-
-                <div class="client-form-actions">
-                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
-                        @if (_isSubmitting)
-                        {
-                            <span>Creating...</span>
-                        }
-                        else
-                        {
-                            <span>Create Meal Plan</span>
-                        }
-                    </Button>
-                    <a href="/meal-plans" class="client-form-cancel-link">Cancel</a>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="error-banner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    @_errorMessage
                 </div>
-            </EditForm>
-        </div>
-    </Card>
+            }
+
+            <div class="form-actions">
+                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <span>Create Meal Plan</span>
+                    }
+                </Button>
+                <a href="/meal-plans" class="cancel-link">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
 </div>
 
 @code {
@@ -154,6 +202,9 @@
     private List<ClientDto> _clients = [];
     private bool _isSubmitting;
     private string? _errorMessage;
+    private bool _planDetailsOpen = true;
+    private bool _nutritionOpen = true;
+    private bool _notesOpen = true;
 
     protected override async Task OnInitializedAsync()
     {
