@@ -8,6 +8,7 @@ using Nutrir.Core.Interfaces;
 using Nutrir.Web.Components;
 using Nutrir.Web.Components.Account;
 using Nutrir.Web.Middleware;
+using Elastic.Apm.SerilogEnricher;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -19,9 +20,10 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .WriteTo.Console()
-        .WriteTo.Seq(context.Configuration["Seq:ServerUrl"] ?? "http://localhost:7102"));
+        .Enrich.FromLogContext()
+        .Enrich.WithElasticApmCorrelationInfo());
 
     // Add services to the container.
     builder.Services.AddRazorComponents()
@@ -38,6 +40,8 @@ try
             options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
         })
         .AddIdentityCookies();
+
+    builder.Services.AddAllElasticApm();
 
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -61,6 +65,8 @@ try
         var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
         await seeder.SeedAsync(app.Environment.IsDevelopment());
     }
+
+    app.UseSerilogRequestLogging();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
