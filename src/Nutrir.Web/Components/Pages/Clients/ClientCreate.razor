@@ -178,6 +178,13 @@
         _isSubmitting = true;
         _errorMessage = null;
 
+        if (!_model.ConsentGiven)
+        {
+            _errorMessage = "Client consent is required before registration.";
+            _isSubmitting = false;
+            return;
+        }
+
         try
         {
             var authState = await AuthState;

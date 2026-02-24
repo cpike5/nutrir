@@ -8,6 +8,8 @@
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IProgressService ProgressService
+@inject IAuditLogService AuditLogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
 <PageTitle>Progress Entry — Nutrir</PageTitle>
@@ -141,6 +143,13 @@
     {
         _entry = await ProgressService.GetEntryByIdAsync(Id);
         _isLoading = false;
+
+        if (_entry is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await AuditLogService.LogAsync(userId, "ProgressEntryViewed", "ProgressEntry", Id.ToString(), "Viewed ProgressEntry record");
+        }
     }
 
     private async Task ConfirmDelete()

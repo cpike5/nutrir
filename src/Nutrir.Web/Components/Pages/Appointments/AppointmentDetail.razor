@@ -8,6 +8,8 @@
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
+@inject IAuditLogService AuditLogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
@@ -259,6 +261,13 @@
     {
         _appointment = await AppointmentService.GetByIdAsync(Id);
         _isLoading = false;
+
+        if (_appointment is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await AuditLogService.LogAsync(userId, "AppointmentViewed", "Appointment", Id.ToString(), "Viewed Appointment record");
+        }
     }
 
     private bool IsActionable() =>

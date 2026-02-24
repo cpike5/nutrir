@@ -10,6 +10,7 @@
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
+@inject IConsentService ConsentService
 @inject IUserManagementService UserManagementService
 @inject NavigationManager NavigationManager
 
@@ -122,9 +123,43 @@
                     </FormGroup>
 
                     <div class="consent-row">
-                        <FormCheckbox Label="Client has given consent to data collection"
-                                      Value="@_model.ConsentGiven"
-                                      ValueChanged="OnConsentChanged" />
+                        <div class="consent-status">
+                            @if (_client!.ConsentGiven)
+                            {
+                                <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Consent Given</Badge>
+                                @if (_client.ConsentTimestamp.HasValue || !string.IsNullOrEmpty(_client.ConsentPolicyVersion))
+                                {
+                                    <span class="consent-meta">
+                                        @if (_client.ConsentTimestamp.HasValue)
+                                        {
+                                            @_client.ConsentTimestamp.Value.ToString("MMM d, yyyy")
+                                        }
+                                        @if (!string.IsNullOrEmpty(_client.ConsentPolicyVersion))
+                                        {
+                                            <span> · Policy v@(_client.ConsentPolicyVersion)</span>
+                                        }
+                                    </span>
+                                }
+                                <Button Variant="ButtonVariant.Ghost" OnClick="WithdrawConsent" Disabled="@_isWithdrawing">
+                                    @if (_isWithdrawing)
+                                    {
+                                        <span>Withdrawing...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Withdraw Consent</span>
+                                    }
+                                </Button>
+                            }
+                            else
+                            {
+                                <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> No Consent</Badge>
+                                @if (_client.ConsentTimestamp.HasValue)
+                                {
+                                    <span class="consent-meta">Withdrawn @_client.ConsentTimestamp.Value.ToString("MMM d, yyyy")</span>
+                                }
+                            }
+                        </div>
                     </div>
                 </div>
 
@@ -182,7 +217,6 @@
                 Phone = PhoneFormatter.Format(_client.Phone),
                 DateOfBirth = _client.DateOfBirth?.ToString("yyyy-MM-dd"),
                 PrimaryNutritionistId = _client.PrimaryNutritionistId,
-                ConsentGiven = _client.ConsentGiven,
                 Notes = _client.Notes
             };
             _editContext = new EditContext(_model);
@@ -209,9 +243,31 @@
         _model.Phone = PhoneFormatter.Format(value);
     }
 
-    private void OnConsentChanged(bool value)
+    private bool _isWithdrawing;
+
+    private async Task WithdrawConsent()
     {
-        _model.ConsentGiven = value;
+        _isWithdrawing = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            await ConsentService.WithdrawConsentAsync(Id, userId);
+
+            // Reload client to reflect updated consent status
+            _client = await ClientService.GetByIdAsync(Id);
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while withdrawing consent. Please try again.";
+        }
+        finally
+        {
+            _isWithdrawing = false;
+        }
     }
 
     private async Task HandleSubmit()
@@ -230,24 +286,7 @@
                 dob = parsedDob;
             }
 
-            // Preserve existing consent timestamp/version if consent was already given,
-            // otherwise set new values when consent is newly given
-            DateTime? consentTimestamp = _client!.ConsentTimestamp;
-            string? consentVersion = _client.ConsentPolicyVersion;
-
-            if (_model.ConsentGiven && !_client.ConsentGiven)
-            {
-                // Consent newly given on this edit
-                consentTimestamp = DateTime.UtcNow;
-                consentVersion = "1.0";
-            }
-            else if (!_model.ConsentGiven)
-            {
-                // Consent revoked
-                consentTimestamp = null;
-                consentVersion = null;
-            }
-
+            // Consent fields are immutable — managed via IConsentService only
             var dto = new ClientDto(
                 Id: Id,
                 FirstName: _model.FirstName!,
@@ -257,9 +296,9 @@
                 DateOfBirth: dob,
                 PrimaryNutritionistId: _model.PrimaryNutritionistId ?? string.Empty,
                 PrimaryNutritionistName: null,
-                ConsentGiven: _model.ConsentGiven,
-                ConsentTimestamp: consentTimestamp,
-                ConsentPolicyVersion: consentVersion,
+                ConsentGiven: _client!.ConsentGiven,
+                ConsentTimestamp: _client.ConsentTimestamp,
+                ConsentPolicyVersion: _client.ConsentPolicyVersion,
                 Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
                 IsDeleted: _client.IsDeleted,
                 CreatedAt: _client.CreatedAt,
@@ -315,8 +354,6 @@
         public string? DateOfBirth { get; set; }
 
         public string? PrimaryNutritionistId { get; set; }
-
-        public bool ConsentGiven { get; set; }
 
         public string? Notes { get; set; }
     }

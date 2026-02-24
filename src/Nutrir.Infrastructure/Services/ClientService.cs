@@ -11,20 +11,28 @@ public class ClientService : IClientService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly IConsentService _consentService;
     private readonly ILogger<ClientService> _logger;
 
     public ClientService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
+        IConsentService consentService,
         ILogger<ClientService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _consentService = consentService;
         _logger = logger;
     }
 
     public async Task<ClientDto> CreateAsync(ClientDto dto, string createdByUserId)
     {
+        if (!dto.ConsentGiven)
+        {
+            throw new InvalidOperationException("Client consent must be obtained before creating a client record.");
+        }
+
         var entity = new Client
         {
             FirstName = dto.FirstName,
@@ -33,15 +41,22 @@ public class ClientService : IClientService
             Phone = dto.Phone,
             DateOfBirth = dto.DateOfBirth,
             PrimaryNutritionistId = dto.PrimaryNutritionistId,
-            ConsentGiven = dto.ConsentGiven,
-            ConsentTimestamp = dto.ConsentGiven ? DateTime.UtcNow : null,
-            ConsentPolicyVersion = dto.ConsentPolicyVersion,
+            ConsentGiven = false, // Will be set by ConsentService
+            ConsentTimestamp = null,
+            ConsentPolicyVersion = null,
             Notes = dto.Notes,
             CreatedAt = DateTime.UtcNow
         };
 
         _dbContext.Clients.Add(entity);
         await _dbContext.SaveChangesAsync();
+
+        // Create the initial consent event and update client consent fields atomically
+        await _consentService.GrantConsentAsync(
+            entity.Id,
+            "Treatment and care",
+            dto.ConsentPolicyVersion ?? "1.0",
+            createdByUserId);
 
         _logger.LogInformation(
             "Client created: {ClientId} by {UserId}",
@@ -52,8 +67,10 @@ public class ClientService : IClientService
             "ClientCreated",
             "Client",
             entity.Id.ToString(),
-            $"Created client {entity.FirstName} {entity.LastName}");
+            "Created client record");
 
+        // Re-read entity to get updated consent fields
+        await _dbContext.Entry(entity).ReloadAsync();
         return MapToDto(entity);
     }
 
@@ -110,9 +127,7 @@ public class ClientService : IClientService
         entity.Phone = dto.Phone;
         entity.DateOfBirth = dto.DateOfBirth;
         entity.PrimaryNutritionistId = dto.PrimaryNutritionistId;
-        entity.ConsentGiven = dto.ConsentGiven;
-        entity.ConsentTimestamp = dto.ConsentTimestamp;
-        entity.ConsentPolicyVersion = dto.ConsentPolicyVersion;
+        // Consent fields are immutable via UpdateAsync — use IConsentService instead
         entity.Notes = dto.Notes;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -127,7 +142,7 @@ public class ClientService : IClientService
             "ClientUpdated",
             "Client",
             id.ToString(),
-            $"Updated client {entity.FirstName} {entity.LastName}");
+            "Updated client record");
 
         return true;
     }
@@ -143,6 +158,7 @@ public class ClientService : IClientService
 
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;
+        entity.DeletedBy = deletedByUserId;
 
         await _dbContext.SaveChangesAsync();
 
@@ -155,7 +171,7 @@ public class ClientService : IClientService
             "ClientSoftDeleted",
             "Client",
             id.ToString(),
-            $"Soft-deleted client {entity.FirstName} {entity.LastName}");
+            "Soft-deleted client record");
 
         return true;
     }

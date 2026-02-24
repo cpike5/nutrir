@@ -6,10 +6,14 @@
 @using Microsoft.AspNetCore.Identity
 @using Nutrir.Core.Entities
 
+@using Nutrir.Core.Interfaces
+
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IAuditLogService AuditLogService
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Log in</PageTitle>
 
@@ -85,10 +89,14 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+            var user = await UserManager.FindByEmailAsync(Input.Email);
+            var userId = user is not null ? await UserManager.GetUserIdAsync(user) : Input.Email;
+            await AuditLogService.LogAsync(userId, "LoginSuccess", "Authentication", details: "User logged in successfully");
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
         {
+            await AuditLogService.LogAsync(Input.Email, "LoginRequires2FA", "Authentication", details: "Login requires two-factor authentication");
             RedirectManager.RedirectTo(
                 "Account/LoginWith2fa",
                 new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
@@ -96,10 +104,12 @@
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User account locked out.");
+            await AuditLogService.LogAsync(Input.Email, "LoginFailed", "Authentication", details: "User account locked out");
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
+            await AuditLogService.LogAsync(Input.Email, "LoginFailed", "Authentication", details: "Login failed for user");
             errorMessage = "Error: Invalid login attempt.";
         }
     }

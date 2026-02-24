@@ -141,6 +141,7 @@ public class ProgressService : IProgressService
 
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;
+        entity.DeletedBy = userId;
 
         await _dbContext.SaveChangesAsync();
 
@@ -207,7 +208,7 @@ public class ProgressService : IProgressService
             "ProgressGoalCreated",
             "ProgressGoal",
             entity.Id.ToString(),
-            $"Created goal \"{entity.Title}\" for client {entity.ClientId}");
+            $"Created progress goal for client {entity.ClientId}");
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -237,7 +238,7 @@ public class ProgressService : IProgressService
             "ProgressGoalUpdated",
             "ProgressGoal",
             id.ToString(),
-            $"Updated goal \"{entity.Title}\"");
+            "Updated progress goal");
 
         return true;
     }
@@ -274,6 +275,7 @@ public class ProgressService : IProgressService
 
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;
+        entity.DeletedBy = userId;
 
         await _dbContext.SaveChangesAsync();
 
@@ -284,7 +286,7 @@ public class ProgressService : IProgressService
             "ProgressGoalSoftDeleted",
             "ProgressGoal",
             id.ToString(),
-            $"Soft-deleted goal \"{entity.Title}\"");
+            "Soft-deleted progress goal");
 
         return true;
     }

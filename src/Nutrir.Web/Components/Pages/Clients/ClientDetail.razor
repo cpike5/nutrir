@@ -11,6 +11,8 @@
 @inject IAppointmentService AppointmentService
 @inject IMealPlanService MealPlanService
 @inject IProgressService ProgressService
+@inject IAuditLogService AuditLogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
@@ -322,6 +324,13 @@
         _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
         _recentProgress = await ProgressService.GetRecentByClientAsync(Id, 3);
         _isLoading = false;
+
+        if (_client is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await AuditLogService.LogAsync(userId, "ClientViewed", "Client", Id.ToString(), "Viewed Client record");
+        }
     }
 
     private static string GetInitials(ClientDto client)
