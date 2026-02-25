@@ -36,6 +36,12 @@
             }
         </ul>
     }
+    else if (_isOpen && _filteredOptions.Count == 0)
+    {
+        <div class="autocomplete-dropdown autocomplete-empty">
+            @(Options.Count == 0 ? "No options available" : "No matching results")
+        </div>
+    }
 </div>
 
 @code {
