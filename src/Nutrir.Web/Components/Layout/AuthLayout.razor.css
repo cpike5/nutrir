@@ -13,12 +13,9 @@
     padding: var(--space-6);
 }
 
-.auth-brand {
-    font-size: var(--text-3xl);
-    font-family: var(--font-display);
-    font-weight: 700;
-    color: var(--color-primary);
-    margin: 0;
+.auth-logo {
+    width: 160px;
+    height: auto;
 }
 
 /* ── Auth Card ───────────────────────────────────────── */
