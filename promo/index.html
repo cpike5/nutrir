@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrir — Practice Management for Nutritionists</title>
+  <meta name="description" content="The compliance-first practice management platform built for Canadian dietitians and nutritionists. Client tracking, scheduling, meal planning, and progress monitoring.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════
+       RESET & FOUNDATIONS
+       ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Brand palette */
+      --forest: #1e3f20;
+      --sage: #4a6741;
+      --leaf: #73c03a;
+      --leaf-deep: #42851d;
+      --bark: #9a6c41;
+      --sand: #f8f5f0;
+      --sand-dark: #efe9e0;
+      --ink: #282828;
+      --ink-light: #5a5a5a;
+      --white: #ffffff;
+      --taupe: #b6b697;
+
+      /* Typography */
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+      /* Spacing */
+      --section-pad: clamp(4rem, 10vw, 8rem);
+      --container: 1200px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--ink);
+      background: var(--sand);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; }
+
+    /* ═══════════════════════════════════════════
+       GRAIN OVERLAY
+       ═══════════════════════════════════════════ */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 200px;
+    }
+
+    /* ═══════════════════════════════════════════
+       UTILITY
+       ═══════════════════════════════════════════ */
+    .container {
+      max-width: var(--container);
+      margin: 0 auto;
+      padding: 0 clamp(1.5rem, 4vw, 3rem);
+    }
+
+    /* Reveal animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ═══════════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1.25rem 0;
+      transition: background 0.4s, box-shadow 0.4s, padding 0.4s;
+    }
+    .nav.scrolled {
+      background: rgba(248, 245, 240, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 1px 0 rgba(30, 63, 32, 0.08);
+      padding: 0.75rem 0;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .nav-logo svg { width: 36px; height: 36px; }
+    .nav-logo-text {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      color: var(--forest);
+      letter-spacing: 0.02em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ink-light);
+      letter-spacing: 0.01em;
+      transition: color 0.25s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 1.5px;
+      background: var(--sage);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-links a:hover { color: var(--forest); }
+    .nav-links a:hover::after { width: 100%; }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.5rem;
+      background: var(--forest);
+      color: var(--white) !important;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .nav-cta:hover { background: var(--sage); transform: translateY(-1px); }
+    .nav-cta::after { display: none !important; }
+
+    .nav-mobile-toggle {
+      display: none;
+      background: none;
+      width: 32px;
+      height: 32px;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+    }
+    .nav-mobile-toggle span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--forest);
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    /* ═══════════════════════════════════════════
+       HERO SECTION
+       ═══════════════════════════════════════════ */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding-top: 5rem;
+    }
+
+    /* Organic blob background */
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .hero-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+    }
+    .hero-blob-1 {
+      width: 600px; height: 600px;
+      background: var(--leaf);
+      top: -10%; right: -5%;
+      animation: float 20s ease-in-out infinite;
+    }
+    .hero-blob-2 {
+      width: 400px; height: 400px;
+      background: var(--bark);
+      bottom: -5%; left: 10%;
+      animation: float 15s ease-in-out infinite reverse;
+    }
+    .hero-blob-3 {
+      width: 300px; height: 300px;
+      background: var(--taupe);
+      top: 30%; left: -8%;
+      animation: float 18s ease-in-out infinite 3s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      position: relative;
+    }
+
+    .hero-content { z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem 0.4rem 0.5rem;
+      background: rgba(74, 103, 65, 0.08);
+      border: 1px solid rgba(74, 103, 65, 0.15);
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--sage);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .hero-badge-dot {
+      width: 8px; height: 8px;
+      background: var(--leaf);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 5.5vw, 4.5rem);
+      line-height: 1.08;
+      color: var(--forest);
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--sage);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+      color: var(--ink-light);
+      line-height: 1.7;
+      max-width: 500px;
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.9rem 2rem;
+      background: var(--forest);
+      color: var(--white);
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px rgba(30, 63, 32, 0.2);
+    }
+    .btn-primary:hover {
+      background: var(--sage);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(30, 63, 32, 0.25);
+    }
+    .btn-primary svg { width: 18px; height: 18px; transition: transform 0.3s; }
+    .btn-primary:hover svg { transform: translateX(3px); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.75rem;
+      background: transparent;
+      color: var(--forest);
+      border: 1.5px solid rgba(30, 63, 32, 0.2);
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--forest);
+      background: rgba(30, 63, 32, 0.04);
+    }
+
+    /* Hero visual — app preview */
+    .hero-visual {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-mockup {
+      position: relative;
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow:
+        0 2px 4px rgba(0,0,0,0.02),
+        0 8px 24px rgba(0,0,0,0.06),
+        0 32px 64px rgba(0,0,0,0.08);
+      overflow: hidden;
+      transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-mockup:hover {
+      transform: perspective(1200px) rotateY(-1deg) rotateX(1deg);
+    }
+
+    .mockup-topbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      background: var(--sand);
+      border-bottom: 1px solid var(--sand-dark);
+    }
+    .mockup-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--sand-dark);
+    }
+    .mockup-dot:nth-child(1) { background: #f87171; }
+    .mockup-dot:nth-child(2) { background: #fbbf24; }
+    .mockup-dot:nth-child(3) { background: #4ade80; }
+
+    .mockup-body {
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 1rem;
+      min-height: 340px;
+    }
+
+    .mockup-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      padding-top: 4px;
+    }
+    .mockup-sidebar-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--sand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mockup-sidebar-icon.active { background: var(--sage); }
+    .mockup-sidebar-icon.active svg { stroke: var(--white); }
+    .mockup-sidebar-icon svg { width: 18px; height: 18px; stroke: var(--ink-light); stroke-width: 1.8; fill: none; }
+
+    .mockup-main {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .mockup-greeting {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--forest);
+    }
+
+    .mockup-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+    }
+    .mockup-metric {
+      padding: 0.75rem;
+      background: var(--sand);
+      border-radius: 10px;
+      text-align: center;
+    }
+    .mockup-metric-num {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1;
+    }
+    .mockup-metric-label {
+      font-size: 0.65rem;
+      color: var(--ink-light);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .mockup-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      flex: 1;
+    }
+    .mockup-card {
+      padding: 0.75rem;
+      background: var(--sand);
+      border-radius: 10px;
+    }
+    .mockup-card-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--sage);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .mockup-card-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0;
+    }
+    .mockup-card-row + .mockup-card-row {
+      border-top: 1px solid rgba(0,0,0,0.04);
+    }
+    .mockup-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mockup-card-text {
+      font-size: 0.72rem;
+      color: var(--ink);
+    }
+    .mockup-card-sub {
+      font-size: 0.62rem;
+      color: var(--ink-light);
+    }
+    .mockup-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--sand-dark);
+      margin-top: 4px;
+    }
+    .mockup-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    /* Floating badges around hero mockup */
+    .hero-float {
+      position: absolute;
+      background: var(--white);
+      border-radius: 14px;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      z-index: 2;
+      animation: float-badge 6s ease-in-out infinite;
+    }
+    .hero-float-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .hero-float-icon svg { width: 18px; height: 18px; }
+
+    .hero-float-1 {
+      top: 5%; right: -8%;
+      animation-delay: 0s;
+    }
+    .hero-float-1 .hero-float-icon { background: rgba(115, 192, 58, 0.12); }
+    .hero-float-1 .hero-float-icon svg { stroke: var(--leaf-deep); fill: none; stroke-width: 1.8; }
+
+    .hero-float-2 {
+      bottom: 12%; left: -12%;
+      animation-delay: 2s;
+    }
+    .hero-float-2 .hero-float-icon { background: rgba(154, 108, 65, 0.12); }
+    .hero-float-2 .hero-float-icon svg { stroke: var(--bark); fill: none; stroke-width: 1.8; }
+
+    @keyframes float-badge {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* ═══════════════════════════════════════════
+       MARQUEE / TRUST BAR
+       ═══════════════════════════════════════════ */
+    .trust-bar {
+      padding: 3rem 0;
+      border-top: 1px solid rgba(30, 63, 32, 0.06);
+      border-bottom: 1px solid rgba(30, 63, 32, 0.06);
+    }
+    .trust-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      opacity: 0.6;
+      margin-bottom: 1.5rem;
+    }
+    .trust-items {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--ink-light);
+      opacity: 0.5;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .trust-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+    /* ═══════════════════════════════════════════
+       FEATURES SECTION
+       ═══════════════════════════════════════════ */
+    .features {
+      padding: var(--section-pad) 0;
+    }
+
+    .section-eyebrow {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.15;
+      color: var(--forest);
+      margin-bottom: 1rem;
+      max-width: 600px;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--ink-light);
+      max-width: 520px;
+      line-height: 1.7;
+      font-weight: 300;
+      margin-bottom: 3.5rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      position: relative;
+      background: var(--white);
+      border-radius: 20px;
+      padding: 2.5rem;
+      border: 1px solid rgba(30, 63, 32, 0.06);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--leaf), var(--sage));
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(30, 63, 32, 0.08);
+      border-color: rgba(30, 63, 32, 0.1);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .feature-icon svg { width: 26px; height: 26px; stroke-width: 1.6; fill: none; }
+
+    .feature-card:nth-child(1) .feature-icon { background: rgba(115, 192, 58, 0.1); }
+    .feature-card:nth-child(1) .feature-icon svg { stroke: var(--leaf-deep); }
+    .feature-card:nth-child(2) .feature-icon { background: rgba(154, 108, 65, 0.1); }
+    .feature-card:nth-child(2) .feature-icon svg { stroke: var(--bark); }
+    .feature-card:nth-child(3) .feature-icon { background: rgba(74, 103, 65, 0.1); }
+    .feature-card:nth-child(3) .feature-icon svg { stroke: var(--sage); }
+    .feature-card:nth-child(4) .feature-icon { background: rgba(74, 126, 139, 0.1); }
+    .feature-card:nth-child(4) .feature-icon svg { stroke: #4a7e8b; }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--forest);
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-desc {
+      font-size: 0.92rem;
+      color: var(--ink-light);
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+    .feature-list li::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--leaf);
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       SHOWCASE / HIGHLIGHT SECTION
+       ═══════════════════════════════════════════ */
+    .showcase {
+      padding: var(--section-pad) 0;
+      background: var(--forest);
+      position: relative;
+      overflow: hidden;
+    }
+    .showcase::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: rgba(115, 192, 58, 0.08);
+      filter: blur(100px);
+    }
+
+    .showcase .section-eyebrow { color: var(--taupe); }
+    .showcase .section-title { color: var(--white); }
+    .showcase .section-subtitle { color: rgba(255,255,255,0.6); }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .showcase-stat {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      transition: all 0.3s;
+    }
+    .showcase-stat:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-4px);
+    }
+
+    .showcase-stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: rgba(115, 192, 58, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+    .showcase-stat-icon svg { width: 24px; height: 24px; stroke: var(--leaf); fill: none; stroke-width: 1.6; }
+
+    .showcase-stat-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+    .showcase-stat-desc {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════
+       COMPLIANCE SECTION
+       ═══════════════════════════════════════════ */
+    .compliance {
+      padding: var(--section-pad) 0;
+    }
+
+    .compliance-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .compliance-visual {
+      position: relative;
+    }
+
+    .compliance-card-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .compliance-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.5rem;
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid rgba(30, 63, 32, 0.06);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .compliance-card:hover {
+      transform: translateX(8px);
+      box-shadow: 0 8px 24px rgba(30, 63, 32, 0.06);
+    }
+
+    .compliance-card-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .compliance-card-icon svg { width: 22px; height: 22px; fill: none; stroke-width: 1.6; }
+
+    .compliance-card:nth-child(1) .compliance-card-icon { background: rgba(115, 192, 58, 0.1); }
+    .compliance-card:nth-child(1) .compliance-card-icon svg { stroke: var(--leaf-deep); }
+    .compliance-card:nth-child(2) .compliance-card-icon { background: rgba(154, 108, 65, 0.1); }
+    .compliance-card:nth-child(2) .compliance-card-icon svg { stroke: var(--bark); }
+    .compliance-card:nth-child(3) .compliance-card-icon { background: rgba(74, 103, 65, 0.1); }
+    .compliance-card:nth-child(3) .compliance-card-icon svg { stroke: var(--sage); }
+
+    .compliance-card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--forest);
+      margin-bottom: 0.25rem;
+    }
+    .compliance-card-desc {
+      font-size: 0.82rem;
+      color: var(--ink-light);
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════
+       CTA SECTION
+       ═══════════════════════════════════════════ */
+    .cta {
+      padding: var(--section-pad) 0;
+    }
+
+    .cta-inner {
+      position: relative;
+      background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+      border-radius: 28px;
+      padding: clamp(3rem, 6vw, 5rem);
+      text-align: center;
+      overflow: hidden;
+    }
+    .cta-inner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 70% 30%, rgba(115,192,58,0.15) 0%, transparent 50%);
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      color: var(--white);
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .cta-subtitle {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.7);
+      max-width: 500px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+      font-weight: 300;
+      position: relative;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .btn-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.9rem 2rem;
+      background: var(--white);
+      color: var(--forest);
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .btn-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.75rem;
+      background: transparent;
+      color: var(--white);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .btn-ghost:hover {
+      border-color: var(--white);
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ */
+    .footer {
+      padding: 3rem 0;
+      border-top: 1px solid rgba(30, 63, 32, 0.06);
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .footer-left svg { width: 28px; height: 28px; }
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--forest);
+    }
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--ink-light);
+    }
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--ink-light);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--forest); }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .hero-inner {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+      }
+      .hero-subtitle { margin: 0 auto 2.5rem; }
+      .hero-actions { justify-content: center; }
+      .hero-visual { max-width: 560px; margin: 0 auto; }
+      .hero-float { display: none; }
+      .hero-mockup { transform: none; }
+      .hero-mockup:hover { transform: translateY(-4px); }
+      .compliance-inner { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-mobile-toggle { display: flex; }
+      .features-grid { grid-template-columns: 1fr; }
+      .showcase-grid { grid-template-columns: 1fr; }
+      .footer-inner {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+      }
+      .footer-links { gap: 1.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary, .btn-secondary, .btn-white, .btn-ghost { justify-content: center; }
+      .mockup-metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { transition: opacity 0.3s; transform: none; }
+      .hero-blob, .hero-float, .hero-badge-dot { animation: none; }
+      .hero-mockup { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════
+       NAVIGATION
+       ════════════════════════════════════════════ -->
+  <nav class="nav" id="nav">
+    <div class="container nav-inner">
+      <a href="#" class="nav-logo">
+        <svg viewBox="40 30 120 120" width="36" height="36">
+          <defs><linearGradient id="lgNav" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#73c03a"/><stop offset="100%" stop-color="#42851d"/></linearGradient></defs>
+          <rect x="52" y="45" width="16" height="95" rx="8" fill="#1e3f20"/>
+          <rect x="132" y="45" width="16" height="95" rx="8" fill="#1e3f20"/>
+          <path d="M 60 53 C 115 53, 140 85, 140 132 C 85 132, 60 100, 60 53 Z" fill="url(#lgNav)"/>
+          <path d="M 60 53 Q 110 85, 140 132" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+        </svg>
+        <span class="nav-logo-text">Nutrir</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#why">Why Nutrir</a></li>
+        <li><a href="#compliance">Compliance</a></li>
+        <li><a href="#cta" class="nav-cta">Get Early Access</a></li>
+      </ul>
+      <button class="nav-mobile-toggle" aria-label="Menu" onclick="this.classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════
+       HERO
+       ════════════════════════════════════════════ -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-blob hero-blob-1"></div>
+      <div class="hero-blob hero-blob-2"></div>
+      <div class="hero-blob hero-blob-3"></div>
+    </div>
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge reveal">
+          <span class="hero-badge-dot"></span>
+          Built for Canadian Practitioners
+        </div>
+        <h1 class="hero-title reveal reveal-delay-1">
+          Your practice,<br><em>nourished.</em>
+        </h1>
+        <p class="hero-subtitle reveal reveal-delay-2">
+          The compliance-first practice management platform designed exclusively for dietitians and nutritionists. From client intake to progress tracking — everything in one place.
+        </p>
+        <div class="hero-actions reveal reveal-delay-3">
+          <a href="#cta" class="btn-primary">
+            Request Early Access
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#features" class="btn-secondary">See Features</a>
+        </div>
+      </div>
+
+      <!-- App mockup -->
+      <div class="hero-visual reveal reveal-delay-2">
+        <div class="hero-mockup">
+          <div class="mockup-topbar">
+            <span class="mockup-dot"></span>
+            <span class="mockup-dot"></span>
+            <span class="mockup-dot"></span>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-sidebar">
+              <div class="mockup-sidebar-icon active">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              </div>
+              <div class="mockup-sidebar-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="mockup-sidebar-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <div class="mockup-sidebar-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+            </div>
+            <div class="mockup-main">
+              <div class="mockup-greeting">Good morning, Dr. Chen</div>
+              <div class="mockup-metrics">
+                <div class="mockup-metric">
+                  <div class="mockup-metric-num">24</div>
+                  <div class="mockup-metric-label">Clients</div>
+                </div>
+                <div class="mockup-metric">
+                  <div class="mockup-metric-num">6</div>
+                  <div class="mockup-metric-label">Today</div>
+                </div>
+                <div class="mockup-metric">
+                  <div class="mockup-metric-num">18</div>
+                  <div class="mockup-metric-label">Plans</div>
+                </div>
+              </div>
+              <div class="mockup-cards">
+                <div class="mockup-card">
+                  <div class="mockup-card-header">Today's Schedule</div>
+                  <div class="mockup-card-row">
+                    <div class="mockup-avatar" style="background: linear-gradient(135deg, #73c03a, #42851d)"></div>
+                    <div>
+                      <div class="mockup-card-text">Sarah M. — 9:00 AM</div>
+                      <div class="mockup-card-sub">Follow-up</div>
+                    </div>
+                  </div>
+                  <div class="mockup-card-row">
+                    <div class="mockup-avatar" style="background: linear-gradient(135deg, #9a6c41, #c4882f)"></div>
+                    <div>
+                      <div class="mockup-card-text">James L. — 10:30 AM</div>
+                      <div class="mockup-card-sub">Initial consult</div>
+                    </div>
+                  </div>
+                  <div class="mockup-card-row">
+                    <div class="mockup-avatar" style="background: linear-gradient(135deg, #4a7e8b, #5a9fad)"></div>
+                    <div>
+                      <div class="mockup-card-text">Priya K. — 1:00 PM</div>
+                      <div class="mockup-card-sub">Plan review</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mockup-card">
+                  <div class="mockup-card-header">Client Progress</div>
+                  <div style="padding: 0.25rem 0;">
+                    <div class="mockup-card-text">Sarah M.</div>
+                    <div class="mockup-bar"><div class="mockup-bar-fill" style="width: 78%; background: var(--leaf);"></div></div>
+                  </div>
+                  <div style="padding: 0.25rem 0;">
+                    <div class="mockup-card-text">James L.</div>
+                    <div class="mockup-bar"><div class="mockup-bar-fill" style="width: 45%; background: var(--bark);"></div></div>
+                  </div>
+                  <div style="padding: 0.25rem 0;">
+                    <div class="mockup-card-text">Priya K.</div>
+                    <div class="mockup-bar"><div class="mockup-bar-fill" style="width: 92%; background: var(--sage);"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating badges -->
+        <div class="hero-float hero-float-1">
+          <div class="hero-float-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.82rem;">PIPEDA Compliant</div>
+            <div style="font-size: 0.7rem; color: var(--ink-light);">Privacy-first design</div>
+          </div>
+        </div>
+        <div class="hero-float hero-float-2">
+          <div class="hero-float-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.82rem;">Data Encrypted</div>
+            <div style="font-size: 0.7rem; color: var(--ink-light);">End-to-end security</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       TRUST BAR
+       ════════════════════════════════════════════ -->
+  <section class="trust-bar">
+    <div class="container">
+      <div class="trust-label">Built with industry standards</div>
+      <div class="trust-items">
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          PIPEDA
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          PHIPA
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          HTTPS / HSTS
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Audit Logging
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          MFA Ready
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       FEATURES
+       ════════════════════════════════════════════ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-eyebrow reveal">Core Features</div>
+      <h2 class="section-title reveal reveal-delay-1">Everything you need to run a <em>thriving</em> practice</h2>
+      <p class="section-subtitle reveal reveal-delay-2">Purpose-built tools that let you focus on your clients, not your software.</p>
+
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="feature-title">Client Management</h3>
+          <p class="feature-desc">Complete client profiles with health history, dietary restrictions, consent tracking, and contact information — all in one accessible view.</p>
+          <ul class="feature-list">
+            <li>Detailed health & dietary profiles</li>
+            <li>Consent capture & tracking</li>
+            <li>Searchable client directory</li>
+            <li>Intake form management</li>
+          </ul>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h3 class="feature-title">Appointment Scheduling</h3>
+          <p class="feature-desc">Streamlined booking and session management. See your day at a glance and never miss a follow-up with smart scheduling tools.</p>
+          <ul class="feature-list">
+            <li>Calendar view with daily schedule</li>
+            <li>Session type management</li>
+            <li>Appointment history tracking</li>
+            <li>Quick booking from client profiles</li>
+          </ul>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3 class="feature-title">Meal Planning</h3>
+          <p class="feature-desc">Build personalized meal plans with day-by-day structure, nutritional targets, and meal slot organization — then assign them directly to clients.</p>
+          <ul class="feature-list">
+            <li>Multi-day plan builder</li>
+            <li>Customizable meal slots</li>
+            <li>Nutritional target setting</li>
+            <li>Client plan assignment</li>
+          </ul>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="feature-title">Progress Tracking</h3>
+          <p class="feature-desc">Set measurable goals, record progress entries, and visualize client outcomes over time with clear, meaningful charts.</p>
+          <ul class="feature-list">
+            <li>Goal setting with metrics</li>
+            <li>Progress entry logging</li>
+            <li>Visual progress charts</li>
+            <li>Measurement tracking</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       SHOWCASE — WHY NUTRIR
+       ════════════════════════════════════════════ -->
+  <section class="showcase" id="why">
+    <div class="container">
+      <div class="section-eyebrow reveal">Why Nutrir</div>
+      <h2 class="section-title reveal reveal-delay-1">Built differently, <em style="color: var(--leaf)">on purpose</em></h2>
+      <p class="section-subtitle reveal reveal-delay-2">Not another generic CRM repurposed for health. Nutrir is designed from the ground up for how nutritionists actually work.</p>
+
+      <div class="showcase-grid">
+        <div class="showcase-stat reveal">
+          <div class="showcase-stat-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3 class="showcase-stat-title">Command Center Dashboard</h3>
+          <p class="showcase-stat-desc">See your entire practice at a glance — today's schedule, client alerts, active meal plans, and recent activity in one dense, actionable view.</p>
+        </div>
+        <div class="showcase-stat reveal reveal-delay-1">
+          <div class="showcase-stat-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="showcase-stat-title">Privacy by Default</h3>
+          <p class="showcase-stat-desc">Built for Canadian health privacy law from day one. PIPEDA, PHIPA, and HIA requirements are baked into the architecture, not bolted on after.</p>
+        </div>
+        <div class="showcase-stat reveal reveal-delay-2">
+          <div class="showcase-stat-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+          </div>
+          <h3 class="showcase-stat-title">Solo Practitioner Focus</h3>
+          <p class="showcase-stat-desc">No enterprise bloat. No features you'll never use. Nutrir is laser-focused on the workflows of independent dietitians and nutritionists.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       COMPLIANCE
+       ════════════════════════════════════════════ -->
+  <section class="compliance" id="compliance">
+    <div class="container">
+      <div class="compliance-inner">
+        <div>
+          <div class="section-eyebrow reveal">Compliance & Security</div>
+          <h2 class="section-title reveal reveal-delay-1">Your clients' trust is <em>non-negotiable</em></h2>
+          <p class="section-subtitle reveal reveal-delay-2">Handling personal health information requires more than good intentions. Nutrir implements the safeguards your profession demands.</p>
+        </div>
+        <div class="compliance-visual">
+          <div class="compliance-card-stack">
+            <div class="compliance-card reveal">
+              <div class="compliance-card-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <div class="compliance-card-title">Canadian Privacy Compliance</div>
+                <div class="compliance-card-desc">Purpose-built for PIPEDA, PHIPA, and HIA. Consent capture, data minimization, and breach notification workflows included.</div>
+              </div>
+            </div>
+            <div class="compliance-card reveal reveal-delay-1">
+              <div class="compliance-card-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div>
+                <div class="compliance-card-title">Full Audit Trail</div>
+                <div class="compliance-card-desc">Every data access and modification is logged. Know who accessed what, when, and why — essential for regulatory reviews.</div>
+              </div>
+            </div>
+            <div class="compliance-card reveal reveal-delay-2">
+              <div class="compliance-card-icon">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div>
+                <div class="compliance-card-title">Encryption & Access Control</div>
+                <div class="compliance-card-desc">HTTPS/HSTS enforced, multi-factor authentication, and role-based access control. Your data is protected at rest and in transit.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       CTA
+       ════════════════════════════════════════════ -->
+  <section class="cta" id="cta">
+    <div class="container">
+      <div class="cta-inner">
+        <h2 class="cta-title reveal">Ready to nourish your practice?</h2>
+        <p class="cta-subtitle reveal reveal-delay-1">Join the waitlist for early access. Be among the first Canadian practitioners to experience a platform built with your needs in mind.</p>
+        <div class="cta-actions reveal reveal-delay-2">
+          <a href="mailto:hello@nutrir.ca?subject=Early Access Request" class="btn-white">
+            Request Early Access
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#features" class="btn-ghost">Learn More</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       FOOTER
+       ════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-left">
+        <svg viewBox="40 30 120 120" width="28" height="28">
+          <defs><linearGradient id="lgFoot" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#73c03a"/><stop offset="100%" stop-color="#42851d"/></linearGradient></defs>
+          <rect x="52" y="45" width="16" height="95" rx="8" fill="#1e3f20"/>
+          <rect x="132" y="45" width="16" height="95" rx="8" fill="#1e3f20"/>
+          <path d="M 60 53 C 115 53, 140 85, 140 132 C 85 132, 60 100, 60 53 Z" fill="url(#lgFoot)"/>
+          <path d="M 60 53 Q 110 85, 140 132" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+        </svg>
+        <span class="footer-brand">Nutrir</span>
+        <span class="footer-copy">&copy; 2026. All rights reserved.</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="mailto:hello@nutrir.ca">Contact</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════════════
+       SCRIPTS
+       ════════════════════════════════════════════ -->
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(el => observer.observe(el));
+
+    // Sticky nav
+    const nav = document.getElementById('nav');
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      nav.classList.toggle('scrolled', scrollY > 60);
+      lastScroll = scrollY;
+    }, { passive: true });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
