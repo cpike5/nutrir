@@ -146,15 +146,6 @@
                 _userContextSet = true;
             }
 
-            try
-            {
-                var stored = await JS.InvokeAsync<bool>("aiPanel.getStoredState");
-                if (stored && !_isOpen)
-                {
-                    PanelState.Toggle();
-                }
-            }
-            catch (JSException) { }
         }
 
         if (_isOpen && _messages.Count > 0)
