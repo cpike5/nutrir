@@ -4,8 +4,10 @@
 @inject IAiAgentService AiAgent
 @inject AiPanelState PanelState
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 @using Nutrir.Core.Interfaces
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <div class="cc-ai-panel @(_isOpen ? "cc-ai-panel--open" : "")">
     <div class="cc-ai-header">
@@ -104,6 +106,7 @@
     private string _inputText = "";
     private readonly List<ChatMessage> _messages = [];
     private bool _jsInitialized;
+    private bool _userContextSet;
 
     private static readonly string[] _starters =
     [
@@ -124,6 +127,21 @@
         if (firstRender)
         {
             _jsInitialized = true;
+
+            if (!_userContextSet)
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+                var firstName = user.FindFirst("FirstName")?.Value;
+                var lastName = user.FindFirst("LastName")?.Value;
+                var name = firstName is not null && lastName is not null
+                    ? $"{firstName} {lastName}"
+                    : user.Identity?.Name?.Split('@')[0] ?? "User";
+                var role = user.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+                AiAgent.SetUserContext(name, role);
+                _userContextSet = true;
+            }
+
             try
             {
                 var stored = await JS.InvokeAsync<bool>("aiPanel.getStoredState");
@@ -232,6 +250,8 @@
             _isStreaming = false;
             assistantMsg.ToolStatus = null;
             StateHasChanged();
+            try { await JS.InvokeVoidAsync("aiPanel.focusInput", "ai-input"); }
+            catch (JSException) { }
         }
     }
 

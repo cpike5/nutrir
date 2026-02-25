@@ -12,4 +12,5 @@ public interface IAiAgentService
 {
     IAsyncEnumerable<AgentStreamEvent> SendMessageAsync(string userMessage, CancellationToken cancellationToken = default);
     void ClearHistory();
+    void SetUserContext(string userName, string userRole);
 }

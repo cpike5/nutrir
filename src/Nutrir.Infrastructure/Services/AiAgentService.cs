@@ -16,9 +16,14 @@ public class AiAgentService : IAiAgentService
     private readonly ILogger<AiAgentService> _logger;
     private readonly List<MessageParam> _conversationHistory = [];
 
+    private string _userName = "User";
+    private string _userRole = "Unknown";
+
     private const int MaxToolLoopIterations = 10;
 
-    private const string SystemPrompt = """
+    private string BuildSystemPrompt() => $"""
+        Today's date is {DateTime.Now:yyyy-MM-dd (dddd)}. You are speaking with {_userName} ({_userRole}).
+
         You are Nutrir Assistant, an AI helper for a nutrition practice management application used by dietitians and nutritionists.
 
         ## Capabilities
@@ -88,7 +93,7 @@ public class AiAgentService : IAiAgentService
             {
                 Model = _options.Model,
                 MaxTokens = _options.MaxTokens,
-                System = SystemPrompt,
+                System = BuildSystemPrompt(),
                 Messages = _conversationHistory.ToArray(),
                 Tools = tools.Select(t => (ToolUnion)t).ToArray(),
             };
@@ -156,6 +161,12 @@ public class AiAgentService : IAiAgentService
     public void ClearHistory()
     {
         _conversationHistory.Clear();
+    }
+
+    public void SetUserContext(string userName, string userRole)
+    {
+        _userName = userName;
+        _userRole = userRole;
     }
 
     /// <summary>
