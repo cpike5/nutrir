@@ -61,7 +61,7 @@ public class UserManagementService : IUserManagementService
             var role = roles.FirstOrDefault() ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(roleFilter) &&
-                !string.Equals(role, roleFilter, StringComparison.OrdinalIgnoreCase))
+                !roles.Any(r => string.Equals(r, roleFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
             }

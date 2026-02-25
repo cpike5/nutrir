@@ -90,7 +90,8 @@ public class DatabaseSeeder
             EmailConfirmed = true,
             IsActive = true,
             FirstName = "Admin",
-            LastName = string.Empty,
+            LastName = "User",
+            DisplayName = "Admin",
             CreatedDate = DateTime.UtcNow
         };
 
@@ -150,6 +151,7 @@ public class DatabaseSeeder
             IsActive = true,
             FirstName = "Alyssa",
             LastName = "Martin",
+            DisplayName = "Alyssa Martin",
             CreatedDate = DateTime.UtcNow
         };
 
