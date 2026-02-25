@@ -98,8 +98,8 @@ public class AiToolExecutor
             CreateTool("list_appointments", "List appointments with optional filters for date range, client, and status.",
                 new Dictionary<string, object>
                 {
-                    ["from_date"] = new { type = "string", description = "Start date filter (ISO 8601, e.g. 2025-01-01)" },
-                    ["to_date"] = new { type = "string", description = "End date filter (ISO 8601, e.g. 2025-12-31)" },
+                    ["from_date"] = new { type = "string", description = "Start date filter (ISO 8601 UTC, e.g. 2025-01-01T00:00:00Z)" },
+                    ["to_date"] = new { type = "string", description = "End date filter (ISO 8601 UTC, e.g. 2025-12-31T23:59:59Z)" },
                     ["client_id"] = new { type = "integer", description = "Filter by client ID" },
                     ["status"] = new { type = "string", description = "Filter by status: Scheduled, Confirmed, Completed, NoShow, LateCancellation, Cancelled" }
                 }),
@@ -377,7 +377,10 @@ public class AiToolExecutor
     private static DateTime? GetOptionalDate(JsonElement input, string property)
     {
         var str = GetOptionalString(input, property);
-        return str is not null && DateTime.TryParse(str, out var dt) ? dt : null;
+        if (str is null) return null;
+        return DateTime.TryParse(str, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var dt) ? dt : null;
     }
 
     private static TEnum? GetOptionalEnum<TEnum>(JsonElement input, string property) where TEnum : struct, Enum

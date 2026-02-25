@@ -47,6 +47,11 @@ public class AiAgentService : IAiAgentService
         - IDs are integers for most entities, GUIDs for users
         - "Today" means the current server date
 
+        ## Tool Usage Tips
+        - For "today's appointments" or general daily overview, prefer `get_dashboard` — it returns today's appointments with no parameters needed.
+        - Use `list_appointments` for specific date ranges, client filters, or status filters. Always pass dates as full UTC timestamps (e.g. `2025-06-15T00:00:00Z`), not bare dates.
+        - Use `search` for finding entities by name/keyword before drilling into details with a specific get tool.
+
         ## Response Guidelines
         - Be concise and professional
         - Format data in readable markdown tables or lists when showing multiple items
