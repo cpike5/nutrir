@@ -33,8 +33,11 @@ The Dockerfile at `src/Nutrir.Web/Dockerfile` uses a two-stage build:
 - Runs `dotnet restore`
 - Copies full source and runs `dotnet publish` (Release config)
 
-### Stage 2: `runtime` (ASP.NET image)
-- Base: `mcr.microsoft.com/dotnet/aspnet:9.0`
+### Stage 2: `runtime` (ASP.NET chiseled image)
+- Base: `mcr.microsoft.com/dotnet/aspnet:9.0-noble-chiseled`
+- Ubuntu chiseled image — no shell, no package manager, non-root by default (~110MB vs ~220MB for standard Debian)
+- Includes ICU for culture-aware formatting (en-CA dates, currency)
+- `docker exec` shell access is unavailable — use Seq and Elastic for diagnostics
 - Copies published output from build stage
 - Exposes port 8080
 - Entry point: `dotnet Nutrir.Web.dll`
