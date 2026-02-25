@@ -135,8 +135,9 @@
         if (!_isOpen && e.Key is "ArrowDown" or "ArrowUp")
         {
             _isOpen = true;
-            _preventDefaultKey = true;
             FilterOptions();
+            // Only prevent default for the next Enter (not Tab or typing)
+            _preventDefaultKey = false;
             return;
         }
 
@@ -147,6 +148,7 @@
                 {
                     _highlightedIndex = (_highlightedIndex + 1) % _filteredOptions.Count;
                 }
+                // Prevent Enter from submitting form if user navigated, but allow Tab
                 _preventDefaultKey = true;
                 break;
 
@@ -167,6 +169,17 @@
                 }
                 // Prevent Enter from submitting the parent form when dropdown is open
                 _preventDefaultKey = _isOpen;
+                break;
+
+            case "Tab":
+                if (_isOpen && _filteredOptions.Count > 0)
+                {
+                    // Select highlighted item, or first item if none highlighted
+                    var tabIndex = _highlightedIndex >= 0 ? _highlightedIndex : 0;
+                    await SelectOption(_filteredOptions[tabIndex]);
+                }
+                // Never prevent Tab — let focus move to next field naturally
+                _preventDefaultKey = false;
                 break;
 
             case "Escape":
