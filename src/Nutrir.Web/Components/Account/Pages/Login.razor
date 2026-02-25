@@ -88,8 +88,26 @@
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
             var user = await UserManager.FindByEmailAsync(Input.Email);
+
+            if (user is not null && !user.IsActive)
+            {
+                await SignInManager.SignOutAsync();
+                var blockedUserId = await UserManager.GetUserIdAsync(user);
+                await AuditLogService.LogAsync(blockedUserId, "LoginBlocked", "Authentication",
+                    details: "Deactivated account attempted login");
+                errorMessage = "Error: Your account has been deactivated. Contact your administrator.";
+                return;
+            }
+
+            Logger.LogInformation("User logged in.");
+
+            if (user is not null)
+            {
+                user.LastLoginDate = DateTime.UtcNow;
+                await UserManager.UpdateAsync(user);
+            }
+
             var userId = user is not null ? await UserManager.GetUserIdAsync(user) : Input.Email;
             await AuditLogService.LogAsync(userId, "LoginSuccess", "Authentication", details: "User logged in successfully");
             RedirectManager.RedirectTo(ReturnUrl);
