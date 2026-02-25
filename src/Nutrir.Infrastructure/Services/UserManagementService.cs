@@ -336,6 +336,101 @@ public class UserManagementService : IUserManagementService
         return true;
     }
 
+    public async Task<CreateUserResultDto> CreateUserAsync(CreateUserDto dto, string createdByUserId)
+    {
+        var password = dto.Password ?? GenerateRandomPassword();
+
+        var user = new ApplicationUser
+        {
+            UserName = dto.Email,
+            Email = dto.Email,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            DisplayName = $"{dto.FirstName} {dto.LastName}",
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        var createResult = await _userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            _logger.LogWarning("CreateUser failed: {Errors}", errors);
+            throw new InvalidOperationException($"Failed to create user: {errors}");
+        }
+
+        if (!await _roleManager.RoleExistsAsync(dto.Role))
+        {
+            _logger.LogWarning("CreateUser: role {Role} does not exist", dto.Role);
+            throw new InvalidOperationException($"Role '{dto.Role}' does not exist");
+        }
+
+        var roleResult = await _userManager.AddToRoleAsync(user, dto.Role);
+        if (!roleResult.Succeeded)
+        {
+            var errors = string.Join("; ", roleResult.Errors.Select(e => e.Description));
+            _logger.LogWarning("CreateUser failed to assign role: {Errors}", errors);
+            throw new InvalidOperationException($"Failed to assign role: {errors}");
+        }
+
+        await _auditLogService.LogAsync(
+            createdByUserId,
+            "UserCreated",
+            "User",
+            user.Id,
+            $"User created: {dto.FirstName} {dto.LastName} ({dto.Email}), Role: {dto.Role}");
+
+        _logger.LogInformation(
+            "User {UserId} created by {CreatedByUserId} with role {Role}",
+            user.Id, createdByUserId, dto.Role);
+
+        var userDetail = new UserDetailDto(
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            user.DisplayName,
+            user.Email ?? string.Empty,
+            dto.Role,
+            user.IsActive,
+            user.CreatedDate,
+            user.LastLoginDate,
+            user.TwoFactorEnabled);
+
+        return new CreateUserResultDto(userDetail, password);
+    }
+
+    private static string GenerateRandomPassword()
+    {
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string digits = "0123456789";
+        const string special = "!@#$%^&*";
+
+        var random = new Random();
+        var password = new char[16];
+
+        // Ensure at least one of each required category
+        password[0] = upper[random.Next(upper.Length)];
+        password[1] = lower[random.Next(lower.Length)];
+        password[2] = digits[random.Next(digits.Length)];
+        password[3] = special[random.Next(special.Length)];
+
+        var all = upper + lower + digits + special;
+        for (var i = 4; i < password.Length; i++)
+        {
+            password[i] = all[random.Next(all.Length)];
+        }
+
+        // Shuffle
+        for (var i = password.Length - 1; i > 0; i--)
+        {
+            var j = random.Next(i + 1);
+            (password[i], password[j]) = (password[j], password[i]);
+        }
+
+        return new string(password);
+    }
+
     public async Task<bool> ForceMfaAsync(string userId, string forcedByUserId)
     {
         var user = await _userManager.FindByIdAsync(userId);

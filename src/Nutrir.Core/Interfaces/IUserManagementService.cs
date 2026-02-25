@@ -27,4 +27,6 @@ public interface IUserManagementService
     Task<bool> ResetPasswordAsync(string userId, string newPassword, string resetByUserId);
 
     Task<bool> ForceMfaAsync(string userId, string forcedByUserId);
+
+    Task<CreateUserResultDto> CreateUserAsync(CreateUserDto dto, string createdByUserId);
 }
