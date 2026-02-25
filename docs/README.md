@@ -27,6 +27,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Maintenance Mode](infrastructure/maintenance-mode.md) | Admin-toggleable maintenance mode with 503 page, API endpoints, middleware |
 | [CLI Tool](infrastructure/cli-tool.md) | Nutrir CLI reference — all commands, options, output format, and examples |
 | [AI Assistant Spec](infrastructure/ai-assistant-spec.md) | Phase B design spec for the AI assistant panel — architecture, tools, permissions, UI |
+| [AI Assistant Phase 1](infrastructure/ai-assistant-phase1.md) | Phase 1 read-only AI assistant — architecture, tools, streaming, configuration |
 
 ## Design System Documents
 

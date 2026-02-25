@@ -1,0 +1,393 @@
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@implements IDisposable
+@inject IAiAgentService AiAgent
+@inject AiPanelState PanelState
+@inject IJSRuntime JS
+@using Nutrir.Core.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="cc-ai-panel @(_isOpen ? "cc-ai-panel--open" : "")">
+    <div class="cc-ai-header">
+        <div class="cc-ai-header-left">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20h6v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
+                <line x1="10" y1="22" x2="14" y2="22"/>
+            </svg>
+            <span>Nutrir Assistant</span>
+        </div>
+        <div class="cc-ai-header-right">
+            @if (_messages.Count > 0)
+            {
+                <button class="cc-ai-header-btn" title="Clear conversation" @onclick="ClearConversation">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            }
+            <button class="cc-ai-header-btn" title="Close panel" @onclick="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="cc-ai-messages" id="ai-messages-container">
+        @if (_messages.Count == 0 && !_isStreaming)
+        {
+            <div class="cc-ai-welcome">
+                <div class="cc-ai-welcome-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20h6v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
+                        <line x1="10" y1="22" x2="14" y2="22"/>
+                    </svg>
+                </div>
+                <p class="cc-ai-welcome-text">Ask me anything about your practice data.</p>
+                <div class="cc-ai-starters">
+                    @foreach (var starter in _starters)
+                    {
+                        <button class="cc-ai-starter" @onclick="() => SendStarter(starter)">@starter</button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var msg in _messages)
+            {
+                <div class="cc-ai-msg cc-ai-msg--@msg.Role">
+                    <div class="cc-ai-msg-content">
+                        @if (msg.Role == "user")
+                        {
+                            @msg.Text
+                        }
+                        else
+                        {
+                            @((MarkupString)RenderMarkdown(msg.Text))
+                            @if (!string.IsNullOrEmpty(msg.ToolStatus))
+                            {
+                                <div class="cc-ai-tool-status">
+                                    <span class="cc-ai-tool-spinner"></span>
+                                    @msg.ToolStatus
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="cc-ai-input-area">
+        <div class="cc-ai-input-row">
+            <input id="ai-input"
+                   type="text"
+                   placeholder="Ask about clients, appointments, meal plans..."
+                   autocomplete="off"
+                   @bind="_inputText"
+                   @bind:event="oninput"
+                   @onkeydown="HandleKeyDown"
+                   disabled="@_isStreaming" />
+            <button class="cc-ai-send-btn" @onclick="SendMessage" disabled="@(_isStreaming || string.IsNullOrWhiteSpace(_inputText))">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isOpen;
+    private bool _isStreaming;
+    private string _inputText = "";
+    private readonly List<ChatMessage> _messages = [];
+    private bool _jsInitialized;
+
+    private static readonly string[] _starters =
+    [
+        "How many clients do we have?",
+        "What appointments are today?",
+        "Show all active meal plans",
+        "Which clients haven't given consent?",
+    ];
+
+    protected override void OnInitialized()
+    {
+        PanelState.OnToggle += OnPanelToggle;
+        _isOpen = PanelState.IsOpen;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _jsInitialized = true;
+            try
+            {
+                var stored = await JS.InvokeAsync<bool>("aiPanel.getStoredState");
+                if (stored && !_isOpen)
+                {
+                    PanelState.Toggle();
+                }
+            }
+            catch (JSException) { }
+        }
+
+        if (_isOpen && _messages.Count > 0)
+        {
+            try { await JS.InvokeVoidAsync("aiPanel.scrollToBottom", "ai-messages-container"); }
+            catch (JSException) { }
+        }
+    }
+
+    private void OnPanelToggle()
+    {
+        _isOpen = PanelState.IsOpen;
+        InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            if (_jsInitialized)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("aiPanel.saveState", _isOpen);
+                    if (_isOpen)
+                        await JS.InvokeVoidAsync("aiPanel.focusInput", "ai-input");
+                }
+                catch (JSException) { }
+            }
+        });
+    }
+
+    private void Close()
+    {
+        PanelState.Close();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_isStreaming && !string.IsNullOrWhiteSpace(_inputText))
+        {
+            await SendMessage();
+        }
+    }
+
+    private Task SendStarter(string text)
+    {
+        _inputText = text;
+        return SendMessage();
+    }
+
+    private async Task SendMessage()
+    {
+        if (_isStreaming || string.IsNullOrWhiteSpace(_inputText))
+            return;
+
+        var userText = _inputText.Trim();
+        _inputText = "";
+        _isStreaming = true;
+
+        _messages.Add(new ChatMessage { Role = "user", Text = userText });
+        var assistantMsg = new ChatMessage { Role = "assistant", Text = "" };
+        _messages.Add(assistantMsg);
+        StateHasChanged();
+
+        try
+        {
+            await foreach (var evt in AiAgent.SendMessageAsync(userText))
+            {
+                if (evt.TextDelta is not null)
+                {
+                    assistantMsg.Text += evt.TextDelta;
+                    assistantMsg.ToolStatus = null;
+                }
+                else if (evt.ToolName is not null)
+                {
+                    assistantMsg.ToolStatus = $"Looking up {FormatToolName(evt.ToolName)}...";
+                }
+                else if (evt.IsComplete)
+                {
+                    assistantMsg.ToolStatus = null;
+                }
+                else if (evt.Error is not null)
+                {
+                    assistantMsg.Text += string.IsNullOrEmpty(assistantMsg.Text)
+                        ? evt.Error
+                        : $"\n\n{evt.Error}";
+                    assistantMsg.ToolStatus = null;
+                }
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            if (string.IsNullOrEmpty(assistantMsg.Text))
+                assistantMsg.Text = "Sorry, something went wrong. Please try again.";
+        }
+        finally
+        {
+            _isStreaming = false;
+            assistantMsg.ToolStatus = null;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearConversation()
+    {
+        _messages.Clear();
+        AiAgent.ClearHistory();
+        StateHasChanged();
+    }
+
+    private static string FormatToolName(string toolName) => toolName switch
+    {
+        "list_clients" => "clients",
+        "get_client" => "client details",
+        "list_appointments" => "appointments",
+        "get_appointment" => "appointment details",
+        "list_meal_plans" => "meal plans",
+        "get_meal_plan" => "meal plan details",
+        "list_goals" => "goals",
+        "get_goal" => "goal details",
+        "list_progress" => "progress entries",
+        "get_progress_entry" => "progress details",
+        "list_users" => "users",
+        "get_user" => "user details",
+        "search" => "search results",
+        "get_dashboard" => "dashboard data",
+        _ => toolName.Replace('_', ' ')
+    };
+
+    /// <summary>
+    /// Minimal markdown rendering: bold, italic, code, headers, line breaks, lists.
+    /// </summary>
+    private static string RenderMarkdown(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+
+        var escaped = System.Net.WebUtility.HtmlEncode(text);
+
+        // Code blocks (```)
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"```(\w*)\r?\n([\s\S]*?)```",
+            "<pre><code>$2</code></pre>");
+
+        // Inline code
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"`([^`]+)`",
+            "<code>$1</code>");
+
+        // Bold
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"\*\*(.+?)\*\*",
+            "<strong>$1</strong>");
+
+        // Italic
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"\*(.+?)\*",
+            "<em>$1</em>");
+
+        // Headers
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^### (.+)$",
+            "<strong>$1</strong>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^## (.+)$",
+            "<strong>$1</strong>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^# (.+)$",
+            "<strong>$1</strong>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Horizontal rules
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^---+$",
+            "<hr/>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Tables: convert markdown tables to HTML
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"(\|.+\|\r?\n\|[-| :]+\|\r?\n(?:\|.+\|\r?\n?)+)",
+            match => ConvertTable(match.Value),
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Unordered list items
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^[-*] (.+)$",
+            "<li>$1</li>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Ordered list items
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^\d+\. (.+)$",
+            "<li>$1</li>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Line breaks (double newline = paragraph break)
+        escaped = escaped.Replace("\r\n", "\n");
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"\n\n",
+            "<br/><br/>");
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"\n",
+            "<br/>");
+
+        return escaped;
+    }
+
+    private static string ConvertTable(string markdown)
+    {
+        var lines = markdown.Trim().Split('\n')
+            .Select(l => l.Trim().Trim('|'))
+            .ToArray();
+
+        if (lines.Length < 2) return markdown;
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<table class=\"cc-ai-table\">");
+
+        // Header
+        var headers = lines[0].Split('|').Select(h => h.Trim()).ToArray();
+        sb.Append("<thead><tr>");
+        foreach (var h in headers)
+            sb.Append($"<th>{h}</th>");
+        sb.Append("</tr></thead>");
+
+        // Body (skip separator line at index 1)
+        sb.Append("<tbody>");
+        for (int i = 2; i < lines.Length; i++)
+        {
+            var cells = lines[i].Split('|').Select(c => c.Trim()).ToArray();
+            sb.Append("<tr>");
+            foreach (var c in cells)
+                sb.Append($"<td>{c}</td>");
+            sb.Append("</tr>");
+        }
+        sb.Append("</tbody></table>");
+
+        return sb.ToString();
+    }
+
+    private class ChatMessage
+    {
+        public string Role { get; init; } = "";
+        public string Text { get; set; } = "";
+        public string? ToolStatus { get; set; }
+    }
+
+    public void Dispose()
+    {
+        PanelState.OnToggle -= OnPanelToggle;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        PanelState.OnToggle -= OnPanelToggle;
+        return ValueTask.CompletedTask;
+    }
+}

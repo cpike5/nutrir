@@ -220,3 +220,23 @@ Limits are tracked in-memory per session for v1. Persistent tracking (e.g., Redi
 - **Multi-step workflow templates** — Pre-built prompts for common workflows (new client onboarding, end-of-session notes, weekly review) accessible via slash commands
 - **Audit source column** — Dedicated `Source` enum on audit entries (replacing the free-text tag) to enable reliable filtering between `Web`, `Cli`, and `AiAssistant` actions
 - **Structured output mode** — For batch operations, the assistant streams a structured progress indicator rather than prose
+
+## Phase 1 Implementation
+
+Phase 1 has been implemented as a read-only proof of concept. It proves the agent loop works with streaming and the existing service layer, and delivers immediate value as a natural language query interface for practice data.
+
+See [AI Assistant Phase 1](ai-assistant-phase1.md) for full implementation details including key files, configuration, streaming flow, and known limitations.
+
+Phase 1 scope:
+
+- 14 read-only tools covering clients, appointments, meal plans, goals, progress, users, search, and dashboard
+- Streaming text output via `IAsyncEnumerable<AgentStreamEvent>` consumed directly in the Blazor component
+- Tool-use loop with a 10-iteration safety limit
+- Collapsible panel UI toggled from the TopBar, with open/closed state persisted in localStorage
+
+Out of scope for Phase 1 (deferred to Phase 2 / Phase B):
+
+- Write operations (create, update, delete, cancel)
+- Confirmation dialogs
+- SignalR hub — Phase 1 uses the Blazor InteractiveServer circuit directly as the streaming channel
+- Entity links, conversation persistence, rate limiting, and rich markdown rendering

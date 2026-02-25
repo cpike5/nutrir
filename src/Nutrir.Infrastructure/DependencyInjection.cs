@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nutrir.Core.Interfaces;
+using Nutrir.Infrastructure.Configuration;
 using Nutrir.Infrastructure.Data;
 using Nutrir.Infrastructure.Services;
 
@@ -29,6 +30,11 @@ public static class DependencyInjection
         services.AddScoped<ISearchService, SearchService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();
+
+        // AI Assistant
+        services.Configure<AnthropicOptions>(configuration.GetSection(AnthropicOptions.SectionName));
+        services.AddScoped<AiToolExecutor>();
+        services.AddScoped<IAiAgentService, AiAgentService>();
 
         return services;
     }

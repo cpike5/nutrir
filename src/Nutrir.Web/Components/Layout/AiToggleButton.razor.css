@@ -1,0 +1,25 @@
+.cc-ai-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.cc-ai-toggle:hover {
+    background: var(--color-bg-alt);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.cc-ai-toggle--active {
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
