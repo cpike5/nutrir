@@ -995,11 +995,164 @@
       .mockup-metrics { grid-template-columns: repeat(2, 1fr); }
     }
 
+    /* ═══════════════════════════════════════════
+       PARTICLE CANVAS
+       ═══════════════════════════════════════════ */
+    .hero-particles {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       ENHANCED MICRO-INTERACTIONS
+       ═══════════════════════════════════════════ */
+
+    /* Feature card shine sweep on hover */
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -75%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.3),
+        transparent
+      );
+      transform: skewX(-20deg);
+      transition: none;
+      opacity: 0;
+    }
+    .feature-card:hover::after {
+      animation: card-shine 0.6s ease-out forwards;
+    }
+    @keyframes card-shine {
+      0% { left: -75%; opacity: 1; }
+      100% { left: 125%; opacity: 0; }
+    }
+
+    /* Button press feedback */
+    .btn-primary:active { transform: translateY(0) scale(0.97); }
+    .btn-white:active { transform: translateY(0) scale(0.97); }
+
+    /* Showcase stat card glow on hover */
+    .showcase-stat::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.4s;
+      background: radial-gradient(circle at 50% 0%, rgba(115,192,58,0.08), transparent 70%);
+      pointer-events: none;
+    }
+    .showcase-stat {
+      position: relative;
+      overflow: hidden;
+    }
+    .showcase-stat:hover::after { opacity: 1; }
+
+    /* Compliance card left accent on hover */
+    .compliance-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%) scaleY(0);
+      width: 3px;
+      height: 60%;
+      border-radius: 0 3px 3px 0;
+      background: var(--leaf);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .compliance-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .compliance-card:hover::before { transform: translateY(-50%) scaleY(1); }
+
+    /* Nav link underline elastic spring */
+    .nav-links a:hover::after { width: 100%; }
+
+    /* Mockup progress bars animate in */
+    .mockup-bar-fill {
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-visual.visible .mockup-bar-fill {
+      transform: scaleX(1);
+    }
+
+    /* Mockup metric number pop */
+    .mockup-metric-num {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-visual.visible .mockup-metric-num {
+      animation: num-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .hero-visual.visible .mockup-metric:nth-child(1) .mockup-metric-num { animation-delay: 0.3s; }
+    .hero-visual.visible .mockup-metric:nth-child(2) .mockup-metric-num { animation-delay: 0.45s; }
+    .hero-visual.visible .mockup-metric:nth-child(3) .mockup-metric-num { animation-delay: 0.6s; }
+    @keyframes num-pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Trust bar items fade-stagger */
+    .trust-item {
+      transition: opacity 0.5s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Section divider decoration */
+    .features::before {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--leaf), var(--sage));
+      border-radius: 2px;
+      margin-bottom: 2rem;
+      opacity: 0.5;
+    }
+
+    /* CTA floating orbs */
+    .cta-inner::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: rgba(115,192,58,0.1);
+      filter: blur(60px);
+      animation: float 12s ease-in-out infinite;
+    }
+
+    /* Footer link hover lift */
+    .footer-links a {
+      transition: color 0.2s, transform 0.2s;
+      display: inline-block;
+    }
+    .footer-links a:hover {
+      color: var(--forest);
+      transform: translateY(-1px);
+    }
+
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       .reveal { transition: opacity 0.3s; transform: none; }
       .hero-blob, .hero-float, .hero-badge-dot { animation: none; }
       .hero-mockup { transform: none; }
+      .hero-particles { display: none; }
+      .feature-card::after { animation: none !important; }
+      .mockup-bar-fill { transition: none; transform: scaleX(1); }
+      .mockup-metric-num { animation: none !important; }
     }
   </style>
 </head>
@@ -1037,6 +1190,7 @@
        ════════════════════════════════════════════ -->
   <section class="hero">
     <div class="hero-bg">
+      <canvas class="hero-particles" id="heroParticles"></canvas>
       <div class="hero-blob hero-blob-1"></div>
       <div class="hero-blob hero-blob-2"></div>
       <div class="hero-blob hero-blob-3"></div>
@@ -1397,7 +1551,137 @@
        SCRIPTS
        ════════════════════════════════════════════ -->
   <script>
-    // Scroll reveal
+    // ═══════════════════════════════════════════
+    // ORGANIC PARTICLE SYSTEM
+    // ═══════════════════════════════════════════
+    (function() {
+      const canvas = document.getElementById('heroParticles');
+      if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const ctx = canvas.getContext('2d');
+      let width, height, particles = [], mouseX = -1000, mouseY = -1000;
+      const PARTICLE_COUNT = 35;
+
+      const palette = [
+        { r: 115, g: 192, b: 58 },  // leaf
+        { r: 74, g: 103, b: 65 },   // sage
+        { r: 154, g: 108, b: 65 },  // bark
+        { r: 182, g: 182, b: 151 }, // taupe
+        { r: 66, g: 133, b: 29 },   // leaf-deep
+      ];
+
+      function resize() {
+        const hero = canvas.parentElement.parentElement;
+        width = canvas.width = hero.offsetWidth;
+        height = canvas.height = hero.offsetHeight;
+      }
+
+      function createParticle() {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const size = 2 + Math.random() * 5;
+        return {
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: size,
+          baseSize: size,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: -0.15 - Math.random() * 0.25,
+          opacity: 0.08 + Math.random() * 0.12,
+          color: color,
+          phase: Math.random() * Math.PI * 2,
+          wobbleSpeed: 0.005 + Math.random() * 0.01,
+          wobbleAmp: 15 + Math.random() * 25,
+        };
+      }
+
+      function init() {
+        resize();
+        particles = [];
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          particles.push(createParticle());
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (const p of particles) {
+          // Gentle wobble
+          p.phase += p.wobbleSpeed;
+          const wobbleX = Math.sin(p.phase) * p.wobbleAmp * 0.01;
+
+          p.x += p.vx + wobbleX;
+          p.y += p.vy;
+
+          // Subtle mouse repulsion
+          const dx = p.x - mouseX;
+          const dy = p.y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            const force = (150 - dist) / 150 * 0.4;
+            p.x += (dx / dist) * force;
+            p.y += (dy / dist) * force;
+          }
+
+          // Wrap around
+          if (p.y < -20) { p.y = height + 20; p.x = Math.random() * width; }
+          if (p.x < -20) p.x = width + 20;
+          if (p.x > width + 20) p.x = -20;
+
+          // Draw organic dot
+          const { r, g, b } = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r},${g},${b},${p.opacity})`;
+          ctx.fill();
+
+          // Soft glow halo
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r},${g},${b},${p.opacity * 0.15})`;
+          ctx.fill();
+        }
+
+        // Draw faint connection lines between close particles
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const a = particles[i], b = particles[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+              const alpha = (1 - dist / 120) * 0.04;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `rgba(74,103,65,${alpha})`;
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      // Track mouse for subtle interaction
+      document.querySelector('.hero').addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+      });
+      document.querySelector('.hero').addEventListener('mouseleave', () => {
+        mouseX = -1000;
+        mouseY = -1000;
+      });
+
+      window.addEventListener('resize', resize);
+      init();
+      draw();
+    })();
+
+    // ═══════════════════════════════════════════
+    // SCROLL REVEAL
+    // ═══════════════════════════════════════════
     const reveals = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -1408,16 +1692,46 @@
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
     reveals.forEach(el => observer.observe(el));
 
-    // Sticky nav
+    // ═══════════════════════════════════════════
+    // PARALLAX BLOBS (mouse-follow)
+    // ═══════════════════════════════════════════
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const hero = document.querySelector('.hero');
+      const blobs = document.querySelectorAll('.hero-blob');
+      const speeds = [0.02, 0.015, 0.025];
+      let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+
+      hero.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect();
+        targetX = (e.clientX - rect.left - rect.width / 2);
+        targetY = (e.clientY - rect.top - rect.height / 2);
+      });
+      hero.addEventListener('mouseleave', () => { targetX = 0; targetY = 0; });
+
+      function tick() {
+        currentX += (targetX - currentX) * 0.03;
+        currentY += (targetY - currentY) * 0.03;
+        blobs.forEach((blob, i) => {
+          const s = speeds[i] || 0.02;
+          blob.style.transform = `translate(${currentX * s}px, ${currentY * s}px)`;
+        });
+        requestAnimationFrame(tick);
+      }
+      tick();
+    })();
+
+    // ═══════════════════════════════════════════
+    // STICKY NAV
+    // ═══════════════════════════════════════════
     const nav = document.getElementById('nav');
-    let lastScroll = 0;
     window.addEventListener('scroll', () => {
-      const scrollY = window.scrollY;
-      nav.classList.toggle('scrolled', scrollY > 60);
-      lastScroll = scrollY;
+      nav.classList.toggle('scrolled', window.scrollY > 60);
     }, { passive: true });
 
-    // Smooth scroll for anchor links
+    // ═══════════════════════════════════════════
+    // SMOOTH SCROLL
+    // ═══════════════════════════════════════════
     document.querySelectorAll('a[href^="#"]').forEach(a => {
       a.addEventListener('click', (e) => {
         const target = document.querySelector(a.getAttribute('href'));
@@ -1427,6 +1741,25 @@
         }
       });
     });
+
+    // ═══════════════════════════════════════════
+    // MOCKUP TILT (subtle 3D on hover)
+    // ═══════════════════════════════════════════
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const mockup = document.querySelector('.hero-mockup');
+      if (!mockup) return;
+
+      mockup.addEventListener('mousemove', (e) => {
+        const rect = mockup.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        mockup.style.transform = `perspective(1200px) rotateY(${x * 6}deg) rotateX(${-y * 4}deg)`;
+      });
+      mockup.addEventListener('mouseleave', () => {
+        mockup.style.transform = 'perspective(1200px) rotateY(-4deg) rotateX(2deg)';
+      });
+    })();
   </script>
 </body>
 </html>
