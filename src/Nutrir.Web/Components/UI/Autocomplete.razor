@@ -14,6 +14,7 @@
            @oninput="HandleInput"
            @onfocusin="HandleFocusIn"
            @onkeydown="HandleKeyDown"
+           @onkeydown:preventDefault="@_preventDefaultKey"
            @attributes="AdditionalAttributes" />
 
     @if (_isOpen && _filteredOptions.Count > 0)
@@ -50,6 +51,7 @@
     private string _searchText = string.Empty;
     private bool _isOpen;
     private bool _autoSelected;
+    private bool _preventDefaultKey;
     private int _highlightedIndex = -1;
     private List<AutocompleteOption> _filteredOptions = [];
 
@@ -83,6 +85,7 @@
         _searchText = e.Value?.ToString() ?? string.Empty;
         _isOpen = true;
         _highlightedIndex = -1;
+        _preventDefaultKey = false;
         FilterOptions();
     }
 
@@ -90,6 +93,7 @@
     {
         _isOpen = true;
         _highlightedIndex = -1;
+        _preventDefaultKey = false;
         FilterOptions();
     }
 
@@ -125,6 +129,7 @@
         if (!_isOpen && e.Key is "ArrowDown" or "ArrowUp")
         {
             _isOpen = true;
+            _preventDefaultKey = true;
             FilterOptions();
             return;
         }
@@ -136,6 +141,7 @@
                 {
                     _highlightedIndex = (_highlightedIndex + 1) % _filteredOptions.Count;
                 }
+                _preventDefaultKey = true;
                 break;
 
             case "ArrowUp":
@@ -145,18 +151,27 @@
                         ? _filteredOptions.Count - 1
                         : _highlightedIndex - 1;
                 }
+                _preventDefaultKey = true;
                 break;
 
             case "Enter":
-                if (_highlightedIndex >= 0 && _highlightedIndex < _filteredOptions.Count)
+                if (_isOpen && _highlightedIndex >= 0 && _highlightedIndex < _filteredOptions.Count)
                 {
                     await SelectOption(_filteredOptions[_highlightedIndex]);
                 }
+                // Prevent Enter from submitting the parent form when dropdown is open
+                _preventDefaultKey = _isOpen;
                 break;
 
             case "Escape":
                 _isOpen = false;
                 _highlightedIndex = -1;
+                _preventDefaultKey = false;
+                break;
+
+            default:
+                // Allow normal typing — don't prevent default for character keys
+                _preventDefaultKey = false;
                 break;
         }
     }
