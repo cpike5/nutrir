@@ -15,6 +15,7 @@ services:
       - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-http://host.docker.internal:8200}
       - ElasticApm__SecretToken=${ELASTIC_APM_SECRET_TOKEN:-}
       - ElasticApm__Environment=${ASPNETCORE_ENVIRONMENT:-Development}
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
 
   db:
     image: postgres:17

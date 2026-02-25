@@ -44,6 +44,7 @@ try
     builder.Services.AddAllElasticApm();
 
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddScoped<Nutrir.Web.Components.Layout.AiPanelState>();
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
     builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
