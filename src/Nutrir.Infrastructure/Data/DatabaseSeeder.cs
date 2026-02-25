@@ -35,6 +35,7 @@ public class DatabaseSeeder
     {
         await SeedRolesAsync();
         await SeedAdminUserAsync();
+        await SeedNutritionistUserAsync();
 
         if (isDevelopment)
         {
@@ -70,6 +71,15 @@ public class DatabaseSeeder
         if (existingAdmin is not null)
         {
             _logger.LogInformation("Admin user {AdminEmail} already exists, skipping creation", _seedOptions.AdminEmail);
+
+            // Ensure existing admin also has the Nutritionist role
+            if (!await _userManager.IsInRoleAsync(existingAdmin, "Nutritionist"))
+            {
+                var addNutResult = await _userManager.AddToRoleAsync(existingAdmin, "Nutritionist");
+                if (addNutResult.Succeeded)
+                    _logger.LogInformation("Assigned Nutritionist role to existing admin {AdminEmail}", _seedOptions.AdminEmail);
+            }
+
             return;
         }
 
@@ -104,6 +114,65 @@ public class DatabaseSeeder
         else
         {
             _logger.LogError("Failed to assign Admin role to user {AdminEmail}: {Errors}", _seedOptions.AdminEmail,
+                string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+        }
+
+        // Admin user also acts as the default nutritionist for small practices
+        var nutritionistResult = await _userManager.AddToRoleAsync(adminUser, "Nutritionist");
+
+        if (nutritionistResult.Succeeded)
+        {
+            _logger.LogInformation("Assigned Nutritionist role to user {AdminEmail}", _seedOptions.AdminEmail);
+        }
+        else
+        {
+            _logger.LogError("Failed to assign Nutritionist role to user {AdminEmail}: {Errors}", _seedOptions.AdminEmail,
+                string.Join(", ", nutritionistResult.Errors.Select(e => e.Description)));
+        }
+    }
+
+    private async Task SeedNutritionistUserAsync()
+    {
+        const string email = "alyssa@domain.com";
+        var existing = await _userManager.FindByEmailAsync(email);
+
+        if (existing is not null)
+        {
+            _logger.LogInformation("Nutritionist user {Email} already exists, skipping creation", email);
+            return;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            IsActive = true,
+            FirstName = "Alyssa",
+            LastName = "Martin",
+            CreatedDate = DateTime.UtcNow
+        };
+
+        var createResult = await _userManager.CreateAsync(user, _seedOptions.AdminPassword);
+
+        if (!createResult.Succeeded)
+        {
+            _logger.LogError("Failed to create nutritionist user {Email}: {Errors}", email,
+                string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        _logger.LogInformation("Created nutritionist user {Email}", email);
+
+        var roleResult = await _userManager.AddToRoleAsync(user, "Nutritionist");
+
+        if (roleResult.Succeeded)
+        {
+            _logger.LogInformation("Assigned Nutritionist role to user {Email}", email);
+        }
+        else
+        {
+            _logger.LogError("Failed to assign Nutritionist role to user {Email}: {Errors}", email,
                 string.Join(", ", roleResult.Errors.Select(e => e.Description)));
         }
     }
