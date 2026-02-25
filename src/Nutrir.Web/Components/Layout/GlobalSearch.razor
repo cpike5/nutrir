@@ -191,6 +191,7 @@
     private List<RecentSearch> _recentSearches = [];
     private CancellationTokenSource? _debounceCts;
     private string? _userId;
+    private bool _isAdmin;
     private bool _jsInitialized;
 
     private record RecentSearch(string Label, string Url, string Type, long Timestamp);
@@ -201,6 +202,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             _userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            _isAdmin = authState.User.IsInRole("Admin");
 
             try
             {
@@ -262,7 +264,7 @@
             await Task.Delay(250, token);
             if (token.IsCancellationRequested) return;
 
-            _results = await SearchService.SearchAsync(_query, _userId ?? "");
+            _results = await SearchService.SearchAsync(_query, _userId ?? "", _isAdmin);
             _error = null;
         }
         catch (OperationCanceledException) { return; }
