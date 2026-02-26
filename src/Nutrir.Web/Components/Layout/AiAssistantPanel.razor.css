@@ -14,11 +14,20 @@
     flex-direction: column;
     z-index: 500;
     transform: translateX(100%);
-    transition: transform var(--duration-normal) ease;
+    transition: transform var(--duration-normal) ease, width var(--duration-normal) ease;
 }
 
 .cc-ai-panel--open {
     transform: translateX(0);
+}
+
+.cc-ai-panel--wide {
+    width: 700px;
+}
+
+/* Wide toggle button active state */
+.cc-ai-wide-toggle--active {
+    color: var(--color-primary);
 }
 
 /* Header */
@@ -430,5 +439,13 @@
 @media (max-width: 768px) {
     .cc-ai-panel {
         width: 100vw;
+    }
+
+    .cc-ai-panel--wide {
+        width: 100vw;
+    }
+
+    .cc-ai-wide-toggle {
+        display: none;
     }
 }

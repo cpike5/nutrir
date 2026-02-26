@@ -1,5 +1,6 @@
 window.aiPanel = {
     _storageKey: 'nutrir_ai_panel_open',
+    _wideKey: 'nutrir_ai_panel_wide',
 
     getStoredState: function () {
         try {
@@ -12,6 +13,20 @@ window.aiPanel = {
     saveState: function (isOpen) {
         try {
             localStorage.setItem(this._storageKey, isOpen ? 'true' : 'false');
+        } catch { }
+    },
+
+    getStoredWideState: function () {
+        try {
+            return localStorage.getItem(this._wideKey) === 'true';
+        } catch {
+            return false;
+        }
+    },
+
+    saveWideState: function (isWide) {
+        try {
+            localStorage.setItem(this._wideKey, isWide ? 'true' : 'false');
         } catch { }
     },
 
