@@ -394,6 +394,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         _client = await ClientService.GetByIdAsync(Id);
         _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
         _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);

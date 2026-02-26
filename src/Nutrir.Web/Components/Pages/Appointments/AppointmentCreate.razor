@@ -234,6 +234,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         _editContext = new EditContext(_model);
         _clients = await ClientService.GetListAsync();
 

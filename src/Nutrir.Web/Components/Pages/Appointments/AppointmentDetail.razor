@@ -260,6 +260,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         _appointment = await AppointmentService.GetByIdAsync(Id);
         _isLoading = false;
 
