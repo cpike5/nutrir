@@ -84,13 +84,15 @@
                 <div class="hero-actions">
                     @if (_plan.Status is MealPlanStatus.Draft)
                     {
-                        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="ActivatePlan">Activate</Button>
                         <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
                     }
                     else if (_plan.Status is MealPlanStatus.Active)
                     {
-                        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEdit">Edit</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
                         <Button Variant="ButtonVariant.Ghost" OnClick="ArchivePlan">Archive</Button>
                     }
@@ -288,6 +290,7 @@
     }
 
     private void NavigateToEdit() => NavigationManager.NavigateTo($"/meal-plans/{Id}/edit");
+    private void NavigateToEditDetails() => NavigationManager.NavigateTo($"/meal-plans/{Id}/edit-details");
 
     private async Task ActivatePlan()
     {
