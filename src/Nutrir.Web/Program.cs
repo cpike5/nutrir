@@ -9,6 +9,8 @@ using Nutrir.Web.Components;
 using Nutrir.Web.Components.Account;
 using Nutrir.Web.Middleware;
 using Elastic.Apm.SerilogEnricher;
+using Nutrir.Web.Endpoints;
+using QuestPDF.Infrastructure;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -71,6 +73,18 @@ try
         options.Preload = true;
     });
 
+    QuestPDF.Settings.License = LicenseType.Community;
+
+    // Set absolute paths for consent form options
+    builder.Services.PostConfigure<Nutrir.Infrastructure.Configuration.ConsentFormOptions>(options =>
+    {
+        options.DocxTemplatePath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "templates", "consent-form-template.docx");
+        if (!Path.IsPathRooted(options.ScannedCopyStoragePath))
+        {
+            options.ScannedCopyStoragePath = Path.Combine(builder.Environment.ContentRootPath, options.ScannedCopyStoragePath);
+        }
+    });
+
     var app = builder.Build();
 
     // Apply pending migrations and seed roles/admin user on startup.
@@ -112,6 +126,9 @@ try
 
     // Add additional endpoints required by the Identity /Account Razor components.
     app.MapAdditionalIdentityEndpoints();
+
+    // Consent form API endpoints.
+    app.MapConsentFormEndpoints();
 
     // Maintenance mode admin API endpoints.
     app.MapGet("/api/admin/maintenance/status", (IMaintenanceService svc) =>

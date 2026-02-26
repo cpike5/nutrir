@@ -6,10 +6,17 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Core.Models
+@using Nutrir.Infrastructure.Configuration
+@using Microsoft.Extensions.Options
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
+@inject IConsentFormService ConsentFormService
+@inject IConsentFormTemplate ConsentFormTemplate
+@inject IOptions<ConsentFormOptions> ConsentFormOptionsAccessor
 @inject IUserManagementService UserManagementService
 @inject NavigationManager NavigationManager
 
@@ -99,10 +106,49 @@
                               placeholder="Additional notes about the client..."></textarea>
                 </FormGroup>
 
-                <div class="consent-row">
-                    <FormCheckbox Label="Client has given consent to data collection"
-                                  Value="@_model.ConsentGiven"
-                                  ValueChanged="OnConsentChanged" />
+                @* ── Consent Section ──────────────────────────── *@
+                <div class="consent-section">
+                    <div class="consent-section-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>Consent</span>
+                    </div>
+
+                    <ConsentFormReview Content="@_consentContent" />
+
+                    <div class="consent-method">
+                        <label class="consent-method-option">
+                            <input type="radio" name="consentMethod" value="Digital"
+                                   checked="@(_model.ConsentMethod == ConsentSignatureMethod.Digital)"
+                                   @onchange="@(() => OnConsentMethodChanged(ConsentSignatureMethod.Digital))" />
+                            <span class="consent-method-label">Digital consent</span>
+                            <span class="consent-method-desc">Client verbally consents now; recorded digitally</span>
+                        </label>
+                        <label class="consent-method-option">
+                            <input type="radio" name="consentMethod" value="Physical"
+                                   checked="@(_model.ConsentMethod == ConsentSignatureMethod.Physical)"
+                                   @onchange="@(() => OnConsentMethodChanged(ConsentSignatureMethod.Physical))" />
+                            <span class="consent-method-label">Print & sign later</span>
+                            <span class="consent-method-desc">Download and print the form from the client detail page</span>
+                        </label>
+                    </div>
+
+                    @if (_model.ConsentMethod == ConsentSignatureMethod.Digital)
+                    {
+                        <div class="consent-row">
+                            <FormCheckbox Label="I acknowledge that the client has reviewed and consents to the above terms"
+                                          Value="@_model.ConsentGiven"
+                                          ValueChanged="OnConsentChanged" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="consent-info-alert">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                            <span>The consent form can be downloaded and printed from the client detail page after creation. The client will be created with consent pending.</span>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -140,6 +186,7 @@
     private string? _errorMessage;
     private IReadOnlyList<Autocomplete.AutocompleteOption> _nutritionistOptions = [];
     private string? _nutritionistDisplayText;
+    private ConsentFormContent? _consentContent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -161,6 +208,9 @@
             _model.PrimaryNutritionistId = currentUserOption.Value;
             _nutritionistDisplayText = currentUserOption.Text;
         }
+
+        // Generate consent form content for preview
+        _consentContent = ConsentFormTemplate.Generate("(Client Name)", "(Practitioner)", DateTime.UtcNow);
     }
 
     private void OnPhoneChanged(string value)
@@ -173,12 +223,30 @@
         _model.ConsentGiven = value;
     }
 
+    private void OnConsentMethodChanged(ConsentSignatureMethod method)
+    {
+        _model.ConsentMethod = method;
+        if (method == ConsentSignatureMethod.Physical)
+        {
+            // Physical consent: client will sign later, consent is granted at creation
+            _model.ConsentGiven = true;
+        }
+        else
+        {
+            // Digital: require explicit checkbox
+            _model.ConsentGiven = false;
+        }
+    }
+
     private async Task HandleSubmit()
     {
         _isSubmitting = true;
         _errorMessage = null;
 
-        if (!_model.ConsentGiven)
+        var isDigital = _model.ConsentMethod == ConsentSignatureMethod.Digital;
+        var consentRequired = ConsentFormOptionsAccessor.Value.RequiredOnClientCreation;
+
+        if (isDigital && !_model.ConsentGiven)
         {
             _errorMessage = "Client consent is required before registration.";
             _isSubmitting = false;
@@ -196,6 +264,8 @@
                 dob = parsedDob;
             }
 
+            var policyVersion = ConsentFormTemplate.Version;
+
             var dto = new ClientDto(
                 Id: 0,
                 FirstName: _model.FirstName!,
@@ -205,9 +275,9 @@
                 DateOfBirth: dob,
                 PrimaryNutritionistId: _model.PrimaryNutritionistId!,
                 PrimaryNutritionistName: null,
-                ConsentGiven: _model.ConsentGiven,
-                ConsentTimestamp: _model.ConsentGiven ? DateTime.UtcNow : null,
-                ConsentPolicyVersion: _model.ConsentGiven ? "1.0" : null,
+                ConsentGiven: true,
+                ConsentTimestamp: DateTime.UtcNow,
+                ConsentPolicyVersion: policyVersion,
                 Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
                 IsDeleted: false,
                 CreatedAt: DateTime.UtcNow,
@@ -216,6 +286,13 @@
             );
 
             var created = await ClientService.CreateAsync(dto, userId);
+
+            // Record consent form based on method
+            if (isDigital)
+            {
+                await ConsentFormService.RecordDigitalSignatureAsync(created.Id, userId);
+            }
+
             NavigationManager.NavigateTo($"/clients/{created.Id}");
         }
         catch
@@ -254,6 +331,8 @@
         public string? PrimaryNutritionistId { get; set; }
 
         public bool ConsentGiven { get; set; }
+
+        public ConsentSignatureMethod ConsentMethod { get; set; } = ConsentSignatureMethod.Digital;
 
         public string? Notes { get; set; }
     }

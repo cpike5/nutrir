@@ -35,6 +35,8 @@ Every client record requires a documented consent event before any health data i
 - [ ] Consent record is immutable after creation (only a withdrawal event can supersede it)
 - [ ] Withdrawing consent creates a new `ConsentWithdrawn` event; it does not modify the original record
 
+**Implementation:** See [consent-form.md](consent-form.md) for the full specification of the consent form generation feature — including the nine-section form content, PDF/DOCX generation, digital and physical signing workflows, and the `ConsentForm` entity that records each documented consent event.
+
 ---
 
 ### 2. Audit Log Table
@@ -209,7 +211,8 @@ For v1 features, the recommended build order based on dependencies:
 ## Related Documents
 
 - [Privacy Research](privacy-research.md) — Legal analysis of PIPEDA, PHIPA, HIA, and provincial frameworks
+- [Consent Form](consent-form.md) — Full specification for the consent form generation feature (PDF, DOCX, digital and physical signing workflows)
 - [Database & EF Core](../infrastructure/database.md) — Schema conventions, EF Core setup
 - [Architecture Overview](../infrastructure/architecture.md) — Layer responsibilities
 
-> **Last updated**: 2026-02-24
+> **Last updated**: 2026-02-25

@@ -1,0 +1,54 @@
+@using Nutrir.Core.Models
+
+<div class="consent-review">
+    <button type="button" class="consent-review-toggle" @onclick="ToggleExpanded">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="@(_isExpanded ? "toggle-icon expanded" : "toggle-icon")">
+            <path d="m9 18 6-6-6-6"/>
+        </svg>
+        <span>@(_isExpanded ? "Hide Consent Form" : "View Full Consent Form")</span>
+    </button>
+
+    @if (_isExpanded && Content is not null)
+    {
+        <div class="consent-review-content">
+            <div class="consent-review-header">
+                <h3 class="consent-review-title">@Content.Title</h3>
+                <span class="consent-review-version">Version @Content.FormVersion</span>
+            </div>
+
+            @foreach (var formSection in Content.Sections)
+            {
+                <div class="consent-section">
+                    <h4 class="consent-section-heading">@formSection.Heading</h4>
+                    @foreach (var paragraph in formSection.Paragraphs)
+                    {
+                        <p class="consent-section-text">@paragraph</p>
+                    }
+                </div>
+            }
+
+            <div class="consent-signature-block">
+                <p>@Content.SignatureBlockText</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public ConsentFormContent? Content { get; set; }
+    [Parameter] public bool IsExpanded { get; set; }
+    [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }
+
+    private bool _isExpanded;
+
+    protected override void OnParametersSet()
+    {
+        _isExpanded = IsExpanded;
+    }
+
+    private async Task ToggleExpanded()
+    {
+        _isExpanded = !_isExpanded;
+        await IsExpandedChanged.InvokeAsync(_isExpanded);
+    }
+}

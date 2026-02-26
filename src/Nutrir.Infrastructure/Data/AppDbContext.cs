@@ -32,6 +32,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ConsentEvent> ConsentEvents => Set<ConsentEvent>();
 
+    public DbSet<ConsentForm> ConsentForms => Set<ConsentForm>();
+
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
 
     public DbSet<AiConversationMessage> AiConversationMessages => Set<AiConversationMessage>();
@@ -255,6 +257,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(ce => ce.RecordedByUserId).HasMaxLength(450);
             entity.Property(ce => ce.Notes).HasColumnType("text");
             entity.Property(ce => ce.Timestamp).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<ConsentForm>(entity =>
+        {
+            // No soft-delete — consent forms are append-only records
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(cf => cf.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(cf => cf.SignatureMethod).HasConversion<string>();
+            entity.Property(cf => cf.FormVersion).HasMaxLength(50);
+            entity.Property(cf => cf.GeneratedByUserId).HasMaxLength(450);
+            entity.Property(cf => cf.SignedByUserId).HasMaxLength(450);
+            entity.Property(cf => cf.ScannedCopyPath).HasMaxLength(500);
+            entity.Property(cf => cf.Notes).HasColumnType("text");
+            entity.Property(cf => cf.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<AiConversation>(entity =>
