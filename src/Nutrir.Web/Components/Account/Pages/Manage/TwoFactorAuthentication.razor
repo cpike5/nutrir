@@ -15,18 +15,19 @@
 
 @if (canTrack)
 {
-    <div class="table-card">
-        <div class="section-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div class="settings-section">
+        <div class="section-heading">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
             </svg>
-            <span>Two-Factor Authentication</span>
+            <span>Two-factor authentication</span>
         </div>
-        <div class="card-body">
+        <p class="section-desc">Add an extra layer of security to your account.</p>
+        <div class="section-body">
             @if (is2faEnabled)
             {
-                <div class="flex items-center gap-2 mb-4">
-                    <h5>Status</h5>
+                <div class="setting-row mb-4">
+                    <span class="setting-label">Status</span>
                     <span class="badge badge-success">Enabled</span>
                 </div>
 
@@ -53,10 +54,13 @@
                 }
                 else
                 {
-                    <p class="text-sm text-muted mb-4">You have <strong>@recoveryCodesLeft</strong> recovery codes remaining.</p>
+                    <div class="setting-row mb-4">
+                        <span class="setting-label">Recovery codes</span>
+                        <span class="setting-value">@recoveryCodesLeft remaining</span>
+                    </div>
                 }
 
-                <div class="flex gap-2 flex-wrap">
+                <div class="flex gap-3 flex-wrap">
                     @if (isMachineRemembered)
                     {
                         <form @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
@@ -69,8 +73,8 @@
             }
             else
             {
-                <div class="flex items-center gap-2 mb-4">
-                    <h5>Status</h5>
+                <div class="setting-row mb-4">
+                    <span class="setting-label">Status</span>
                     <span class="badge badge-warning">Disabled</span>
                 </div>
                 <p class="text-sm text-muted">Two-factor authentication adds an additional layer of security to your account.</p>
@@ -78,15 +82,16 @@
         </div>
     </div>
 
-    <div class="table-card">
-        <div class="section-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div class="settings-section">
+        <div class="section-heading">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
             </svg>
-            <span>Authenticator App</span>
+            <span>Authenticator app</span>
         </div>
-        <div class="card-body">
-            <div class="flex gap-2 flex-wrap">
+        <p class="section-desc">Configure a TOTP authenticator app for verification codes.</p>
+        <div class="section-body">
+            <div class="flex gap-3 flex-wrap">
                 @if (!hasAuthenticator)
                 {
                     <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary btn-sm">Add authenticator app</a>
@@ -102,14 +107,14 @@
 }
 else
 {
-    <div class="table-card">
-        <div class="section-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div class="settings-section">
+        <div class="section-heading">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
             </svg>
-            <span>Two-Factor Authentication</span>
+            <span>Two-factor authentication</span>
         </div>
-        <div class="card-body">
+        <div class="section-body">
             <div class="alert alert-error" role="alert">
                 <strong>Privacy and cookie policy have not been accepted.</strong>
                 <p>You must accept the policy before you can enable two factor authentication.</p>

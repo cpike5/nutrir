@@ -20,14 +20,15 @@
     <AntiforgeryToken />
 </form>
 
-<div class="table-card">
-    <div class="section-header">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<div class="settings-section">
+    <div class="section-heading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
         </svg>
         <span>Email</span>
     </div>
-    <div class="card-body">
+    <p class="section-desc">Manage your email address and verification status.</p>
+    <div class="section-body">
         <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator />
             <ValidationSummary class="form-error" role="alert" />
@@ -53,7 +54,7 @@
                         <button type="submit" class="btn btn-outline btn-sm" form="send-verification-form">Send verification email</button>
                     </div>
                 }
-                <hr class="divider" />
+                <hr class="section-divider" />
                 <div class="form-group">
                     <label for="Input.NewEmail" class="form-label">New email</label>
                     <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-input" autocomplete="email" aria-required="true" placeholder="Enter a new email" />
