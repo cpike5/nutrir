@@ -189,6 +189,13 @@
             try
             {
                 _isWide = await JS.InvokeAsync<bool>("aiPanel.getStoredWideState");
+
+                var storedOpen = await JS.InvokeAsync<bool>("aiPanel.getStoredState");
+                if (storedOpen)
+                {
+                    _isOpen = true;
+                    PanelState.SetOpen(true);
+                }
             }
             catch (JSException) { }
 
