@@ -62,12 +62,15 @@ public class AppointmentGenerator
             var client = generatedClient.Client;
             var count = Math.Max(1, avgPerClient + _faker.Random.Int(-2, 2));
 
-            // Appointment window: from client CreatedAt to ~7 days in the future
-            var windowStart = client.CreatedAt;
-            var windowEnd = now.AddDays(7);
+            // Split appointments: ~65% future (next 1-21 days), ~35% historical
+            var futureTarget = Math.Max(1, (int)Math.Ceiling(count * 0.65));
+            var pastTarget = count - futureTarget;
 
-            // Generate candidate time slots spread across the window
-            var candidateSlots = GenerateCandidateSlots(windowStart, windowEnd, count * 3);
+            // Generate candidate slots for each window separately
+            var pastCandidates = pastTarget > 0
+                ? GenerateCandidateSlots(client.CreatedAt, now, pastTarget * 4)
+                : [];
+            var futureCandidates = GenerateCandidateSlots(now.AddHours(1), now.AddDays(21), futureTarget * 5);
 
             if (!occupiedSlots.ContainsKey(client.PrimaryNutritionistId))
             {
@@ -75,97 +78,114 @@ public class AppointmentGenerator
             }
 
             var nutritionistSlots = occupiedSlots[client.PrimaryNutritionistId];
-            var generated = 0;
 
-            foreach (var slotStart in candidateSlots)
-            {
-                if (generated >= count)
-                    break;
-
-                var type = generated == 0
-                    ? AppointmentType.InitialConsultation
-                    : _faker.Random.WeightedRandom(
-                        [AppointmentType.FollowUp, AppointmentType.CheckIn],
-                        [0.7f, 0.3f]);
-
-                var duration = type switch
-                {
-                    AppointmentType.InitialConsultation => 60,
-                    AppointmentType.FollowUp => _faker.Random.Bool() ? 30 : 45,
-                    AppointmentType.CheckIn => 15,
-                    _ => 30
-                };
-
-                var slotEnd = slotStart.AddMinutes(duration);
-
-                // Check for overlaps with this nutritionist's existing slots
-                if (HasOverlap(nutritionistSlots, slotStart, slotEnd))
-                    continue;
-
-                var isFuture = slotStart > now;
-
-                var status = isFuture
-                    ? _faker.Random.WeightedRandom(
-                        [AppointmentStatus.Scheduled, AppointmentStatus.Confirmed],
-                        [0.6f, 0.4f])
-                    : _faker.Random.WeightedRandom(
-                        [
-                            AppointmentStatus.Completed,
-                            AppointmentStatus.NoShow,
-                            AppointmentStatus.Cancelled,
-                            AppointmentStatus.LateCancellation
-                        ],
-                        [0.7f, 0.1f, 0.1f, 0.1f]);
-
-                var location = _faker.Random.WeightedRandom(
-                    [AppointmentLocation.InPerson, AppointmentLocation.Virtual, AppointmentLocation.Phone],
-                    [0.4f, 0.4f, 0.2f]);
-
-                var createdAt = slotStart.AddDays(-_faker.Random.Int(1, 3));
-                // CreatedAt should not be before the client was created
-                if (createdAt < client.CreatedAt)
-                    createdAt = client.CreatedAt;
-
-                var appointment = new Appointment
-                {
-                    ClientId = client.Id,
-                    NutritionistId = client.PrimaryNutritionistId,
-                    Type = type,
-                    Status = status,
-                    StartTime = slotStart,
-                    DurationMinutes = duration,
-                    Location = location,
-                    Notes = PickNotes(type),
-                    CreatedAt = createdAt
-                };
-
-                // Location-specific fields
-                switch (location)
-                {
-                    case AppointmentLocation.Virtual:
-                        appointment.VirtualMeetingUrl =
-                            $"https://meet.example.com/{client.FirstName.ToLowerInvariant()}";
-                        break;
-                    case AppointmentLocation.InPerson:
-                        appointment.LocationNotes = "Office A, Suite 204";
-                        break;
-                }
-
-                // Cancellation fields
-                if (status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
-                {
-                    appointment.CancellationReason = _faker.PickRandom(CancellationReasons);
-                    // CancelledAt between CreatedAt and StartTime
-                    appointment.CancelledAt = _faker.Date.Between(createdAt, slotStart).ToUniversalTime();
-                }
-
-                nutritionistSlots.Add((slotStart, slotEnd));
-                appointments.Add(appointment);
-                generated++;
-            }
+            // Generate past appointments first (up to pastTarget)
+            var pastGenerated = GenerateFromCandidates(pastCandidates, pastTarget, client, nutritionistSlots, now, appointments);
+            // Then future appointments (up to futureTarget, plus any shortfall from past)
+            var futureRemaining = count - pastGenerated;
+            GenerateFromCandidates(futureCandidates, futureRemaining, client, nutritionistSlots, now, appointments);
         }
 
         return appointments;
+    }
+
+    private int GenerateFromCandidates(
+        List<DateTime> candidateSlots,
+        int targetCount,
+        Client client,
+        List<(DateTime Start, DateTime End)> nutritionistSlots,
+        DateTime now,
+        List<Appointment> appointments)
+    {
+        var generated = 0;
+        var hasInitial = appointments.Any(a => a.ClientId == client.Id && a.Type == AppointmentType.InitialConsultation);
+
+        foreach (var slotStart in candidateSlots)
+        {
+            if (generated >= targetCount)
+                break;
+
+            var type = !hasInitial && generated == 0
+                ? AppointmentType.InitialConsultation
+                : _faker.Random.WeightedRandom(
+                    [AppointmentType.FollowUp, AppointmentType.CheckIn],
+                    [0.7f, 0.3f]);
+
+            var duration = type switch
+            {
+                AppointmentType.InitialConsultation => 60,
+                AppointmentType.FollowUp => _faker.Random.Bool() ? 30 : 45,
+                AppointmentType.CheckIn => 15,
+                _ => 30
+            };
+
+            var slotEnd = slotStart.AddMinutes(duration);
+
+            if (HasOverlap(nutritionistSlots, slotStart, slotEnd))
+                continue;
+
+            var isFuture = slotStart > now;
+
+            var status = isFuture
+                ? _faker.Random.WeightedRandom(
+                    [AppointmentStatus.Scheduled, AppointmentStatus.Confirmed],
+                    [0.6f, 0.4f])
+                : _faker.Random.WeightedRandom(
+                    [
+                        AppointmentStatus.Completed,
+                        AppointmentStatus.NoShow,
+                        AppointmentStatus.Cancelled,
+                        AppointmentStatus.LateCancellation
+                    ],
+                    [0.7f, 0.1f, 0.1f, 0.1f]);
+
+            var location = _faker.Random.WeightedRandom(
+                [AppointmentLocation.InPerson, AppointmentLocation.Virtual, AppointmentLocation.Phone],
+                [0.4f, 0.4f, 0.2f]);
+
+            var createdAt = slotStart.AddDays(-_faker.Random.Int(1, 3));
+            if (createdAt < client.CreatedAt)
+                createdAt = client.CreatedAt;
+
+            var appointment = new Appointment
+            {
+                ClientId = client.Id,
+                NutritionistId = client.PrimaryNutritionistId,
+                Type = type,
+                Status = status,
+                StartTime = slotStart,
+                DurationMinutes = duration,
+                Location = location,
+                Notes = PickNotes(type),
+                CreatedAt = createdAt
+            };
+
+            switch (location)
+            {
+                case AppointmentLocation.Virtual:
+                    appointment.VirtualMeetingUrl =
+                        $"https://meet.example.com/{client.FirstName.ToLowerInvariant()}";
+                    break;
+                case AppointmentLocation.InPerson:
+                    appointment.LocationNotes = "Office A, Suite 204";
+                    break;
+            }
+
+            if (status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
+            {
+                appointment.CancellationReason = _faker.PickRandom(CancellationReasons);
+                appointment.CancelledAt = _faker.Date.Between(createdAt, slotStart).ToUniversalTime();
+            }
+
+            if (type == AppointmentType.InitialConsultation)
+                hasInitial = true;
+
+            nutritionistSlots.Add((slotStart, slotEnd));
+            appointments.Add(appointment);
+            generated++;
+        }
+
+        return generated;
     }
 
     private List<DateTime> GenerateCandidateSlots(DateTime windowStart, DateTime windowEnd, int count)
