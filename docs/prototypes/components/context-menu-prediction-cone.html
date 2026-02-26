@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Context Menu — Prediction Cone Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ─────────────────────────────────────────────────────────────
+       Design tokens — dark theme variant of Nutrir palette
+    ───────────────────────────────────────────────────────────── */
+    :root {
+      --bg-page:       #1a1720;
+      --bg-menu:       #211e28;
+      --bg-menu-hover: #2d2935;
+      --bg-menu-active:#3a3346;
+      --bg-separator:  #2f2b38;
+
+      --border-menu:   rgba(255, 255, 255, 0.07);
+      --border-focus:  rgba(176, 104, 125, 0.5);
+
+      --text-primary:  #e8e3ec;
+      --text-muted:    #8a8292;
+      --text-accent:   #d98ba0;    /* Nutrir primary lightened for dark bg */
+      --text-danger:   #e07070;
+      --text-success:  #76b887;
+
+      --shadow-menu:   0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+
+      --radius-menu:   8px;
+      --radius-item:   5px;
+
+      --font-ui:   'Outfit', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', monospace;
+
+      --cone-fill:   rgba(120, 160, 255, 0.15);
+      --cone-stroke: rgba(120, 160, 255, 0.5);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Reset & base
+    ───────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-ui);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Page background — subtle grid pattern
+    ───────────────────────────────────────────────────────────── */
+    body {
+      background-image:
+        linear-gradient(rgba(176, 104, 125, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(176, 104, 125, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Page hero content
+    ───────────────────────────────────────────────────────────── */
+    .page-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 16px;
+      pointer-events: none; /* let right-click pass through */
+    }
+
+    .page-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .page-hint {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 10px 18px;
+      border: 1px solid var(--border-menu);
+      border-radius: 40px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .page-hint kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Debug panel (top-right corner)
+    ───────────────────────────────────────────────────────────── */
+    .debug-panel {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      pointer-events: all;
+    }
+
+    .debug-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-menu);
+      border: 1px solid var(--border-menu);
+      border-radius: 6px;
+      font-family: var(--font-ui);
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .debug-toggle:hover {
+      border-color: var(--border-focus);
+      color: var(--text-primary);
+    }
+
+    .debug-toggle.active {
+      background: rgba(120, 160, 255, 0.1);
+      border-color: rgba(120, 160, 255, 0.4);
+      color: rgb(140, 180, 255);
+    }
+
+    .debug-toggle .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.15s;
+    }
+
+    .debug-toggle.active .dot {
+      background: rgb(120, 160, 255);
+      box-shadow: 0 0 6px rgba(120, 160, 255, 0.7);
+    }
+
+    .debug-info {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 14px;
+      background: var(--bg-menu);
+      border: 1px solid rgba(120, 160, 255, 0.3);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-width: 200px;
+    }
+
+    .debug-info.visible { display: flex; }
+
+    .debug-info .di-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .debug-info .di-label { color: rgba(120, 160, 255, 0.7); }
+    .debug-info .di-val   { color: var(--text-primary); }
+
+    /* ─────────────────────────────────────────────────────────────
+       Debug SVG overlay canvas
+    ───────────────────────────────────────────────────────────── */
+    #debug-svg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 8000;
+      display: none;
+    }
+
+    #debug-svg.visible { display: block; }
+
+    /* ─────────────────────────────────────────────────────────────
+       Menu container (root)
+    ───────────────────────────────────────────────────────────── */
+    .ctx-menu {
+      position: fixed;
+      z-index: 9000;
+      display: none;
+      min-width: 220px;
+    }
+
+    .ctx-menu.open { display: block; }
+
+    /* ─────────────────────────────────────────────────────────────
+       Menu list
+    ───────────────────────────────────────────────────────────── */
+    .menu-list {
+      background: var(--bg-menu);
+      border: 1px solid var(--border-menu);
+      border-radius: var(--radius-menu);
+      box-shadow: var(--shadow-menu);
+      padding: 4px;
+      min-width: 220px;
+      animation: menu-appear 0.12s ease;
+    }
+
+    @keyframes menu-appear {
+      from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0); }
+    }
+
+    /* Submenus slide in from the side, not down */
+    .submenu-wrapper .menu-list {
+      animation: submenu-appear 0.12s ease;
+    }
+
+    @keyframes submenu-appear {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Menu items
+    ───────────────────────────────────────────────────────────── */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: var(--radius-item);
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--text-primary);
+      cursor: pointer;
+      position: relative;
+      transition: background 0.08s ease, color 0.08s ease;
+      white-space: nowrap;
+    }
+
+    .menu-item:hover,
+    .menu-item.hovered {
+      background: var(--bg-menu-hover);
+    }
+
+    .menu-item.active-submenu {
+      background: var(--bg-menu-active);
+      color: var(--text-accent);
+    }
+
+    .menu-item .item-icon {
+      width: 18px;
+      text-align: center;
+      font-size: 0.9375rem;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .menu-item .item-label {
+      flex: 1;
+    }
+
+    .menu-item .item-shortcut {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .menu-item .item-arrow {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-left: 4px;
+      transition: transform 0.1s ease;
+    }
+
+    .menu-item.active-submenu .item-arrow {
+      transform: translateX(2px);
+    }
+
+    /* Danger variant */
+    .menu-item.danger {
+      color: var(--text-danger);
+    }
+    .menu-item.danger .item-icon { opacity: 1; }
+    .menu-item.danger:hover { background: rgba(224, 112, 112, 0.1); }
+
+    /* Disabled variant */
+    .menu-item.disabled {
+      color: var(--text-muted);
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Separators
+    ───────────────────────────────────────────────────────────── */
+    .menu-separator {
+      height: 1px;
+      background: var(--border-menu);
+      margin: 4px 8px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Section labels
+    ───────────────────────────────────────────────────────────── */
+    .menu-section-label {
+      padding: 6px 10px 2px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Submenu positioning wrapper
+    ───────────────────────────────────────────────────────────── */
+    .submenu-wrapper {
+      position: absolute;
+      top: 0;
+      left: 100%;         /* Opens to the right by default */
+      padding-left: 4px;  /* Gap between parent and child menu */
+      display: none;
+      z-index: 1;
+    }
+
+    .submenu-wrapper.open { display: block; }
+
+    /* Flip to left when near right edge */
+    .submenu-wrapper.flip-left {
+      left: auto;
+      right: 100%;
+      padding-left: 0;
+      padding-right: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Page Content ── -->
+  <div class="page-content" aria-hidden="true">
+    <div class="page-title">Prediction Cone Context Menu</div>
+    <p class="page-subtitle">
+      Right-click anywhere to open the context menu. Hover over items with submenus
+      and move diagonally toward the submenu — notice it stays open while you're
+      in the safe triangle zone.
+    </p>
+    <div class="page-hint">
+      <span>&#x2B95;</span>
+      Right-click to open &nbsp;&bull;&nbsp; <kbd>ESC</kbd> to close &nbsp;&bull;&nbsp; Click outside to dismiss
+    </div>
+  </div>
+
+  <!-- ── Debug controls ── -->
+  <div class="debug-panel" role="region" aria-label="Debug controls">
+    <button class="debug-toggle" id="debug-btn" aria-pressed="false">
+      <span class="dot"></span>
+      Debug Cone Visualization
+    </button>
+    <div class="debug-info" id="debug-info" role="status" aria-live="polite">
+      <div class="di-row">
+        <span class="di-label">Mouse X,Y</span>
+        <span class="di-val" id="di-mouse">—</span>
+      </div>
+      <div class="di-row">
+        <span class="di-label">In cone?</span>
+        <span class="di-val" id="di-cone">—</span>
+      </div>
+      <div class="di-row">
+        <span class="di-label">Active level</span>
+        <span class="di-val" id="di-level">—</span>
+      </div>
+      <div class="di-row">
+        <span class="di-label">Blocked hover</span>
+        <span class="di-val" id="di-blocked">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SVG Overlay for cone debug drawing ── -->
+  <svg id="debug-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <filter id="cone-glow">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    <!-- Filled triangle -->
+    <polygon id="cone-fill-poly" fill="rgba(120,160,255,0.12)" stroke="none" />
+    <!-- Stroke outline -->
+    <polygon id="cone-stroke-poly" fill="none" stroke="rgba(120,160,255,0.55)"
+             stroke-width="1.5" stroke-dasharray="5,3" />
+    <!-- Mouse cursor cross-hair -->
+    <circle id="cone-mouse-dot" r="4" fill="rgba(120,160,255,0.9)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+    <!-- Corner markers -->
+    <circle id="cone-corner-a" r="3" fill="rgba(120,200,120,0.8)" />
+    <circle id="cone-corner-b" r="3" fill="rgba(120,200,120,0.8)" />
+    <!-- Label -->
+    <text id="cone-label" font-family="'JetBrains Mono', monospace" font-size="11"
+          fill="rgba(140,180,255,0.7)">Safe Zone</text>
+  </svg>
+
+  <!-- ── Context Menu ── -->
+  <!--
+    The menu is built as a static DOM structure.
+    Submenus are nested .submenu-wrapper elements inside .menu-item elements.
+    JavaScript drives open/close state and handles the prediction cone logic.
+  -->
+  <nav class="ctx-menu" id="ctx-menu" role="menu" aria-label="Context menu">
+    <ul class="menu-list" role="none">
+
+      <!-- ── New File group ── -->
+      <li class="menu-section-label">Create</li>
+
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="new-file">
+        <span class="item-icon">📄</span>
+        <span class="item-label">New File</span>
+        <span class="item-shortcut">Ctrl N</span>
+      </li>
+
+      <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+        <span class="item-icon">📁</span>
+        <span class="item-label">New Folder</span>
+        <span class="item-arrow">&#x276F;</span>
+        <!-- Level 2 submenu -->
+        <div class="submenu-wrapper" role="menu" aria-label="New Folder submenu">
+          <ul class="menu-list" role="none">
+            <li class="menu-item" role="menuitem" tabindex="-1" data-action="new-folder-here">
+              <span class="item-icon">📂</span>
+              <span class="item-label">Here</span>
+            </li>
+            <li class="menu-item" role="menuitem" tabindex="-1" data-action="new-folder-desktop">
+              <span class="item-icon">🖥</span>
+              <span class="item-label">On Desktop</span>
+            </li>
+            <li class="menu-separator" role="separator"></li>
+            <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+              <span class="item-icon">☁️</span>
+              <span class="item-label">Cloud Location</span>
+              <span class="item-arrow">&#x276F;</span>
+              <!-- Level 3 submenu -->
+              <div class="submenu-wrapper" role="menu" aria-label="Cloud Location submenu">
+                <ul class="menu-list" role="none">
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="cloud-drive">
+                    <span class="item-icon">🔵</span>
+                    <span class="item-label">Google Drive</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="cloud-dropbox">
+                    <span class="item-icon">📦</span>
+                    <span class="item-label">Dropbox</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="cloud-onedrive">
+                    <span class="item-icon">🌐</span>
+                    <span class="item-label">OneDrive</span>
+                  </li>
+                  <li class="menu-separator" role="separator"></li>
+                  <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+                    <span class="item-icon">🔒</span>
+                    <span class="item-label">Encrypted Vault</span>
+                    <span class="item-arrow">&#x276F;</span>
+                    <!-- Level 4 submenu (deepest) -->
+                    <div class="submenu-wrapper" role="menu" aria-label="Encrypted Vault submenu">
+                      <ul class="menu-list" role="none">
+                        <li class="menu-item" role="menuitem" tabindex="-1" data-action="vault-new">
+                          <span class="item-icon">✨</span>
+                          <span class="item-label">Create New Vault</span>
+                        </li>
+                        <li class="menu-item" role="menuitem" tabindex="-1" data-action="vault-existing">
+                          <span class="item-icon">🗝</span>
+                          <span class="item-label">Open Existing</span>
+                        </li>
+                        <li class="menu-item disabled" role="menuitem" tabindex="-1">
+                          <span class="item-icon">🛡</span>
+                          <span class="item-label">Hardware Key (YubiKey)</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+              <span class="item-icon">🗃</span>
+              <span class="item-label">Template</span>
+              <span class="item-arrow">&#x276F;</span>
+              <!-- Level 3 alternate branch -->
+              <div class="submenu-wrapper" role="menu" aria-label="Template submenu">
+                <ul class="menu-list" role="none">
+                  <li class="menu-section-label">Project types</li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="tmpl-react">
+                    <span class="item-icon">⚛</span>
+                    <span class="item-label">React App</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="tmpl-api">
+                    <span class="item-icon">🔌</span>
+                    <span class="item-label">REST API</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="tmpl-lib">
+                    <span class="item-icon">📚</span>
+                    <span class="item-label">Library Package</span>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="menu-separator" role="separator"></li>
+
+      <!-- ── Edit group ── -->
+      <li class="menu-section-label">Edit</li>
+
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="cut">
+        <span class="item-icon">✂️</span>
+        <span class="item-label">Cut</span>
+        <span class="item-shortcut">Ctrl X</span>
+      </li>
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="copy">
+        <span class="item-icon">📋</span>
+        <span class="item-label">Copy</span>
+        <span class="item-shortcut">Ctrl C</span>
+      </li>
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="paste">
+        <span class="item-icon">📌</span>
+        <span class="item-label">Paste</span>
+        <span class="item-shortcut">Ctrl V</span>
+      </li>
+
+      <li class="menu-separator" role="separator"></li>
+
+      <!-- ── Share group ── -->
+      <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+        <span class="item-icon">↗</span>
+        <span class="item-label">Share</span>
+        <span class="item-arrow">&#x276F;</span>
+        <!-- Level 2 submenu -->
+        <div class="submenu-wrapper" role="menu" aria-label="Share submenu">
+          <ul class="menu-list" role="none">
+            <li class="menu-item" role="menuitem" tabindex="-1" data-action="share-link">
+              <span class="item-icon">🔗</span>
+              <span class="item-label">Copy Link</span>
+            </li>
+            <li class="menu-item" role="menuitem" tabindex="-1" data-action="share-email">
+              <span class="item-icon">✉️</span>
+              <span class="item-label">Send via Email</span>
+            </li>
+            <li class="menu-item has-submenu" role="menuitem" tabindex="-1" aria-haspopup="true" aria-expanded="false">
+              <span class="item-icon">👥</span>
+              <span class="item-label">Invite People</span>
+              <span class="item-arrow">&#x276F;</span>
+              <!-- Level 3 submenu -->
+              <div class="submenu-wrapper" role="menu" aria-label="Invite People submenu">
+                <ul class="menu-list" role="none">
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="invite-view">
+                    <span class="item-icon">👁</span>
+                    <span class="item-label">Viewer access</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="invite-edit">
+                    <span class="item-icon">✏️</span>
+                    <span class="item-label">Editor access</span>
+                  </li>
+                  <li class="menu-item" role="menuitem" tabindex="-1" data-action="invite-admin">
+                    <span class="item-icon">👑</span>
+                    <span class="item-label">Admin access</span>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="menu-separator" role="separator"></li>
+
+      <!-- ── Properties ── -->
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="properties">
+        <span class="item-icon">⚙</span>
+        <span class="item-label">Properties</span>
+      </li>
+
+      <li class="menu-item" role="menuitem" tabindex="-1" data-action="rename">
+        <span class="item-icon">🏷</span>
+        <span class="item-label">Rename</span>
+        <span class="item-shortcut">F2</span>
+      </li>
+
+      <li class="menu-separator" role="separator"></li>
+
+      <!-- ── Danger zone ── -->
+      <li class="menu-item danger" role="menuitem" tabindex="-1" data-action="delete">
+        <span class="item-icon">🗑</span>
+        <span class="item-label">Delete</span>
+        <span class="item-shortcut">Del</span>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- ── Toast notification (for action feedback) ── -->
+  <div id="toast" style="
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: #2d2935; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 10px 20px; font-size: 0.875rem; color: #e8e3ec;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4); transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0; z-index: 99999; white-space: nowrap;
+  " aria-live="assertive" role="status"></div>
+
+<script>
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  PREDICTION CONE CONTEXT MENU
+ *  ─────────────────────────────────────────────────────────────────────────
+ *  The "prediction cone" (also called "safe triangle" or "menu aim") is a
+ *  UX technique that prevents accidentally triggering adjacent menu items
+ *  while the user moves their mouse diagonally toward an open submenu.
+ *
+ *  ALGORITHM OVERVIEW
+ *  ──────────────────
+ *  1. When a menu item with a submenu becomes active, record the current
+ *     mouse position (M) and the bounding rectangle of the open submenu.
+ *
+ *  2. Define a triangle with three vertices:
+ *       A = current mouse position (M)
+ *       B = top-right corner of the submenu rect
+ *       C = bottom-right corner of the submenu rect
+ *     (For left-flipped submenus, use top-left and bottom-left corners.)
+ *
+ *  3. On every mousemove, test whether the current mouse position lies
+ *     inside this triangle using cross-product sign testing (winding order).
+ *
+ *  4. If inside the cone: block hover changes on sibling menu items.
+ *     If outside the cone: immediately switch to the newly hovered item.
+ *
+ *  5. Update the cone triangle on every frame — it tracks the mouse and
+ *     the submenu's current position, so it stays valid during scrolling
+ *     or repositioning.
+ *
+ *  CROSS-PRODUCT POINT-IN-TRIANGLE TEST
+ *  ──────────────────────────────────────
+ *  Given triangle (A, B, C) and point P, compute:
+ *    d1 = sign( cross(AB, AP) )
+ *    d2 = sign( cross(BC, BP) )
+ *    d3 = sign( cross(CA, CP) )
+ *  P is inside iff all signs are the same (all positive or all negative).
+ *  This works for both CW and CCW winding orders.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+'use strict';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+/** Current mouse position (updated on every mousemove) */
+const mouse = { x: 0, y: 0 };
+
+/**
+ * Prediction cone state.
+ * Updated whenever a new submenu becomes active.
+ */
+const cone = {
+  active:    false,   // Is there an active cone?
+  apex:      null,    // { x, y } — the mouse position when submenu opened
+  submenuEl: null,    // The .submenu-wrapper DOM element (to query its rect live)
+  flipped:   false,   // Whether the submenu opened to the left
+  depth:     -1,      // The depth of the parent item that opened the submenu
+};
+
+/** Whether debug visualization is on */
+let debugMode = false;
+
+/** Pending hover-change timer (used when hovering outside the cone) */
+let hoverSwitchTimer = null;
+
+// ─── DOM References ───────────────────────────────────────────────────────────
+
+const ctxMenu    = document.getElementById('ctx-menu');
+const debugSvg   = document.getElementById('debug-svg');
+const debugBtn   = document.getElementById('debug-btn');
+const debugInfo  = document.getElementById('debug-info');
+const diMouse    = document.getElementById('di-mouse');
+const diCone     = document.getElementById('di-cone');
+const diLevel    = document.getElementById('di-level');
+const diBlocked  = document.getElementById('di-blocked');
+const conePolyFill   = document.getElementById('cone-fill-poly');
+const conePolyStroke = document.getElementById('cone-stroke-poly');
+const coneMouseDot   = document.getElementById('cone-mouse-dot');
+const coneCornerA    = document.getElementById('cone-corner-a');
+const coneCornerB    = document.getElementById('cone-corner-b');
+const coneLabel      = document.getElementById('cone-label');
+const toast      = document.getElementById('toast');
+
+let toastTimer = null;
+
+// ─── Utility: Point-in-Triangle ───────────────────────────────────────────────
+
+/**
+ * Compute the 2D cross product of vectors (B-A) and (P-A).
+ * The sign tells us which side of edge A→B the point P is on.
+ */
+function cross2d(ax, ay, bx, by, px, py) {
+  return (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+}
+
+/**
+ * Returns true if point (px, py) lies inside or on the edge of
+ * triangle defined by vertices A, B, C (any winding order).
+ */
+function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+  const d1 = cross2d(ax, ay, bx, by, px, py);
+  const d2 = cross2d(bx, by, cx, cy, px, py);
+  const d3 = cross2d(cx, cy, ax, ay, px, py);
+
+  const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+  const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+  // If all same sign (or zero), point is inside
+  return !(hasNeg && hasPos);
+}
+
+// ─── Cone Management ──────────────────────────────────────────────────────────
+
+/**
+ * Activate the prediction cone for a newly opened submenu.
+ * Called when a submenu opens and we need to protect against
+ * accidentally hovering sibling menu items during diagonal mouse movement.
+ *
+ * @param {HTMLElement} submenuWrapper - The .submenu-wrapper div that just opened
+ * @param {boolean} flipped - Whether the submenu opened to the left
+ */
+function activateCone(submenuWrapper, flipped, depth) {
+  cone.active    = true;
+  cone.apex      = { x: mouse.x, y: mouse.y };
+  cone.submenuEl = submenuWrapper;
+  cone.flipped   = flipped;
+  cone.depth     = depth;
+}
+
+/** Deactivate the cone (e.g. when submenu closes or menu closes entirely) */
+function deactivateCone() {
+  cone.active    = false;
+  cone.submenuEl = null;
+  clearConeDebugVisual();
+}
+
+/**
+ * Test whether the current mouse position is inside the prediction cone.
+ * The cone's apex follows the mouse live; the base spans the near edge
+ * of the currently open submenu.
+ *
+ * @returns {boolean} true = mouse is in the safe zone, keep current submenu open
+ */
+function mouseInCone() {
+  if (!cone.active || !cone.submenuEl || !cone.apex) return false;
+
+  const rect = cone.submenuEl.getBoundingClientRect();
+  if (rect.width === 0) return false;
+
+  // Define the two far corners of the submenu near-edge
+  // For right-opening submenu: near-edge is the LEFT side of the submenu rect
+  // For left-opening submenu:  near-edge is the RIGHT side
+  let cornerTopX, cornerBotX;
+  if (cone.flipped) {
+    cornerTopX = rect.right;
+    cornerBotX = rect.right;
+  } else {
+    cornerTopX = rect.left;
+    cornerBotX = rect.left;
+  }
+
+  const cornerTopY = rect.top;
+  const cornerBotY = rect.bottom;
+
+  // Apex = the mouse position when the submenu first opened (fixed point).
+  // Test point = current live mouse position.
+  // The triangle: apex → top corner → bottom corner of submenu near-edge.
+  const apexX = cone.apex.x;
+  const apexY = cone.apex.y;
+
+  const inside = pointInTriangle(
+    mouse.x, mouse.y,
+    apexX, apexY,
+    cornerTopX, cornerTopY,
+    cornerBotX, cornerBotY
+  );
+
+  // Update debug visualization
+  if (debugMode) {
+    updateConeDebugVisual(apexX, apexY, cornerTopX, cornerTopY, cornerBotX, cornerBotY, inside);
+  }
+
+  return inside;
+}
+
+// ─── Debug Visualization ──────────────────────────────────────────────────────
+
+function updateConeDebugVisual(ax, ay, bx, by, cx, cy, inside) {
+  const pts = `${ax},${ay} ${bx},${by} ${cx},${cy}`;
+  conePolyFill.setAttribute('points', pts);
+  conePolyStroke.setAttribute('points', pts);
+
+  if (inside) {
+    conePolyFill.setAttribute('fill', 'rgba(120,200,120,0.12)');
+    conePolyStroke.setAttribute('stroke', 'rgba(120,200,120,0.6)');
+  } else {
+    conePolyFill.setAttribute('fill', 'rgba(120,160,255,0.12)');
+    conePolyStroke.setAttribute('stroke', 'rgba(120,160,255,0.55)');
+  }
+
+  coneMouseDot.setAttribute('cx', ax);
+  coneMouseDot.setAttribute('cy', ay);
+  coneCornerA.setAttribute('cx', bx);
+  coneCornerA.setAttribute('cy', by);
+  coneCornerB.setAttribute('cx', cx);
+  coneCornerB.setAttribute('cy', cy);
+  coneLabel.setAttribute('x', (bx + cx) / 2 + 8);
+  coneLabel.setAttribute('y', (by + cy) / 2);
+  coneLabel.textContent = inside ? 'In Safe Zone' : 'Outside Cone';
+}
+
+function clearConeDebugVisual() {
+  conePolyFill.setAttribute('points', '0,0 0,0 0,0');
+  conePolyStroke.setAttribute('points', '0,0 0,0 0,0');
+  coneMouseDot.setAttribute('cx', -100);
+  coneMouseDot.setAttribute('cy', -100);
+  coneCornerA.setAttribute('cx', -100);
+  coneCornerA.setAttribute('cy', -100);
+  coneCornerB.setAttribute('cx', -100);
+  coneCornerB.setAttribute('cy', -100);
+}
+
+// ─── Menu State ───────────────────────────────────────────────────────────────
+
+/** All currently open submenu wrappers, from outermost inward */
+let openSubmenus = [];
+
+/**
+ * Close all submenus from the given depth onwards.
+ * depth = 0 means close everything.
+ * depth = 1 means keep the first level open, close the rest.
+ */
+function closeSubmenusFrom(depth) {
+  for (let i = openSubmenus.length - 1; i >= depth; i--) {
+    const { item, wrapper } = openSubmenus[i];
+    wrapper.classList.remove('open');
+    item.classList.remove('active-submenu');
+    item.setAttribute('aria-expanded', 'false');
+  }
+  openSubmenus = openSubmenus.slice(0, depth);
+
+  // Deactivate the cone if the submenu it was protecting got closed
+  if (cone.active && cone.depth >= depth) {
+    deactivateCone();
+  }
+}
+
+/**
+ * Open the submenu for a given menu item.
+ * Closes any siblings at the same depth first.
+ *
+ * @param {HTMLElement} item - The .menu-item.has-submenu element
+ * @param {number} depth - Which nesting level this item is at (0 = root)
+ */
+function openSubmenu(item, depth) {
+  // Close anything at this depth or deeper first
+  closeSubmenusFrom(depth);
+
+  const wrapper = item.querySelector(':scope > .submenu-wrapper');
+  if (!wrapper) return;
+
+  // Position the submenu: check if it would clip off screen
+  const itemRect = item.getBoundingClientRect();
+  const vpWidth  = window.innerWidth;
+  const vpHeight = window.innerHeight;
+
+  // Temporarily show to measure
+  wrapper.style.display = 'block';
+  const wRect = wrapper.getBoundingClientRect();
+  wrapper.style.display = '';
+
+  // Horizontal: flip left if not enough space on the right
+  const flipped = (itemRect.right + wRect.width + 8) > vpWidth;
+  if (flipped) {
+    wrapper.classList.add('flip-left');
+  } else {
+    wrapper.classList.remove('flip-left');
+  }
+
+  // Vertical: shift up if it would overflow the bottom
+  const overflowBottom = (itemRect.top + wRect.height) - vpHeight;
+  if (overflowBottom > 0) {
+    wrapper.style.top = `${-overflowBottom - 4}px`;
+  } else {
+    wrapper.style.top = '0px';
+  }
+
+  wrapper.classList.add('open');
+  item.classList.add('active-submenu');
+  item.setAttribute('aria-expanded', 'true');
+
+  openSubmenus.push({ item, wrapper });
+
+  // Activate cone protection for this submenu
+  activateCone(wrapper, flipped, depth);
+}
+
+// ─── Event: menu item mouse enter ────────────────────────────────────────────
+
+/**
+ * Determines the nesting depth of a menu item by counting ancestor
+ * .menu-list elements up to the root context menu.
+ */
+function getItemDepth(item) {
+  let depth = 0;
+  let el = item.parentElement; // <ul.menu-list>
+  while (el && el !== ctxMenu) {
+    if (el.classList.contains('menu-list')) depth++;
+    el = el.parentElement;
+  }
+  return depth - 1; // depth 0 = root menu
+}
+
+/**
+ * Handle mouse entering a menu item.
+ * This is where the prediction cone check happens:
+ * - If the mouse is in the safe zone (moving toward an open submenu),
+ *   we defer the hover change.
+ * - Otherwise, we immediately open/close submenus as appropriate.
+ */
+function onItemMouseEnter(e) {
+  const item  = e.currentTarget;
+  const depth = getItemDepth(item);
+
+  // Clear any pending hover switch
+  clearTimeout(hoverSwitchTimer);
+
+  // Only apply cone check when hovering a SIBLING of the item that opened
+  // the protected submenu (same depth). Items inside the submenu itself
+  // (deeper depth) should always respond immediately.
+  const coneIsActive = cone.active && depth === cone.depth && mouseInCone();
+
+  if (debugMode) {
+    diLevel.textContent   = depth;
+    diBlocked.textContent = coneIsActive ? 'yes' : 'no';
+    diCone.textContent    = coneIsActive ? 'yes' : 'no';
+  }
+
+  if (coneIsActive) {
+    /*
+     * Mouse is moving toward the currently open submenu.
+     * Defer the hover switch with a short timeout.
+     * If the mouse leaves the cone before the timer fires, the switch
+     * never happens and the original submenu stays open.
+     * If still in the cone when timer fires, we do a re-check.
+     */
+    hoverSwitchTimer = setTimeout(() => {
+      // Re-evaluate: if now outside cone (or cone gone), apply the hover
+      if (!cone.active || !mouseInCone()) {
+        applyItemHover(item, depth);
+      }
+    }, 80);
+    return;
+  }
+
+  // Not in cone — apply immediately
+  applyItemHover(item, depth);
+}
+
+function applyItemHover(item, depth) {
+  // Remove .hovered from all siblings
+  const siblings = item.parentElement.querySelectorAll(':scope > .menu-item');
+  siblings.forEach(s => s.classList.remove('hovered'));
+  item.classList.add('hovered');
+
+  if (item.classList.contains('has-submenu')) {
+    openSubmenu(item, depth);
+  } else {
+    // Plain item — close any open submenus at this depth
+    closeSubmenusFrom(depth);
+  }
+}
+
+// ─── Global Mouse Tracking ────────────────────────────────────────────────────
+
+document.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+
+  if (debugMode) {
+    diMouse.textContent = `${e.clientX}, ${e.clientY}`;
+
+    // Continuously update cone drawing (apex follows mouse live)
+    if (cone.active && cone.submenuEl) {
+      mouseInCone(); // triggers the draw call as a side effect
+    } else {
+      clearConeDebugVisual();
+    }
+  }
+});
+
+// ─── Context Menu Open/Close ──────────────────────────────────────────────────
+
+/**
+ * Open the context menu at a given page position.
+ * Clamps to viewport so it never goes off-screen.
+ */
+function openContextMenu(x, y) {
+  ctxMenu.classList.add('open');
+
+  // Measure
+  const menuRect = ctxMenu.getBoundingClientRect();
+  const vpW = window.innerWidth;
+  const vpH = window.innerHeight;
+
+  // Clamp X: don't let menu go past right edge
+  // We need the menu width — read it after adding 'open'
+  const mw = ctxMenu.offsetWidth  || 240;
+  const mh = ctxMenu.offsetHeight || 400;
+
+  let cx = x;
+  let cy = y;
+  if (cx + mw > vpW - 8) cx = vpW - mw - 8;
+  if (cy + mh > vpH - 8) cy = vpH - mh - 8;
+  if (cx < 8) cx = 8;
+  if (cy < 8) cy = 8;
+
+  ctxMenu.style.left = `${cx}px`;
+  ctxMenu.style.top  = `${cy}px`;
+}
+
+function closeContextMenu() {
+  closeSubmenusFrom(0);
+  ctxMenu.classList.remove('open');
+
+  // Clear .hovered from all items
+  ctxMenu.querySelectorAll('.menu-item').forEach(i => {
+    i.classList.remove('hovered', 'active-submenu');
+  });
+}
+
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  closeContextMenu(); // Reset state on new open
+  openContextMenu(e.clientX, e.clientY);
+});
+
+document.addEventListener('click', (e) => {
+  if (!ctxMenu.contains(e.target)) {
+    closeContextMenu();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeContextMenu();
+});
+
+// ─── Wire up all menu items ───────────────────────────────────────────────────
+
+/**
+ * Attach mouseenter listeners to all .menu-item elements.
+ * We do this once after DOM load. The same handler works for all levels.
+ */
+ctxMenu.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('mouseenter', onItemMouseEnter);
+});
+
+// Leaf items: close menu on click
+ctxMenu.querySelectorAll('.menu-item[data-action]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const action = item.dataset.action;
+    const label  = item.querySelector('.item-label')?.textContent || action;
+    showToast(`▶ ${label}`);
+    closeContextMenu();
+  });
+});
+
+// ─── Debug Toggle ─────────────────────────────────────────────────────────────
+
+debugBtn.addEventListener('click', () => {
+  debugMode = !debugMode;
+  debugBtn.classList.toggle('active', debugMode);
+  debugBtn.setAttribute('aria-pressed', String(debugMode));
+  debugInfo.classList.toggle('visible', debugMode);
+  debugSvg.classList.toggle('visible', debugMode);
+
+  if (!debugMode) clearConeDebugVisual();
+});
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(60px)';
+  }, 2200);
+}
+
+// ─── Initial hint ─────────────────────────────────────────────────────────────
+
+// Show a subtle hint toast on first load
+setTimeout(() => {
+  showToast('Right-click anywhere to open the context menu');
+}, 800);
+
+</script>
+</body>
+</html>
