@@ -68,7 +68,7 @@ public class AiToolExecutor
     {
         return toolName switch
         {
-            "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
+            "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"} (consent: {(GetOptionalBool(input, "consent_given") == true ? "confirmed" : "not confirmed")})",
             "update_client" => $"update client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
             "delete_client" => $"delete client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
 
@@ -306,7 +306,7 @@ public class AiToolExecutor
 
             // --- Write Tools: Clients ---
 
-            CreateTool("create_client", "Create a new client in the practice.",
+            CreateTool("create_client", "Create a new client in the practice. IMPORTANT: Before calling this tool, you must explicitly ask the practitioner to confirm that the client has consented to their data being stored. Set consent_given to true only after the practitioner confirms.",
                 new Dictionary<string, object>
                 {
                     ["first_name"] = new { type = "string", description = "Client's first name" },
@@ -316,8 +316,9 @@ public class AiToolExecutor
                     ["date_of_birth"] = new { type = "string", description = "Date of birth (yyyy-MM-dd)" },
                     ["primary_nutritionist_id"] = new { type = "string", description = "User ID of the primary nutritionist" },
                     ["notes"] = new { type = "string", description = "Optional notes about the client" },
+                    ["consent_given"] = new { type = "boolean", description = "Whether the client has given consent for their data to be stored. Must be explicitly confirmed by the practitioner before setting to true." },
                 },
-                "first_name", "last_name", "primary_nutritionist_id"),
+                "first_name", "last_name", "primary_nutritionist_id", "consent_given"),
 
             CreateTool("update_client", "Update an existing client's information.",
                 new Dictionary<string, object>
@@ -738,6 +739,15 @@ public class AiToolExecutor
 
     private async Task<string> HandleCreateClient(JsonElement input)
     {
+        var consentGiven = GetOptionalBool(input, "consent_given") ?? false;
+        if (!consentGiven)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                error = "consent_given must be true. You must ask the practitioner to confirm that the client has given consent for their data to be stored before creating a client record."
+            }, SerializerOptions);
+        }
+
         var dto = new ClientDto(
             Id: 0,
             FirstName: GetRequiredString(input, "first_name"),
@@ -747,9 +757,9 @@ public class AiToolExecutor
             DateOfBirth: GetOptionalDateOnly(input, "date_of_birth"),
             PrimaryNutritionistId: GetRequiredString(input, "primary_nutritionist_id"),
             PrimaryNutritionistName: null,
-            ConsentGiven: false,
+            ConsentGiven: true,
             ConsentTimestamp: null,
-            ConsentPolicyVersion: null,
+            ConsentPolicyVersion: "1.0",
             Notes: GetOptionalString(input, "notes"),
             IsDeleted: false,
             CreatedAt: DateTime.UtcNow,
