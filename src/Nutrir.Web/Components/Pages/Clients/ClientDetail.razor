@@ -16,6 +16,7 @@
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject ITimeZoneService TimeZoneService
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
 
@@ -264,7 +265,7 @@
                             <div class="list-row-primary">
                                 <span class="list-row-title">@FormatApptType(appt.Type)</span>
                                 <span class="list-row-meta">
-                                    @appt.StartTime.ToLocalTime().ToString("MMM d, yyyy") · @appt.DurationMinutes min
+                                    @TimeZoneService.ToUserLocal(appt.StartTime).ToString("MMM d, yyyy") · @appt.DurationMinutes min
                                     <span> · @appt.Location</span>
                                 </span>
                             </div>

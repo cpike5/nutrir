@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IMealPlanService, MealPlanService>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<ITimeZoneService, TimeZoneService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();
 

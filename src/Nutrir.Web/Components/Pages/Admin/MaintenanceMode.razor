@@ -8,6 +8,7 @@
 @attribute [Authorize(Roles = "Admin,Nutritionist")]
 @inject IMaintenanceService MaintenanceService
 @inject AuthenticationStateProvider AuthState
+@inject ITimeZoneService TimeZoneService
 
 <PageTitle>Maintenance Mode — Nutrir</PageTitle>
 
@@ -52,14 +53,14 @@
                     {
                         <div class="status-field">
                             <span class="status-label">Started at</span>
-                            <span class="status-value">@_state.StartedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                            <span class="status-value">@TimeZoneService.ToUserLocal(_state.StartedAt.Value).ToString("MMM d, yyyy h:mm tt")</span>
                         </div>
                     }
                     @if (_state.EstimatedEndAt.HasValue)
                     {
                         <div class="status-field">
                             <span class="status-label">Estimated end</span>
-                            <span class="status-value">@_state.EstimatedEndAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                            <span class="status-value">@TimeZoneService.ToUserLocal(_state.EstimatedEndAt.Value).ToString("MMM d, yyyy h:mm tt")</span>
                         </div>
                     }
                     @if (!string.IsNullOrEmpty(_state.Message))

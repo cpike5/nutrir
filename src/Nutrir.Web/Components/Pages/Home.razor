@@ -11,6 +11,7 @@
 
 @inject IDashboardService DashboardService
 @inject IAuditLogService AuditLogService
+@inject ITimeZoneService TimeZoneService
 @inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Dashboard</PageTitle>
@@ -38,7 +39,7 @@ else
     <!-- Greeting -->
     <div class="dash-greeting">
         <h2>Good @GetTimeOfDay(), @_firstName</h2>
-        <p><span class="dash-greeting-date">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</span></p>
+        <p><span class="dash-greeting-date">@TimeZoneService.UserNow.ToString("dddd, MMMM d, yyyy")</span></p>
     </div>
 
     <!-- Quick Actions -->
@@ -87,7 +88,7 @@ else
                 {
                     @foreach (var appt in _todaysAppointments)
                     {
-                        <ScheduleListItem Time="@appt.StartTime.ToLocalTime().ToString("h:mm")"
+                        <ScheduleListItem Time="@TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm")"
                                           ClientName="@($"{appt.ClientFirstName} {appt.ClientLastName}")"
                                           Duration="@appt.DurationMinutes"
                                           Type="@appt.Type"
@@ -310,9 +311,9 @@ else
         return $"{(int)(elapsed.TotalDays / 30)}mo";
     }
 
-    private static string GetTimeOfDay()
+    private string GetTimeOfDay()
     {
-        var hour = DateTime.Now.Hour;
+        var hour = TimeZoneService.UserNow.Hour;
         if (hour < 12) return "morning";
         if (hour < 17) return "afternoon";
         return "evening";

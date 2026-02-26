@@ -11,6 +11,7 @@
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
 @inject IClientService ClientService
+@inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
 
 <PageTitle>New Appointment — Nutrir</PageTitle>
@@ -241,7 +242,7 @@
             _model.ClientId = ClientId.Value.ToString();
         }
 
-        _model.Date = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
+        _model.Date = TimeZoneService.UserNow.AddDays(1).ToString("yyyy-MM-dd");
         _model.Time = "09:00";
     }
 
@@ -277,7 +278,7 @@
                 return;
             }
 
-            var utcStartTime = DateTime.SpecifyKind(startTime, DateTimeKind.Local).ToUniversalTime();
+            var utcStartTime = TimeZoneService.ToUtc(startTime);
 
             if (!Enum.TryParse<AppointmentType>(_model.Type, out var type))
                 type = AppointmentType.FollowUp;

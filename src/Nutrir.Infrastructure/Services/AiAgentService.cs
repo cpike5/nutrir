@@ -20,6 +20,7 @@ public class AiAgentService : IAiAgentService
     private readonly IAiConversationStore _conversationStore;
     private readonly IAiRateLimiter _rateLimiter;
     private readonly IAiUsageTracker _usageTracker;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<AiAgentService> _logger;
     private readonly List<MessageParam> _conversationHistory = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingConfirmations = new();
@@ -34,7 +35,7 @@ public class AiAgentService : IAiAgentService
     private const int MaxToolLoopIterations = 10;
 
     private string BuildSystemPrompt() => $"""
-        Today's date is {DateTime.Now:yyyy-MM-dd (dddd)}. You are speaking with {_userName} ({_userRole}).
+        Today's date is {_timeZoneService.UserNow:yyyy-MM-dd (dddd)}. You are speaking with {_userName} ({_userRole}).
 
         You are Nutrir Assistant, an AI helper for a nutrition practice management application used by dietitians and nutritionists.
 
@@ -137,6 +138,7 @@ public class AiAgentService : IAiAgentService
         IAiConversationStore conversationStore,
         IAiRateLimiter rateLimiter,
         IAiUsageTracker usageTracker,
+        ITimeZoneService timeZoneService,
         ILogger<AiAgentService> logger)
     {
         _options = options.Value;
@@ -145,6 +147,7 @@ public class AiAgentService : IAiAgentService
         _conversationStore = conversationStore;
         _rateLimiter = rateLimiter;
         _usageTracker = usageTracker;
+        _timeZoneService = timeZoneService;
         _logger = logger;
     }
 
