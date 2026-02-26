@@ -64,43 +64,252 @@ public class AiToolExecutor
 
     // --- Description Builder ---
 
-    public static string BuildConfirmationDescription(string toolName, JsonElement input)
+    public async Task<string> BuildConfirmationDescriptionAsync(string toolName, JsonElement input)
     {
-        return toolName switch
+        try
         {
-            "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"} (consent: {(GetOptionalBool(input, "consent_given") == true ? "confirmed" : "not confirmed")})",
-            "update_client" => $"update client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "delete_client" => $"delete client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            return toolName switch
+            {
+                "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"} (consent: {(GetOptionalBool(input, "consent_given") == true ? "confirmed" : "not confirmed")})",
+                "update_client" => await BuildClientDescription("update", input),
+                "delete_client" => await BuildClientDescription("delete", input),
 
-            "create_appointment" => $"create an appointment for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
-            "update_appointment" => $"update appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "cancel_appointment" => $"cancel appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "delete_appointment" => $"delete appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+                "create_appointment" => await BuildCreateAppointmentDescription(input),
+                "update_appointment" => await BuildAppointmentDescription("update", input),
+                "cancel_appointment" => await BuildAppointmentDescription("cancel", input),
+                "delete_appointment" => await BuildAppointmentDescription("delete", input),
 
-            "create_meal_plan" => $"create a meal plan titled '{GetOptionalString(input, "title") ?? "?"}' for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
-            "update_meal_plan" => $"update meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "activate_meal_plan" => $"activate meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "archive_meal_plan" => $"archive meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "duplicate_meal_plan" => $"duplicate meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "delete_meal_plan" => $"delete meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+                "create_meal_plan" => await BuildCreateMealPlanDescription(input),
+                "update_meal_plan" => await BuildMealPlanDescription("update", input),
+                "activate_meal_plan" => await BuildMealPlanDescription("activate", input),
+                "archive_meal_plan" => await BuildMealPlanDescription("archive", input),
+                "duplicate_meal_plan" => await BuildMealPlanDescription("duplicate", input),
+                "delete_meal_plan" => await BuildMealPlanDescription("delete", input),
 
-            "create_goal" => $"create a goal titled '{GetOptionalString(input, "title") ?? "?"}' for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
-            "update_goal" => $"update goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
-            "achieve_goal" => $"mark goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"} as achieved",
-            "abandon_goal" => $"mark goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"} as abandoned",
-            "delete_goal" => $"delete goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+                "create_goal" => $"create a goal titled \"{GetOptionalString(input, "title") ?? "?"}\" for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
+                "update_goal" => await BuildGoalDescription("update", input),
+                "achieve_goal" => await BuildGoalDescription("mark", input, "as achieved"),
+                "abandon_goal" => await BuildGoalDescription("mark", input, "as abandoned"),
+                "delete_goal" => await BuildGoalDescription("delete", input),
 
-            "create_progress_entry" => $"log a progress entry for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
-            "delete_progress_entry" => $"delete progress entry #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+                "create_progress_entry" => await BuildCreateProgressEntryDescription(input),
+                "delete_progress_entry" => await BuildProgressEntryDescription(input),
 
-            "create_user" => $"create a user account for {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
-            "change_user_role" => $"change role of user {GetOptionalString(input, "user_id") ?? "?"} to {GetOptionalString(input, "new_role") ?? "?"}",
-            "deactivate_user" => $"deactivate user {GetOptionalString(input, "user_id") ?? "?"}",
-            "reactivate_user" => $"reactivate user {GetOptionalString(input, "user_id") ?? "?"}",
-            "reset_user_password" => $"reset password for user {GetOptionalString(input, "user_id") ?? "?"}",
+                "create_user" => $"create a user account for {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
+                "change_user_role" => await BuildUserDescription("change role of", input, $"to {GetOptionalString(input, "new_role") ?? "?"}"),
+                "deactivate_user" => await BuildUserDescription("deactivate", input),
+                "reactivate_user" => await BuildUserDescription("reactivate", input),
+                "reset_user_password" => await BuildUserDescription("reset password for", input),
 
-            _ => toolName.Replace('_', ' '),
-        };
+                _ => toolName.Replace('_', ' '),
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to build enriched confirmation description for {ToolName}, falling back to basic", toolName);
+            return BuildFallbackDescription(toolName, input);
+        }
+    }
+
+    private static string BuildFallbackDescription(string toolName, JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id")?.ToString() ?? GetOptionalString(input, "user_id");
+        return id is not null ? $"{toolName.Replace('_', ' ')} #{id}" : toolName.Replace('_', ' ');
+    }
+
+    private async Task<string> BuildClientDescription(string verb, JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id");
+        var name = await ResolveClientNameAsync(id);
+        var desc = name is not null
+            ? $"{verb} client \"{name}\" (#{id})"
+            : $"{verb} client #{id?.ToString() ?? "?"}";
+        return AppendChangedFields(desc, verb, input, "id");
+    }
+
+    private async Task<string> BuildCreateAppointmentDescription(JsonElement input)
+    {
+        var clientId = GetOptionalInt(input, "client_id");
+        var clientName = await ResolveClientNameAsync(clientId);
+        return clientName is not null
+            ? $"create an appointment for \"{clientName}\" (client #{clientId})"
+            : $"create an appointment for client #{clientId?.ToString() ?? "?"}";
+    }
+
+    private async Task<string> BuildAppointmentDescription(string verb, JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id");
+        var label = await ResolveAppointmentLabelAsync(id);
+        var desc = label is not null
+            ? $"{verb} appointment {label} (#{id})"
+            : $"{verb} appointment #{id?.ToString() ?? "?"}";
+        return AppendChangedFields(desc, verb, input, "id");
+    }
+
+    private async Task<string> BuildCreateMealPlanDescription(JsonElement input)
+    {
+        var clientId = GetOptionalInt(input, "client_id");
+        var title = GetOptionalString(input, "title") ?? "?";
+        var clientName = await ResolveClientNameAsync(clientId);
+        return clientName is not null
+            ? $"create a meal plan \"{title}\" for \"{clientName}\" (client #{clientId})"
+            : $"create a meal plan titled \"{title}\" for client #{clientId?.ToString() ?? "?"}";
+    }
+
+    private async Task<string> BuildMealPlanDescription(string verb, JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id");
+        var title = await ResolveMealPlanTitleAsync(id);
+        var desc = title is not null
+            ? $"{verb} meal plan \"{title}\" (#{id})"
+            : $"{verb} meal plan #{id?.ToString() ?? "?"}";
+        return AppendChangedFields(desc, verb, input, "id");
+    }
+
+    private async Task<string> BuildGoalDescription(string verb, JsonElement input, string? suffix = null)
+    {
+        var id = GetOptionalInt(input, "id");
+        var title = await ResolveGoalTitleAsync(id);
+        var entityLabel = title is not null
+            ? $"goal \"{title}\" (#{id})"
+            : $"goal #{id?.ToString() ?? "?"}";
+        var desc = suffix is not null
+            ? $"{verb} {entityLabel} {suffix}"
+            : $"{verb} {entityLabel}";
+        return AppendChangedFields(desc, verb, input, "id");
+    }
+
+    private async Task<string> BuildCreateProgressEntryDescription(JsonElement input)
+    {
+        var clientId = GetOptionalInt(input, "client_id");
+        var clientName = await ResolveClientNameAsync(clientId);
+        return clientName is not null
+            ? $"log a progress entry for \"{clientName}\" (client #{clientId})"
+            : $"log a progress entry for client #{clientId?.ToString() ?? "?"}";
+    }
+
+    private async Task<string> BuildProgressEntryDescription(JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id");
+        var label = await ResolveProgressEntryLabelAsync(id);
+        return label is not null
+            ? $"delete progress entry {label} (#{id})"
+            : $"delete progress entry #{id?.ToString() ?? "?"}";
+    }
+
+    private async Task<string> BuildUserDescription(string verb, JsonElement input, string? suffix = null)
+    {
+        var userId = GetOptionalString(input, "user_id");
+        var displayName = await ResolveUserDisplayNameAsync(userId);
+        var entityLabel = displayName is not null
+            ? $"user \"{displayName}\""
+            : $"user {userId ?? "?"}";
+        return suffix is not null
+            ? $"{verb} {entityLabel} {suffix}"
+            : $"{verb} {entityLabel}";
+    }
+
+    // --- Entity Name Resolvers ---
+
+    private async Task<string?> ResolveClientNameAsync(int? id)
+    {
+        if (id is null) return null;
+        try
+        {
+            var client = await _clientService.GetByIdAsync(id.Value);
+            return client is not null ? $"{client.FirstName} {client.LastName}" : null;
+        }
+        catch { return null; }
+    }
+
+    private async Task<string?> ResolveAppointmentLabelAsync(int? id)
+    {
+        if (id is null) return null;
+        try
+        {
+            var appt = await _appointmentService.GetByIdAsync(id.Value);
+            if (appt is null) return null;
+            var clientName = $"{appt.ClientFirstName} {appt.ClientLastName}";
+            var date = appt.StartTime.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+            return $"for \"{clientName}\" on {date}";
+        }
+        catch { return null; }
+    }
+
+    private async Task<string?> ResolveMealPlanTitleAsync(int? id)
+    {
+        if (id is null) return null;
+        try
+        {
+            var plan = await _mealPlanService.GetByIdAsync(id.Value);
+            return plan?.Title;
+        }
+        catch { return null; }
+    }
+
+    private async Task<string?> ResolveGoalTitleAsync(int? id)
+    {
+        if (id is null) return null;
+        try
+        {
+            var goal = await _progressService.GetGoalByIdAsync(id.Value);
+            return goal?.Title;
+        }
+        catch { return null; }
+    }
+
+    private async Task<string?> ResolveProgressEntryLabelAsync(int? id)
+    {
+        if (id is null) return null;
+        try
+        {
+            var entry = await _progressService.GetEntryByIdAsync(id.Value);
+            if (entry is null) return null;
+            var clientName = $"{entry.ClientFirstName} {entry.ClientLastName}";
+            var date = entry.EntryDate.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+            return $"for \"{clientName}\" on {date}";
+        }
+        catch { return null; }
+    }
+
+    private async Task<string?> ResolveUserDisplayNameAsync(string? userId)
+    {
+        if (userId is null) return null;
+        try
+        {
+            var user = await _userManagementService.GetUserByIdAsync(userId);
+            return user?.DisplayName;
+        }
+        catch { return null; }
+    }
+
+    // --- Changed Fields Helper ---
+
+    private static string AppendChangedFields(string description, string verb, JsonElement input, params string[] excludeKeys)
+    {
+        if (verb != "update") return description;
+
+        var fields = GetProvidedFields(input, excludeKeys);
+        return fields.Count > 0
+            ? $"{description} — changing: {string.Join(", ", fields)}"
+            : description;
+    }
+
+    private static List<string> GetProvidedFields(JsonElement input, params string[] excludeKeys)
+    {
+        var exclude = new HashSet<string>(excludeKeys, StringComparer.OrdinalIgnoreCase);
+        var fields = new List<string>();
+
+        if (input.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in input.EnumerateObject())
+            {
+                if (!exclude.Contains(prop.Name))
+                    fields.Add(prop.Name);
+            }
+        }
+
+        return fields;
     }
 
     public AiToolExecutor(
