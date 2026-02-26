@@ -79,9 +79,8 @@
 /* ── Hero Header ─────────────────────────────────────── */
 .hero {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-6);
+    flex-direction: column;
+    gap: var(--space-4);
     padding: var(--space-6);
 }
 
@@ -151,6 +150,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: var(--space-1);
+    row-gap: var(--space-1);
 }
 
 .meta-item {
@@ -159,6 +159,7 @@
     gap: var(--space-1);
     font-size: var(--text-sm);
     color: var(--color-text);
+    white-space: nowrap;
 }
 
 .meta-item svg {
@@ -196,8 +197,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    flex-shrink: 0;
     flex-wrap: wrap;
+    padding-left: calc(64px + var(--space-4));
 }
 
 .hero-back-link {
@@ -388,10 +389,6 @@
 
 /* ── Responsive: Tablet ──────────────────────────────── */
 @media (max-width: 768px) {
-    .hero {
-        flex-direction: column;
-    }
-
     .hero-actions {
         padding-left: calc(64px + var(--space-4));
     }
@@ -427,7 +424,7 @@
     }
 
     .hero-actions {
-        padding-left: 0;
+        padding-left: 0 !important;
         justify-content: center;
     }
 
