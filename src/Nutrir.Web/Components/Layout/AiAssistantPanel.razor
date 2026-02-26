@@ -237,7 +237,7 @@
                         StateHasChanged();
                     }
                 }
-                catch { /* Don't block panel if history load fails */ }
+                catch (Exception ex) { Console.Error.WriteLine($"[AiPanel] Failed to load chat history: {ex.Message}"); }
             }
         }
 

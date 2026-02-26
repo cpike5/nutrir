@@ -4,7 +4,7 @@ window.aiPanel = {
 
     getStoredState: function () {
         try {
-            return localStorage.getItem(this._storageKey) === 'true';
+            return sessionStorage.getItem(this._storageKey) === 'true';
         } catch {
             return false;
         }
@@ -12,7 +12,7 @@ window.aiPanel = {
 
     saveState: function (isOpen) {
         try {
-            localStorage.setItem(this._storageKey, isOpen ? 'true' : 'false');
+            sessionStorage.setItem(this._storageKey, isOpen ? 'true' : 'false');
         } catch { }
     },
 

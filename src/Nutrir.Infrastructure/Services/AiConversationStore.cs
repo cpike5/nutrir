@@ -10,22 +10,23 @@ namespace Nutrir.Infrastructure.Services;
 
 public class AiConversationStore : IAiConversationStore
 {
-    private readonly AppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly ILogger<AiConversationStore> _logger;
     private static readonly TimeSpan SessionExpiry = TimeSpan.FromHours(8);
     private const int MaxMessages = 100;
 
-    public AiConversationStore(AppDbContext db, ILogger<AiConversationStore> logger)
+    public AiConversationStore(IDbContextFactory<AppDbContext> dbContextFactory, ILogger<AiConversationStore> logger)
     {
-        _db = db;
+        _dbContextFactory = dbContextFactory;
         _logger = logger;
     }
 
     public async Task<ConversationSnapshot?> LoadActiveSessionAsync(string userId)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
         var cutoff = DateTime.UtcNow - SessionExpiry;
 
-        var conversation = await _db.AiConversations
+        var conversation = await db.AiConversations
             .Where(c => c.UserId == userId && c.LastMessageAt > cutoff)
             .OrderByDescending(c => c.LastMessageAt)
             .Include(c => c.Messages.OrderBy(m => m.Id))
@@ -67,9 +68,10 @@ public class AiConversationStore : IAiConversationStore
         if (newMessages.Count == 0)
             return;
 
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
         var cutoff = DateTime.UtcNow - SessionExpiry;
 
-        var conversation = await _db.AiConversations
+        var conversation = await db.AiConversations
             .Where(c => c.UserId == userId && c.LastMessageAt > cutoff)
             .OrderByDescending(c => c.LastMessageAt)
             .FirstOrDefaultAsync();
@@ -77,8 +79,8 @@ public class AiConversationStore : IAiConversationStore
         if (conversation is null)
         {
             conversation = new AiConversation { UserId = userId };
-            _db.AiConversations.Add(conversation);
-            await _db.SaveChangesAsync();
+            db.AiConversations.Add(conversation);
+            await db.SaveChangesAsync();
         }
 
         conversation.LastMessageAt = DateTime.UtcNow;
@@ -90,7 +92,7 @@ public class AiConversationStore : IAiConversationStore
 
             var displayText = i < displayTexts.Count ? displayTexts[i] : null;
 
-            _db.AiConversationMessages.Add(new AiConversationMessage
+            db.AiConversationMessages.Add(new AiConversationMessage
             {
                 ConversationId = conversation.Id,
                 Role = msg.Role.ToString().ToLowerInvariant(),
@@ -99,28 +101,29 @@ public class AiConversationStore : IAiConversationStore
             });
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         // Enforce max messages cap
-        await TrimMessagesAsync(conversation.Id);
+        await TrimMessagesAsync(db, conversation.Id);
     }
 
     public async Task ClearHistoryAsync(string userId)
     {
-        var conversations = await _db.AiConversations
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var conversations = await db.AiConversations
             .Where(c => c.UserId == userId)
             .ToListAsync();
 
         if (conversations.Count > 0)
         {
-            _db.AiConversations.RemoveRange(conversations);
-            await _db.SaveChangesAsync();
+            db.AiConversations.RemoveRange(conversations);
+            await db.SaveChangesAsync();
         }
     }
 
-    private async Task TrimMessagesAsync(int conversationId)
+    private async Task TrimMessagesAsync(AppDbContext db, int conversationId)
     {
-        var totalMessages = await _db.AiConversationMessages
+        var totalMessages = await db.AiConversationMessages
             .Where(m => m.ConversationId == conversationId)
             .CountAsync();
 
@@ -128,14 +131,14 @@ public class AiConversationStore : IAiConversationStore
             return;
 
         var excess = totalMessages - MaxMessages;
-        var oldestIds = await _db.AiConversationMessages
+        var oldestIds = await db.AiConversationMessages
             .Where(m => m.ConversationId == conversationId)
             .OrderBy(m => m.Id)
             .Take(excess)
             .Select(m => m.Id)
             .ToListAsync();
 
-        await _db.AiConversationMessages
+        await db.AiConversationMessages
             .Where(m => oldestIds.Contains(m.Id))
             .ExecuteDeleteAsync();
     }
