@@ -188,7 +188,6 @@
             try
             {
                 _isWide = await JS.InvokeAsync<bool>("aiPanel.getStoredWideState");
-                StateHasChanged();
             }
             catch (JSException) { }
 
