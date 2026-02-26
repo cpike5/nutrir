@@ -1,0 +1,399 @@
+@page "/admin/audit-log"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using System.Security.Claims
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@implements IDisposable
+@inject IAuditLogService AuditLogService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Audit Log — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Admin"), new BreadcrumbItem("Audit Log") })" />
+
+<div class="audit-log-page">
+    <div class="audit-log-header">
+        <h1 class="audit-log-title">Audit Log</h1>
+        <p class="audit-log-subtitle">Review system activity and changes across the application.</p>
+    </div>
+
+    <div class="audit-log-filters">
+        <div class="audit-log-filter-row">
+            <FormGroup Label="From" Id="filter-from">
+                <input type="date" id="filter-from" class="form-input"
+                       value="@_filterFrom?.ToString("yyyy-MM-dd")"
+                       @onchange="OnFromChanged" />
+            </FormGroup>
+
+            <FormGroup Label="To" Id="filter-to">
+                <input type="date" id="filter-to" class="form-input"
+                       value="@_filterTo?.ToString("yyyy-MM-dd")"
+                       @onchange="OnToChanged" />
+            </FormGroup>
+
+            <FormGroup Label="Action" Id="filter-action">
+                <FormSelect Id="filter-action"
+                            Value="@_filterAction"
+                            ValueChanged="OnActionChanged">
+                    <option value="">All Actions</option>
+                    @if (_distinctActions is not null)
+                    {
+                        @foreach (var action in _distinctActions)
+                        {
+                            <option value="@action">@action</option>
+                        }
+                    }
+                </FormSelect>
+            </FormGroup>
+
+            <FormGroup Label="Entity Type" Id="filter-entity-type">
+                <FormSelect Id="filter-entity-type"
+                            Value="@_filterEntityType"
+                            ValueChanged="OnEntityTypeChanged">
+                    <option value="">All Entity Types</option>
+                    @if (_distinctEntityTypes is not null)
+                    {
+                        @foreach (var entityType in _distinctEntityTypes)
+                        {
+                            <option value="@entityType">@entityType</option>
+                        }
+                    }
+                </FormSelect>
+            </FormGroup>
+
+            <FormGroup Label="Source" Id="filter-source">
+                <FormSelect Id="filter-source"
+                            Value="@_filterSource"
+                            ValueChanged="OnSourceChanged">
+                    <option value="">All Sources</option>
+                    <option value="Web">Web</option>
+                    <option value="Cli">CLI</option>
+                    <option value="AiAssistant">AI Assistant</option>
+                </FormSelect>
+            </FormGroup>
+
+            <FormGroup Label="Search" Id="filter-search">
+                <input type="text" id="filter-search" class="form-input"
+                       placeholder="Search logs..."
+                       value="@_filterSearch"
+                       @oninput="OnSearchInput" />
+            </FormGroup>
+
+            <div class="audit-log-filter-clear">
+                <button class="btn btn-ghost btn-sm" @onclick="ClearFilters">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="table-card">
+            <p class="audit-log-loading">Loading audit logs...</p>
+        </div>
+    }
+    else if (_result is null || _result.Items.Count == 0)
+    {
+        <div class="table-card">
+            <div class="audit-log-empty">
+                <p class="audit-log-empty-title">No audit logs found</p>
+                <p class="audit-log-empty-desc">Try adjusting your filters or date range.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="audit-table" role="grid">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Entity Type</th>
+                        <th class="col-entity-id">Entity ID</th>
+                        <th>Source</th>
+                        <th class="col-details">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var rowIndex = 0; }
+                    @foreach (var entry in _result.Items)
+                    {
+                        <tr style="animation-delay: @(rowIndex * 30)ms">
+                            <td class="audit-timestamp-cell">
+                                <div class="audit-timestamp-date">@entry.Timestamp.ToLocalTime().ToString("MMM d, yyyy")</div>
+                                <div class="audit-timestamp-time">@entry.Timestamp.ToLocalTime().ToString("h:mm:ss tt")</div>
+                            </td>
+                            <td>@entry.UserDisplayName</td>
+                            <td>
+                                <Badge Variant="@GetActionBadgeVariant(entry.Action)">@entry.Action</Badge>
+                            </td>
+                            <td>@entry.EntityType</td>
+                            <td class="col-entity-id">@(entry.EntityId ?? "—")</td>
+                            <td>@FormatSource(entry.Source)</td>
+                            <td class="col-details">
+                                <span class="audit-details-text" title="@entry.Details">@Truncate(entry.Details, 80)</span>
+                            </td>
+                        </tr>
+                        rowIndex++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="audit-log-pagination">
+            <span class="audit-log-pagination-info">
+                Showing @((_result.Page - 1) * _result.PageSize + 1)–@Math.Min(_result.Page * _result.PageSize, _result.TotalCount) of @_result.TotalCount results
+            </span>
+
+            <div class="audit-log-pagination-buttons">
+                <button class="btn btn-ghost btn-sm"
+                        disabled="@(_result.Page <= 1)"
+                        @onclick="() => GoToPage(_result.Page - 1)">
+                    Previous
+                </button>
+
+                @foreach (var pageNum in GetPageNumbers())
+                {
+                    if (pageNum == -1)
+                    {
+                        <span class="audit-log-pagination-ellipsis">...</span>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm @(pageNum == _result.Page ? "btn-primary" : "btn-ghost")"
+                                @onclick="() => GoToPage(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+                }
+
+                <button class="btn btn-ghost btn-sm"
+                        disabled="@(_result.Page >= TotalPages)"
+                        @onclick="() => GoToPage(_result.Page + 1)">
+                    Next
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private AuditLogPageResult? _result;
+    private List<string>? _distinctActions;
+    private List<string>? _distinctEntityTypes;
+    private bool _isLoading = true;
+
+    private DateTime? _filterFrom;
+    private DateTime? _filterTo;
+    private string _filterAction = "";
+    private string _filterEntityType = "";
+    private string _filterSource = "";
+    private string _filterSearch = "";
+    private int _currentPage = 1;
+
+    private Timer? _debounceTimer;
+
+    private int TotalPages => _result is null || _result.PageSize == 0
+        ? 1
+        : (int)Math.Ceiling((double)_result.TotalCount / _result.PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+
+            var actionsTask = AuditLogService.GetDistinctActionsAsync();
+            var entityTypesTask = AuditLogService.GetDistinctEntityTypesAsync();
+            var logTask = AuditLogService.LogAsync(userId, "AuditLogViewed", "AuditLog");
+
+            await Task.WhenAll(actionsTask, entityTypesTask, logTask);
+
+            _distinctActions = actionsTask.Result;
+            _distinctEntityTypes = entityTypesTask.Result;
+
+            await LoadDataAsync();
+        }
+        catch
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            AuditSource? source = string.IsNullOrEmpty(_filterSource)
+                ? null
+                : Enum.Parse<AuditSource>(_filterSource);
+
+            var request = new AuditLogQueryRequest(
+                Page: _currentPage,
+                PageSize: 25,
+                From: _filterFrom,
+                To: _filterTo,
+                Action: string.IsNullOrEmpty(_filterAction) ? null : _filterAction,
+                EntityType: string.IsNullOrEmpty(_filterEntityType) ? null : _filterEntityType,
+                Source: source,
+                SearchTerm: string.IsNullOrEmpty(_filterSearch) ? null : _filterSearch);
+
+            _result = await AuditLogService.QueryAsync(request);
+        }
+        catch
+        {
+            _result = null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnFromChanged(ChangeEventArgs e)
+    {
+        _filterFrom = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null;
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task OnToChanged(ChangeEventArgs e)
+    {
+        _filterTo = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null;
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task OnActionChanged(string value)
+    {
+        _filterAction = value;
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task OnEntityTypeChanged(string value)
+    {
+        _filterEntityType = value;
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task OnSourceChanged(string value)
+    {
+        _filterSource = value;
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        _filterSearch = e.Value?.ToString() ?? "";
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(async _ =>
+        {
+            _currentPage = 1;
+            await InvokeAsync(async () =>
+            {
+                await LoadDataAsync();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private async Task ClearFilters()
+    {
+        _filterFrom = null;
+        _filterTo = null;
+        _filterAction = "";
+        _filterEntityType = "";
+        _filterSource = "";
+        _filterSearch = "";
+        _currentPage = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || page > TotalPages) return;
+        _currentPage = page;
+        await LoadDataAsync();
+    }
+
+    private List<int> GetPageNumbers()
+    {
+        var pages = new List<int>();
+        var total = TotalPages;
+        var current = _result?.Page ?? 1;
+
+        if (total <= 5)
+        {
+            for (var i = 1; i <= total; i++) pages.Add(i);
+            return pages;
+        }
+
+        pages.Add(1);
+
+        if (current > 3) pages.Add(-1); // ellipsis
+
+        var start = Math.Max(2, current - 1);
+        var end = Math.Min(total - 1, current + 1);
+
+        for (var i = start; i <= end; i++) pages.Add(i);
+
+        if (current < total - 2) pages.Add(-1); // ellipsis
+
+        pages.Add(total);
+
+        return pages;
+    }
+
+    private static BadgeVariant GetActionBadgeVariant(string action)
+    {
+        if (action.Contains("Create", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Register", StringComparison.OrdinalIgnoreCase))
+            return BadgeVariant.Success;
+
+        if (action.Contains("Update", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Edit", StringComparison.OrdinalIgnoreCase))
+            return BadgeVariant.Primary;
+
+        if (action.Contains("Delete", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Remove", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("SoftDelete", StringComparison.OrdinalIgnoreCase))
+            return BadgeVariant.Error;
+
+        if (action.Contains("Login", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Logout", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Auth", StringComparison.OrdinalIgnoreCase))
+            return BadgeVariant.Accent;
+
+        return BadgeVariant.Secondary;
+    }
+
+    private static string FormatSource(AuditSource source) => source switch
+    {
+        AuditSource.Web => "Web",
+        AuditSource.Cli => "CLI",
+        AuditSource.AiAssistant => "AI Assistant",
+        _ => source.ToString()
+    };
+
+    private static string Truncate(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text)) return "—";
+        return text.Length <= maxLength ? text : text[..maxLength] + "...";
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+}
