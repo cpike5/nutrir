@@ -1,8 +1,8 @@
 /* ============================================================
    Nutrir Design System
 
-   Palette generated via Huemint API (score: -2.63)
-   Aesthetic: Clean-clinical + warm-organic hybrid
+   Palette generated via Huemint API — Option C: Earthy & Calming
+   Aesthetic: Grounded, organic, calming — green-based healthcare palette
 
    To test a new palette, swap ONLY the 5 base colors below.
    Everything else derives from them automatically.
@@ -10,39 +10,39 @@
 
 :root {
   /* ── Base Palette (swap these to re-skin) ─────────────── */
-  --color-bg:        #f8f5f0;
-  --color-text:      #282828;
-  --color-primary:   #4a6741;
-  --color-secondary: #9a6c41;
-  --color-accent:    #b6b697;
+  --color-bg:        #f4f8f0;
+  --color-text:      #2a2d2b;
+  --color-primary:   #2d6a4f;
+  --color-secondary: #883e43;
+  --color-accent:    #cabc9e;
 
   /* ── RGB channels (for rgba() derivations) ────────────── */
-  --rgb-bg:        248, 245, 240;
-  --rgb-text:      40, 40, 40;
-  --rgb-primary:   74, 103, 65;
-  --rgb-secondary: 154, 108, 65;
-  --rgb-accent:    182, 182, 151;
+  --rgb-bg:        244, 248, 240;
+  --rgb-text:      42, 45, 43;
+  --rgb-primary:   45, 106, 79;
+  --rgb-secondary: 136, 62, 67;
+  --rgb-accent:    202, 188, 158;
 
   /* ── Surfaces ─────────────────────────────────────────── */
-  --color-bg-alt:      #f1eee9;
+  --color-bg-alt:      #edf2e8;
   --color-bg-card:     #ffffff;
   --color-bg-elevated: #ffffff;
-  --color-bg-footer:   #ece9e4;
+  --color-bg-footer:   #e8ede3;
   --color-bg-input:    #ffffff;
   --color-bg-overlay:  rgba(var(--rgb-text), 0.4);
 
   /* ── Text ─────────────────────────────────────────────── */
-  --color-text-muted:    #6b6b6b;
+  --color-text-muted:    #636865;
   --color-text-on-primary: #ffffff;
   --color-text-on-secondary: #ffffff;
   --color-text-link:     var(--color-primary);
 
   /* ── Interactive states ───────────────────────────────── */
-  --color-primary-hover:   #3d5736;
+  --color-primary-hover:   #245841;
   --color-primary-muted:   rgba(var(--rgb-primary), 0.12);
-  --color-secondary-hover: #885f39;
+  --color-secondary-hover: #733438;
   --color-secondary-muted: rgba(var(--rgb-secondary), 0.12);
-  --color-accent-hover:    #a0a085;
+  --color-accent-hover:    #b8a988;
   --color-accent-muted:    rgba(var(--rgb-accent), 0.15);
 
   /* ── Borders ──────────────────────────────────────────── */
@@ -59,10 +59,10 @@
   --shadow-glow-accent:  0 0 40px rgba(var(--rgb-accent), 0.10);
 
   /* ── Feedback colors ──────────────────────────────────── */
-  --color-success:  #3d8b4f;
-  --color-warning:  #c4882f;
-  --color-error:    #c14a3d;
-  --color-info:     #4a7e8b;
+  --color-success:  #2d7a42;
+  --color-warning:  #b87d2a;
+  --color-error:    #b5403a;
+  --color-info:     #3d7a8b;
 
   /* ── Typography ───────────────────────────────────────── */
   --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
