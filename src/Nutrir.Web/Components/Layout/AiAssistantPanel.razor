@@ -277,7 +277,7 @@
     };
 
     /// <summary>
-    /// Minimal markdown rendering: bold, italic, code, headers, line breaks, lists.
+    /// Minimal markdown rendering: bold, italic, code, headers, line breaks, lists, tables.
     /// </summary>
     private static string RenderMarkdown(string text)
     {
@@ -305,18 +305,18 @@
             @"\*(.+?)\*",
             "<em>$1</em>");
 
-        // Headers
+        // Headers — render with distinct hierarchy classes
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^### (.+)$",
-            "<strong>$1</strong>",
+            "<div class=\"cc-ai-h3\">$1</div>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^## (.+)$",
-            "<strong>$1</strong>",
+            "<div class=\"cc-ai-h2\">$1</div>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^# (.+)$",
-            "<strong>$1</strong>",
+            "<div class=\"cc-ai-h1\">$1</div>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
 
         // Horizontal rules
@@ -331,17 +331,28 @@
             match => ConvertTable(match.Value),
             System.Text.RegularExpressions.RegexOptions.Multiline);
 
-        // Unordered list items
+        // Unordered list items — use data attribute marker for grouping
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^[-*] (.+)$",
-            "<li>$1</li>",
+            "<li data-ul>$1</li>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
 
-        // Ordered list items
+        // Ordered list items — use data attribute marker for grouping
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^\d+\. (.+)$",
-            "<li>$1</li>",
+            "<li data-ol>$1</li>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Wrap consecutive <li data-ul> in <ul> and <li data-ol> in <ol>
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"(<li data-ul>[\s\S]*?</li>)(?=\s*(?!<li data-ul>))",
+            match => "<ul>" + match.Value + "</ul>");
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"(<li data-ol>[\s\S]*?</li>)(?=\s*(?!<li data-ol>))",
+            match => "<ol>" + match.Value + "</ol>");
+
+        // Clean up the data markers
+        escaped = escaped.Replace(" data-ul", "").Replace(" data-ol", "");
 
         // Line breaks (double newline = paragraph break)
         escaped = escaped.Replace("\r\n", "\n");
@@ -351,6 +362,14 @@
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"\n",
             "<br/>");
+
+        // Clean up excessive <br/> around block elements
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"(<br/>)+\s*(<(?:div|table|ul|ol|hr|pre|blockquote)[ >])",
+            "$2");
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"(</(?:div|table|ul|ol|hr|pre|blockquote)>)\s*(<br/>)+",
+            "$1");
 
         return escaped;
     }
@@ -364,7 +383,7 @@
         if (lines.Length < 2) return markdown;
 
         var sb = new System.Text.StringBuilder();
-        sb.Append("<table class=\"cc-ai-table\">");
+        sb.Append("<div class=\"cc-ai-table-wrap\"><table class=\"cc-ai-table\">");
 
         // Header
         var headers = lines[0].Split('|').Select(h => h.Trim()).ToArray();
@@ -383,7 +402,7 @@
                 sb.Append($"<td>{c}</td>");
             sb.Append("</tr>");
         }
-        sb.Append("</tbody></table>");
+        sb.Append("</tbody></table></div>");
 
         return sb.ToString();
     }

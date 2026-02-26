@@ -73,6 +73,7 @@
 .cc-ai-messages {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-4);
     display: flex;
     flex-direction: column;
@@ -134,6 +135,7 @@
 .cc-ai-msg {
     display: flex;
     max-width: 100%;
+    min-width: 0;
 }
 
 .cc-ai-msg--user {
@@ -146,12 +148,14 @@
 
 .cc-ai-msg-content {
     max-width: 90%;
+    min-width: 0;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
     line-height: 1.5;
-    word-wrap: break-word;
     overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-x: auto;
 }
 
 .cc-ai-msg--user .cc-ai-msg-content {
@@ -187,16 +191,47 @@
     padding: 0;
 }
 
+.cc-ai-msg--assistant .cc-ai-msg-content ul,
+.cc-ai-msg--assistant .cc-ai-msg-content ol {
+    margin: 0.25rem 0;
+    padding-left: var(--space-4);
+}
+
 .cc-ai-msg--assistant .cc-ai-msg-content li {
-    margin-left: var(--space-4);
+    margin-left: 0;
+}
+
+/* Header hierarchy */
+::deep .cc-ai-h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.75rem 0 0.25rem;
+}
+
+::deep .cc-ai-h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.5rem 0 0.25rem;
+}
+
+::deep .cc-ai-h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0.375rem 0 0.125rem;
+}
+
+/* Table wrapper for horizontal scroll */
+::deep .cc-ai-table-wrap {
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Table styling */
 ::deep .cc-ai-table {
-    width: 100%;
     border-collapse: collapse;
     font-size: var(--text-xs);
-    margin: var(--space-2) 0;
+    white-space: nowrap;
 }
 
 ::deep .cc-ai-table th,
