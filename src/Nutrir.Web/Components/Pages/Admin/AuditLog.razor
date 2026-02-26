@@ -188,8 +188,8 @@
     private List<string>? _distinctEntityTypes;
     private bool _isLoading = true;
 
-    private DateTime? _filterFrom;
-    private DateTime? _filterTo;
+    private DateTime? _filterFrom = DateTime.Today.AddDays(-30);
+    private DateTime? _filterTo = DateTime.Today;
     private string _filterAction = "";
     private string _filterEntityType = "";
     private string _filterSource = "";
@@ -310,8 +310,8 @@
 
     private async Task ClearFilters()
     {
-        _filterFrom = null;
-        _filterTo = null;
+        _filterFrom = DateTime.Today.AddDays(-30);
+        _filterTo = DateTime.Today;
         _filterAction = "";
         _filterEntityType = "";
         _filterSource = "";
