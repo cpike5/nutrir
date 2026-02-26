@@ -9,13 +9,13 @@ namespace Nutrir.Infrastructure.Services;
 
 public class AuditLogService : IAuditLogService
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditSourceProvider _auditSourceProvider;
     private readonly ILogger<AuditLogService> _logger;
 
-    public AuditLogService(AppDbContext dbContext, IAuditSourceProvider auditSourceProvider, ILogger<AuditLogService> logger)
+    public AuditLogService(IDbContextFactory<AppDbContext> dbContextFactory, IAuditSourceProvider auditSourceProvider, ILogger<AuditLogService> logger)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _auditSourceProvider = auditSourceProvider;
         _logger = logger;
     }
@@ -28,6 +28,8 @@ public class AuditLogService : IAuditLogService
         string? details = null,
         string? ipAddress = null)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
         var entry = new AuditLogEntry
         {
             Timestamp = DateTime.UtcNow,
@@ -40,8 +42,8 @@ public class AuditLogService : IAuditLogService
             Source = _auditSourceProvider.CurrentSource
         };
 
-        _dbContext.AuditLogEntries.Add(entry);
-        await _dbContext.SaveChangesAsync();
+        db.AuditLogEntries.Add(entry);
+        await db.SaveChangesAsync();
 
         _logger.LogDebug(
             "Audit log recorded: {Action} on {EntityType} {EntityId} by {UserId}",
@@ -50,7 +52,9 @@ public class AuditLogService : IAuditLogService
 
     public async Task<List<AuditLogDto>> GetRecentAsync(int count = 10)
     {
-        return await _dbContext.AuditLogEntries
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        return await db.AuditLogEntries
             .OrderByDescending(e => e.Timestamp)
             .Take(count)
             .Select(e => new AuditLogDto(

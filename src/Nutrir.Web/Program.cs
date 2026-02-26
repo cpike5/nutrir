@@ -21,11 +21,16 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithElasticApmCorrelationInfo());
+    builder.Host.UseSerilog((context, services, configuration) =>
+    {
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext();
+
+        if (!string.IsNullOrEmpty(context.Configuration["ElasticApm:ServerUrl"]))
+            configuration.Enrich.WithElasticApmCorrelationInfo();
+    });
 
     // Add services to the container.
     builder.Services.AddRazorComponents()
@@ -43,7 +48,9 @@ try
         })
         .AddIdentityCookies();
 
-    builder.Services.AddAllElasticApm();
+    var apmServerUrl = builder.Configuration["ElasticApm:ServerUrl"];
+    if (!string.IsNullOrEmpty(apmServerUrl))
+        builder.Services.AddAllElasticApm();
 
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddScoped<Nutrir.Web.Components.Layout.AiPanelState>();

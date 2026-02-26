@@ -11,8 +11,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-nutrir};Username=${POSTGRES_USER:-nutrir};Password=${POSTGRES_PASSWORD:-nutrir_dev}
-      - Seq__ServerUrl=http://seq:5341
-      - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-http://host.docker.internal:8200}
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:5341
+      - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-}
       - ElasticApm__SecretToken=${ELASTIC_APM_SECRET_TOKEN:-}
       - ElasticApm__Environment=${ASPNETCORE_ENVIRONMENT:-Development}
       - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
