@@ -7,10 +7,13 @@
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Interfaces
+@using Nutrir.Core.Models
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject IConsentService ConsentService
+@inject IConsentFormService ConsentFormService
+@inject IConsentFormTemplate ConsentFormTemplate
 @inject IUserManagementService UserManagementService
 @inject NavigationManager NavigationManager
 
@@ -161,6 +164,36 @@
                             }
                         </div>
                     </div>
+
+                    @if (!_client!.ConsentGiven)
+                    {
+                        <div class="consent-grant-section">
+                            <div class="section-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                                <span class="section-header-label">Grant Consent</span>
+                            </div>
+                            <div class="consent-grant-body">
+                                <p class="consent-grant-desc">Review the consent form below, then confirm that the client has provided their informed consent.</p>
+
+                                <ConsentFormReview Content="@_consentContent" />
+
+                                <div class="consent-grant-actions">
+                                    <Button Variant="ButtonVariant.Primary" OnClick="GrantConsent" Disabled="@_isGranting">
+                                        @if (_isGranting)
+                                        {
+                                            <span>Granting Consent...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Grant Consent</span>
+                                        }
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
@@ -233,6 +266,15 @@
                 o => o.Value == _client.PrimaryNutritionistId);
             _nutritionistDisplayText = currentNutritionist?.Text
                 ?? _client.PrimaryNutritionistName;
+
+            if (!_client.ConsentGiven)
+            {
+                var practitionerName = _nutritionistDisplayText ?? "(Practitioner)";
+                _consentContent = ConsentFormTemplate.Generate(
+                    $"{_client.FirstName} {_client.LastName}",
+                    practitionerName,
+                    DateTime.UtcNow);
+            }
         }
 
         _isLoading = false;
@@ -244,6 +286,49 @@
     }
 
     private bool _isWithdrawing;
+    private bool _isGranting;
+    private ConsentFormContent? _consentContent;
+
+    private async Task GrantConsent()
+    {
+        _isGranting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                _errorMessage = "Unable to identify the current user. Please sign out and back in.";
+                return;
+            }
+
+            // Regenerate consent content with current timestamp for accuracy
+            var practitionerName = _nutritionistDisplayText ?? "(Practitioner)";
+            _consentContent = ConsentFormTemplate.Generate(
+                $"{_client!.FirstName} {_client.LastName}",
+                practitionerName,
+                DateTime.UtcNow);
+
+            await ConsentFormService.RecordDigitalSignatureAsync(Id, userId);
+
+            // Reload client to reflect updated consent status
+            _client = await ClientService.GetByIdAsync(Id);
+            if (_client is null)
+            {
+                _errorMessage = "Client could not be reloaded. Please refresh the page.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while granting consent. Please try again.";
+        }
+        finally
+        {
+            _isGranting = false;
+        }
+    }
 
     private async Task WithdrawConsent()
     {
