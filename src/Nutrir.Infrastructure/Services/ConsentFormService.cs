@@ -77,6 +77,18 @@ public class ConsentFormService : IConsentFormService
         return docxBytes;
     }
 
+    public byte[] GeneratePreviewPdf(string clientName, string practitionerName)
+    {
+        var content = _template.Generate(clientName, practitionerName, DateTime.UtcNow);
+        return ConsentFormPdfRenderer.Render(content);
+    }
+
+    public byte[] GeneratePreviewDocx(string clientName, string practitionerName)
+    {
+        var content = _template.Generate(clientName, practitionerName, DateTime.UtcNow);
+        return ConsentFormDocxRenderer.Render(content, _options.DocxTemplatePath);
+    }
+
     public async Task<ConsentFormDto> RecordDigitalSignatureAsync(int clientId, string userId)
     {
         var form = await GetOrCreateFormAsync(clientId, userId, ConsentSignatureMethod.Digital);

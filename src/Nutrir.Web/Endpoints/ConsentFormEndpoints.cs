@@ -7,6 +7,31 @@ public static class ConsentFormEndpoints
 {
     public static void MapConsentFormEndpoints(this WebApplication app)
     {
+        // Preview endpoints — generate from form data without a persisted client
+        var preview = app.MapGroup("/api/consent-form/preview")
+            .RequireAuthorization(policy => policy.RequireRole("Admin", "Nutritionist", "Assistant"));
+
+        preview.MapGet("/pdf", (string clientName, string practitionerName, IConsentFormService service) =>
+        {
+            if (string.IsNullOrWhiteSpace(clientName) || string.IsNullOrWhiteSpace(practitionerName))
+                return Results.BadRequest("clientName and practitionerName are required.");
+
+            var pdfBytes = service.GeneratePreviewPdf(clientName, practitionerName);
+            return Results.File(pdfBytes, "application/pdf", "consent-form.pdf");
+        });
+
+        preview.MapGet("/docx", (string clientName, string practitionerName, IConsentFormService service) =>
+        {
+            if (string.IsNullOrWhiteSpace(clientName) || string.IsNullOrWhiteSpace(practitionerName))
+                return Results.BadRequest("clientName and practitionerName are required.");
+
+            var docxBytes = service.GeneratePreviewDocx(clientName, practitionerName);
+            return Results.File(docxBytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "consent-form.docx");
+        });
+
+        // Client-specific endpoints — require a persisted client
         var group = app.MapGroup("/api/clients/{clientId:int}/consent-form")
             .RequireAuthorization(policy => policy.RequireRole("Admin", "Nutritionist", "Assistant"));
 
