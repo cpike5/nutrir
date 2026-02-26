@@ -236,13 +236,16 @@ See [AI Assistant Phase 2a](ai-assistant-phase2a.md) for full implementation det
 - **Inline confirmation dialogs** — Two-tier permission model: Standard (bordered card) for client/clinical mutations, Elevated (warning-styled card with caution icon) for user management. Confirmation pauses the `IAsyncEnumerable` stream via `TaskCompletionSource` until the user allows or denies. Rendered in the chat thread, not as modals.
 - **Audit source tagging** — `AuditSource` enum (`Web`, `Cli`, `AiAssistant`) on audit entries. Ambient scoped `IAuditSourceProvider` set by `AiAgentService` around approved write tool calls; read by `AuditLogService` when creating entries.
 
-### Phase 2b — UX Polish
+### Phase 2b — UX Polish (Complete)
 
-Independent improvements that significantly enhance daily usability. Each can be built and shipped independently.
+Independent improvements that significantly enhance daily usability.
 
-- **Rich markdown rendering** — Parse and render bold, code blocks, and tables in assistant responses (currently displayed as raw markdown syntax)
-- **Entity link chips** — Clickable inline chips that navigate to the detail page within the main content area (e.g., `[John Smith →]` links to the client profile)
-- **Contextual awareness** — Inject the current page's entity context into the system prompt so users can say "create a goal for this client" without specifying an ID
+See [AI Assistant Phase 2b](ai-assistant-phase2b.md) for full implementation details including entity link chip syntax and route mapping, URL parsing patterns, and stream cancellation behaviour.
+
+- **Rich markdown rendering** — Bold, code blocks, and tables in assistant responses are parsed and rendered. Shipped as part of Phase 2a polish work.
+- **Stream cancellation fix** — Panel creates a `CancellationTokenSource` per stream; `Close()`, `ClearConversation()`, and `DisposeAsync()` cancel in-flight streams. `OperationCanceledException` is caught silently.
+- **Entity link chips** — AI responses use `[[type:id:display]]` syntax, rendered as styled inline chips with navigation links. Supported types: `client`, `appointment`, `meal_plan`, `user`. Regex applied after HTML encoding for XSS safety.
+- **Contextual page awareness** — `IAiAgentService.SetPageContext(entityType, entityId)` stores current page context injected into the system prompt. Panel subscribes to `NavigationManager.LocationChanged` and parses URLs to resolve entity context. Sub-paths (e.g., `/clients/5/progress`) correctly resolve to the parent entity.
 
 ### Phase 2c — Production Hardening
 

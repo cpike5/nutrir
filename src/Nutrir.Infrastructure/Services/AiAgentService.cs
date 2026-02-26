@@ -23,6 +23,8 @@ public class AiAgentService : IAiAgentService
     private string _userName = "User";
     private string _userRole = "Unknown";
     private string? _userId;
+    private string? _pageEntityType;
+    private string? _pageEntityId;
 
     private const int MaxToolLoopIterations = 10;
 
@@ -91,7 +93,37 @@ public class AiAgentService : IAiAgentService
         - Round nutritional values to whole numbers
         - For multi-step lookups (e.g., "Tell me about Maria Santos"), use the search tool first, then get details with the specific ID
         - After a successful write operation, briefly confirm what was done (e.g., "Client #12 - Sarah Johnson has been created.")
+
+        ## Entity References
+        When you mention a specific entity by name after retrieving it via a tool, use this link format:
+        - Clients: [[client:ID:Display Name]]
+        - Appointments: [[appointment:ID:Display Name]]
+        - Meal Plans: [[meal_plan:ID:Display Name]]
+        - Users: [[user:ID:Display Name]]
+
+        Examples:
+        - "I found [[client:3:Maria Santos]], who has 2 upcoming appointments."
+        - "Created [[appointment:15:Follow-up with Maria Santos on Jan 15]]."
+
+        Only use this for entities confirmed via tool results. Never fabricate IDs.
+        Do NOT use for goals or progress entries (no standalone detail pages).
+        In tables, use selectively for the most relevant entities — not every row.
+        {BuildPageContextPrompt()}
         """;
+
+    private string BuildPageContextPrompt()
+    {
+        if (_pageEntityType is null || _pageEntityId is null)
+            return "";
+
+        return $"""
+
+        ## Current Page Context
+        The user is currently viewing a {_pageEntityType} detail page (ID: {_pageEntityId}).
+        When they say "this client", "this appointment", etc., they mean {_pageEntityType} #{_pageEntityId}.
+        Use this ID directly without searching — but confirm with the user if ambiguous.
+        """;
+    }
 
     public AiAgentService(
         IOptions<AnthropicOptions> options,
@@ -282,6 +314,12 @@ public class AiAgentService : IAiAgentService
         {
             tcs.TrySetResult(allowed);
         }
+    }
+
+    public void SetPageContext(string? entityType, string? entityId)
+    {
+        _pageEntityType = entityType;
+        _pageEntityId = entityId;
     }
 
     /// <summary>

@@ -25,4 +25,5 @@ public interface IAiAgentService
     void SetUserContext(string userName, string userRole);
     void SetUserId(string userId);
     void RespondToConfirmation(string toolCallId, bool allowed);
+    void SetPageContext(string? entityType, string? entityId);
 }

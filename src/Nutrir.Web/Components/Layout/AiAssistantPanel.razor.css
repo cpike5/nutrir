@@ -247,6 +247,26 @@
     font-weight: 600;
 }
 
+/* Entity link chips */
+::deep .cc-ai-entity-chip {
+    display: inline;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+    font-weight: 500;
+    font-size: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+}
+
+::deep .cc-ai-entity-chip:hover {
+    background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    text-decoration: none;
+}
+
 /* Tool status indicator */
 .cc-ai-tool-status {
     display: flex;

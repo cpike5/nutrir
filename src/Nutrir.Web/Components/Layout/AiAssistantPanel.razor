@@ -5,6 +5,7 @@
 @inject AiPanelState PanelState
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 @using Nutrir.Core.Interfaces
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
@@ -136,6 +137,7 @@
     private readonly List<ChatMessage> _messages = [];
     private bool _jsInitialized;
     private bool _userContextSet;
+    private CancellationTokenSource? _streamCts;
 
     private static readonly string[] _starters =
     [
@@ -152,7 +154,9 @@
     protected override void OnInitialized()
     {
         PanelState.OnToggle += OnPanelToggle;
+        Navigation.LocationChanged += OnLocationChanged;
         _isOpen = PanelState.IsOpen;
+        UpdatePageContext(Navigation.Uri);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -210,6 +214,7 @@
 
     private void Close()
     {
+        _streamCts?.Cancel();
         PanelState.Close();
     }
 
@@ -235,6 +240,7 @@
         var userText = _inputText.Trim();
         _inputText = "";
         _isStreaming = true;
+        _streamCts = new CancellationTokenSource();
 
         _messages.Add(new ChatMessage { Role = "user", Text = userText });
         var assistantMsg = new ChatMessage { Role = "assistant", Text = "" };
@@ -243,7 +249,7 @@
 
         try
         {
-            await foreach (var evt in AiAgent.SendMessageAsync(userText))
+            await foreach (var evt in AiAgent.SendMessageAsync(userText, _streamCts.Token))
             {
                 if (evt.ConfirmationRequest is not null)
                 {
@@ -278,6 +284,10 @@
                 StateHasChanged();
             }
         }
+        catch (OperationCanceledException)
+        {
+            // Stream was cancelled (panel closed or conversation cleared) — no error to show
+        }
         catch (Exception)
         {
             if (string.IsNullOrEmpty(assistantMsg.Text))
@@ -285,6 +295,8 @@
         }
         finally
         {
+            _streamCts?.Dispose();
+            _streamCts = null;
             _isStreaming = false;
             assistantMsg.ToolStatus = null;
             StateHasChanged();
@@ -305,6 +317,7 @@
 
     private void ClearConversation()
     {
+        _streamCts?.Cancel();
         _messages.Clear();
         AiAgent.ClearHistory();
         StateHasChanged();
@@ -362,6 +375,27 @@
         if (string.IsNullOrEmpty(text)) return "";
 
         var escaped = System.Net.WebUtility.HtmlEncode(text);
+
+        // Entity link chips: [[type:id:display]]
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"\[\[(\w+):(\d+|[\w-]+):(.+?)\]\]",
+            match =>
+            {
+                var entityType = match.Groups[1].Value;
+                var id = match.Groups[2].Value;
+                var display = match.Groups[3].Value;
+                var href = entityType switch
+                {
+                    "client" => $"/clients/{id}",
+                    "appointment" => $"/appointments/{id}",
+                    "meal_plan" => $"/meal-plans/{id}",
+                    "user" => $"/admin/users/{id}",
+                    _ => (string?)null
+                };
+                return href is not null
+                    ? $"<a href=\"{href}\" class=\"cc-ai-entity-chip\">{display}</a>"
+                    : display;
+            });
 
         // Code blocks (```)
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
@@ -485,6 +519,39 @@
         return sb.ToString();
     }
 
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        UpdatePageContext(e.Location);
+    }
+
+    private void UpdatePageContext(string uri)
+    {
+        var (entityType, entityId) = ParsePageContext(uri);
+        AiAgent.SetPageContext(entityType, entityId);
+    }
+
+    private static (string? entityType, string? entityId) ParsePageContext(string uri)
+    {
+        // Extract the path portion from the URI
+        var path = new Uri(uri, UriKind.RelativeOrAbsolute).IsAbsoluteUri
+            ? new Uri(uri).AbsolutePath
+            : uri;
+
+        var match = System.Text.RegularExpressions.Regex.Match(path, @"^/clients/(\d+)");
+        if (match.Success) return ("client", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/appointments/(\d+)");
+        if (match.Success) return ("appointment", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/meal-plans/(\d+)");
+        if (match.Success) return ("meal_plan", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/admin/users/([\w-]+)");
+        if (match.Success) return ("user", match.Groups[1].Value);
+
+        return (null, null);
+    }
+
     private class ChatMessage
     {
         public string Role { get; init; } = "";
@@ -497,11 +564,17 @@
     public void Dispose()
     {
         PanelState.OnToggle -= OnPanelToggle;
+        Navigation.LocationChanged -= OnLocationChanged;
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
     }
 
     public ValueTask DisposeAsync()
     {
         PanelState.OnToggle -= OnPanelToggle;
+        Navigation.LocationChanged -= OnLocationChanged;
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
         return ValueTask.CompletedTask;
     }
 }
