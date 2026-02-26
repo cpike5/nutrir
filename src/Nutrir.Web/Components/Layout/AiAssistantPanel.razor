@@ -488,6 +488,12 @@
             "<div class=\"cc-ai-h1\">$1</div>",
             System.Text.RegularExpressions.RegexOptions.Multiline);
 
+        // Blockquotes
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
+            @"^&gt; (.+)$",
+            "<div class=\"cc-ai-blockquote\">$1</div>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
         // Horizontal rules
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
             @"^---+$",
@@ -534,13 +540,32 @@
 
         // Clean up excessive <br/> around block elements
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(<br/>)+\s*(<(?:div|table|ul|ol|hr|pre|blockquote)[ >])",
+            @"(<br/>)+\s*(<(?:div|table|ul|ol|hr|pre)[ >])",
             "$2");
         escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(</(?:div|table|ul|ol|hr|pre|blockquote)>)\s*(<br/>)+",
+            @"(</(?:div|table|ul|ol|hr|pre)>)\s*(<br/>)+",
             "$1");
 
         return escaped;
+    }
+
+    private static readonly HashSet<string> StatusSuccess = new(StringComparer.OrdinalIgnoreCase)
+        { "Confirmed", "Active", "Completed" };
+    private static readonly HashSet<string> StatusWarning = new(StringComparer.OrdinalIgnoreCase)
+        { "Scheduled", "Pending", "Draft" };
+    private static readonly HashSet<string> StatusError = new(StringComparer.OrdinalIgnoreCase)
+        { "Cancelled", "No-show", "Expired" };
+
+    private static string ApplyStatusBadge(string cell)
+    {
+        var trimmed = cell.Trim();
+        if (StatusSuccess.Contains(trimmed))
+            return $"<span class=\"cc-ai-status-success\">{cell}</span>";
+        if (StatusWarning.Contains(trimmed))
+            return $"<span class=\"cc-ai-status-warning\">{cell}</span>";
+        if (StatusError.Contains(trimmed))
+            return $"<span class=\"cc-ai-status-error\">{cell}</span>";
+        return cell;
     }
 
     private static string ConvertTable(string markdown)
@@ -568,7 +593,7 @@
             var cells = lines[i].Split('|').Select(c => c.Trim()).ToArray();
             sb.Append("<tr>");
             foreach (var c in cells)
-                sb.Append($"<td>{c}</td>");
+                sb.Append($"<td>{ApplyStatusBadge(c)}</td>");
             sb.Append("</tr>");
         }
         sb.Append("</tbody></table></div>");
