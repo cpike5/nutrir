@@ -174,6 +174,26 @@
     margin-top: 2px;
 }
 
+/* ── Consent Download Actions ────────────────────────── */
+.consent-download-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.consent-download-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.consent-download-hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
 /* ── Consent Row ──────────────────────────────────────── */
 .consent-row {
     padding: var(--space-2) 0;

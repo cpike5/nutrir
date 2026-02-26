@@ -49,14 +49,14 @@
                     <FormGroup Label="First Name" Id="firstName" Error="@GetFieldError(nameof(_model.FirstName))">
                         <FormInput Id="firstName"
                                    Value="@_model.FirstName"
-                                   ValueChanged="@(v => _model.FirstName = v)"
+                                   ValueChanged="OnFirstNameChanged"
                                    Placeholder="Enter first name" />
                     </FormGroup>
 
                     <FormGroup Label="Last Name" Id="lastName" Error="@GetFieldError(nameof(_model.LastName))">
                         <FormInput Id="lastName"
                                    Value="@_model.LastName"
-                                   ValueChanged="@(v => _model.LastName = v)"
+                                   ValueChanged="OnLastNameChanged"
                                    Placeholder="Enter last name" />
                     </FormGroup>
                 </div>
@@ -130,7 +130,7 @@
                                    checked="@(_model.ConsentMethod == ConsentSignatureMethod.Physical)"
                                    @onchange="@(() => OnConsentMethodChanged(ConsentSignatureMethod.Physical))" />
                             <span class="consent-method-label">Print & sign later</span>
-                            <span class="consent-method-desc">Download and print the form from the client detail page</span>
+                            <span class="consent-method-desc">Download, print, and return the signed form</span>
                         </label>
                     </div>
 
@@ -146,7 +146,24 @@
                     {
                         <div class="consent-info-alert">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                            <span>The consent form can be downloaded and printed from the client detail page after creation. The client will be created with consent pending.</span>
+                            <span>Download and print the consent form for the client to sign. The client will be created with consent pending.</span>
+                        </div>
+                        <div class="consent-download-actions">
+                            @if (_hasClientName)
+                            {
+                                <a href="@GetPreviewUrl("pdf")" target="_blank" class="btn btn-sm btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                    Download PDF
+                                </a>
+                                <a href="@GetPreviewUrl("docx")" target="_blank" class="btn btn-sm btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                    Download DOCX
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="consent-download-hint">Enter the client's name to enable download</span>
+                            }
                         </div>
                     }
                 </div>
@@ -188,6 +205,17 @@
     private string? _nutritionistDisplayText;
     private ConsentFormContent? _consentContent;
 
+    private bool _hasClientName =>
+        !string.IsNullOrWhiteSpace(_model.FirstName) && !string.IsNullOrWhiteSpace(_model.LastName);
+
+    private string GetPreviewUrl(string format)
+    {
+        var clientName = Uri.EscapeDataString($"{_model.FirstName} {_model.LastName}".Trim());
+        var practitionerName = Uri.EscapeDataString(
+            string.IsNullOrWhiteSpace(_nutritionistDisplayText) ? "(Practitioner)" : _nutritionistDisplayText);
+        return $"/api/consent-form/preview/{format}?clientName={clientName}&practitionerName={practitionerName}";
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _editContext = new EditContext(_model);
@@ -211,6 +239,16 @@
 
         // Generate consent form content for preview
         _consentContent = ConsentFormTemplate.Generate("(Client Name)", "(Practitioner)", DateTime.UtcNow);
+    }
+
+    private void OnFirstNameChanged(string value)
+    {
+        _model.FirstName = value;
+    }
+
+    private void OnLastNameChanged(string value)
+    {
+        _model.LastName = value;
     }
 
     private void OnPhoneChanged(string value)
