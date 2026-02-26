@@ -22,4 +22,11 @@ public class AiPanelState
         IsOpen = false;
         OnToggle?.Invoke();
     }
+
+    public void SetOpen(bool isOpen)
+    {
+        if (IsOpen == isOpen) return;
+        IsOpen = isOpen;
+        OnToggle?.Invoke();
+    }
 }
