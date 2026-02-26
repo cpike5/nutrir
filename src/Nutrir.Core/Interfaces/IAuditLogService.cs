@@ -13,4 +13,10 @@ public interface IAuditLogService
         string? ipAddress = null);
 
     Task<List<AuditLogDto>> GetRecentAsync(int count = 10);
+
+    Task<AuditLogPageResult> QueryAsync(AuditLogQueryRequest request);
+
+    Task<List<string>> GetDistinctActionsAsync();
+
+    Task<List<string>> GetDistinctEntityTypesAsync();
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
+using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -66,6 +67,90 @@ public class AuditLogService : IAuditLogService
                 e.EntityId,
                 e.Details,
                 e.Source))
+            .ToListAsync();
+    }
+
+    public async Task<AuditLogPageResult> QueryAsync(AuditLogQueryRequest request)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var query = db.AuditLogEntries.AsQueryable();
+
+        if (request.From.HasValue)
+            query = query.Where(e => e.Timestamp >= request.From.Value);
+
+        if (request.To.HasValue)
+        {
+            var endOfDay = request.To.Value.Date.AddDays(1);
+            query = query.Where(e => e.Timestamp < endOfDay);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Action))
+            query = query.Where(e => e.Action == request.Action);
+
+        if (!string.IsNullOrWhiteSpace(request.EntityType))
+            query = query.Where(e => e.EntityType == request.EntityType);
+
+        if (request.Source.HasValue)
+            query = query.Where(e => e.Source == request.Source.Value);
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var term = request.SearchTerm.ToLower();
+            query = query.Where(e =>
+                e.UserId.ToLower().Contains(term) ||
+                e.Action.ToLower().Contains(term) ||
+                e.EntityType.ToLower().Contains(term) ||
+                (e.Details != null && e.Details.ToLower().Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var entries = await query
+            .OrderByDescending(e => e.Timestamp)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync();
+
+        // Batch-resolve user display names
+        var userIds = entries.Select(e => e.UserId).Distinct().ToList();
+        var userNames = await db.Set<ApplicationUser>()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.DisplayName })
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName);
+
+        var items = entries.Select(e => new AuditLogViewDto(
+            e.Id,
+            e.Timestamp,
+            e.UserId,
+            userNames.GetValueOrDefault(e.UserId, e.UserId),
+            e.Action,
+            e.EntityType,
+            e.EntityId,
+            e.Details,
+            e.IpAddress,
+            e.Source)).ToList();
+
+        return new AuditLogPageResult(items, totalCount, request.Page, request.PageSize);
+    }
+
+    public async Task<List<string>> GetDistinctActionsAsync()
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        return await db.AuditLogEntries
+            .Select(e => e.Action)
+            .Distinct()
+            .OrderBy(a => a)
+            .ToListAsync();
+    }
+
+    public async Task<List<string>> GetDistinctEntityTypesAsync()
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        return await db.AuditLogEntries
+            .Select(e => e.EntityType)
+            .Distinct()
+            .OrderBy(t => t)
             .ToListAsync();
     }
 }
