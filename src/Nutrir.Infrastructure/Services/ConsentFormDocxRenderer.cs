@@ -23,6 +23,14 @@ public static class ConsentFormDocxRenderer
         return RenderProgrammatic(content);
     }
 
+    private static readonly Dictionary<string, Func<ConsentFormContent, string>> Tokens = new()
+    {
+        ["{{ClientName}}"] = c => c.ClientName,
+        ["{{Date}}"] = c => c.Date.ToString("MMMM d, yyyy"),
+        ["{{PractitionerName}}"] = c => c.PractitionerName,
+        ["{{PracticeName}}"] = c => c.PracticeName,
+    };
+
     private static byte[] RenderFromTemplate(ConsentFormContent content, string templatePath)
     {
         using var memoryStream = new MemoryStream();
@@ -39,19 +47,79 @@ public static class ConsentFormDocxRenderer
             var body = doc.MainDocumentPart?.Document.Body;
             if (body is null) return RenderProgrammatic(content);
 
-            foreach (var text in body.Descendants<Text>())
+            // Word often splits {{Token}} across multiple runs.
+            // Work paragraph-by-paragraph: concatenate all run text, replace tokens,
+            // then collapse into a single run preserving the first run's formatting.
+            foreach (var paragraph in body.Descendants<Paragraph>())
             {
-                text.Text = text.Text
-                    .Replace("{{ClientName}}", content.ClientName)
-                    .Replace("{{Date}}", content.Date.ToString("MMMM d, yyyy"))
-                    .Replace("{{PractitionerName}}", content.PractitionerName)
-                    .Replace("{{PracticeName}}", content.PracticeName);
+                ReplaceParagraphTokens(paragraph, content);
             }
 
             doc.MainDocumentPart!.Document.Save();
         }
 
         return memoryStream.ToArray();
+    }
+
+    /// <summary>
+    /// Concatenates all Text nodes in a paragraph, checks for tokens, and if found
+    /// collapses the runs into properly split segments so replacements are clean.
+    /// </summary>
+    private static void ReplaceParagraphTokens(Paragraph paragraph, ConsentFormContent content)
+    {
+        var runs = paragraph.Descendants<Run>().ToList();
+        if (runs.Count == 0) return;
+
+        // Build the full concatenated text for this paragraph
+        var fullText = string.Concat(runs.SelectMany(r => r.Descendants<Text>()).Select(t => t.Text));
+
+        // Check if any token exists in the concatenated text
+        var hasToken = false;
+        foreach (var token in Tokens.Keys)
+        {
+            if (fullText.Contains(token))
+            {
+                hasToken = true;
+                break;
+            }
+        }
+
+        if (!hasToken) return;
+
+        // Perform all replacements
+        foreach (var (token, valueFunc) in Tokens)
+        {
+            fullText = fullText.Replace(token, valueFunc(content));
+        }
+
+        // Preserve formatting from the first run
+        var firstRun = runs[0];
+        var runProps = firstRun.RunProperties?.CloneNode(true) as RunProperties;
+
+        // Remove all existing runs from the paragraph
+        foreach (var run in runs)
+        {
+            run.Remove();
+        }
+
+        // Insert a single new run with the replaced text
+        var newRun = new Run();
+        if (runProps is not null)
+        {
+            newRun.AppendChild(runProps);
+        }
+        newRun.AppendChild(new Text(fullText) { Space = SpaceProcessingModeValues.Preserve });
+
+        // Insert after paragraph properties (or at start)
+        var paragraphProps = paragraph.GetFirstChild<ParagraphProperties>();
+        if (paragraphProps is not null)
+        {
+            paragraphProps.InsertAfterSelf(newRun);
+        }
+        else
+        {
+            paragraph.PrependChild(newRun);
+        }
     }
 
     private static byte[] RenderProgrammatic(ConsentFormContent content)
