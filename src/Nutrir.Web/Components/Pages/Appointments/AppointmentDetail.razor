@@ -10,6 +10,7 @@
 @inject IAppointmentService AppointmentService
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
 
 <PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
@@ -61,11 +62,11 @@
                             <div class="hero-meta-row">
                                 <span class="meta-item">
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
-                                    @_appointment.StartTime.ToLocalTime().ToString("dddd, MMMM d, yyyy")
+                                    @TimeZoneService.ToUserLocal(_appointment.StartTime).ToString("dddd, MMMM d, yyyy")
                                 </span>
                                 <span class="meta-item">
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l3 2"/></svg>
-                                    @_appointment.StartTime.ToLocalTime().ToString("h:mm") — @_appointment.EndTime.ToLocalTime().ToString("h:mm tt")
+                                    @TimeZoneService.ToUserLocal(_appointment.StartTime).ToString("h:mm") — @TimeZoneService.ToUserLocal(_appointment.EndTime).ToString("h:mm tt")
                                     <span class="duration-label">(@_appointment.DurationMinutes min)</span>
                                 </span>
                             </div>
@@ -221,7 +222,7 @@
                     {
                         <div class="cancel-info-row">
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
-                            Cancelled on @_appointment.CancelledAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                            Cancelled on @TimeZoneService.ToUserLocal(_appointment.CancelledAt.Value).ToString("MMM d, yyyy h:mm tt")
                         </div>
                     }
                     @if (!string.IsNullOrEmpty(_appointment.CancellationReason))

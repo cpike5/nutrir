@@ -15,4 +15,6 @@ public class ApplicationUser : IdentityUser
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     public DateTime? LastLoginDate { get; set; }
+
+    public string TimeZoneId { get; set; } = "America/Toronto";
 }

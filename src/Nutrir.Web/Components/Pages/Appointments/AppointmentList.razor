@@ -7,6 +7,7 @@
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
+@inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Appointments — Nutrir</PageTitle>
@@ -113,8 +114,8 @@
                         <tr>
                             <td>
                                 <div class="appt-datetime">
-                                    <span class="appt-date">@appt.StartTime.ToLocalTime().ToString("MMM d")</span>
-                                    <span class="appt-time">@appt.StartTime.ToLocalTime().ToString("h:mm tt")</span>
+                                    <span class="appt-date">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("MMM d")</span>
+                                    <span class="appt-time">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm tt")</span>
                                 </div>
                             </td>
                             <td>
@@ -174,7 +175,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var now = DateTime.Now;
+        var now = TimeZoneService.UserNow;
         _fromDate = now.ToString("yyyy-MM-dd");
         _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
         await LoadAppointmentsAsync();
