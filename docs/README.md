@@ -49,6 +49,13 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Compliance Requirements](compliance/requirements.md) | Actionable application-level requirements (v1 must-have, v2 should-have) distilled from the legal research |
 | [Consent Form](compliance/consent-form.md) | Nine-section PIPEDA-compliant intake consent form — PDF/DOCX generation, digital and physical signing workflows, `ConsentForm` entity |
 
+## Scheduling Documents
+
+| Document | Description |
+|----------|-------------|
+| [Calendar View](scheduling/calendar-view.md) | PoC spec — Radzen Blazor Scheduler integration for appointment calendar view |
+| [Domain Summary](scheduling/domain-summary.md) | Current state of the scheduling domain — entities, services, gaps |
+
 ## Architecture Decision Records
 
 | ADR | Domain | Title |
