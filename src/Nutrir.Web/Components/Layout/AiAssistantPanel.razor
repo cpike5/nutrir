@@ -86,11 +86,11 @@
                         else
                         {
                             @((MarkupString)RenderMarkdown(msg.Text))
-                            @if (msg.PendingConfirmation is not null)
+                            @foreach (var confirmation in msg.Confirmations)
                             {
-                                var isElevated = msg.PendingConfirmation.Tier == ConfirmationTier.Elevated;
+                                var isElevated = confirmation.Request.Tier == ConfirmationTier.Elevated;
                                 <div class="cc-ai-confirmation @(isElevated ? "cc-ai-confirmation--elevated" : "")">
-                                    @if (msg.ConfirmationResult is null)
+                                    @if (confirmation.Result is null)
                                     {
                                         <p class="cc-ai-confirmation-desc">
                                             @if (isElevated)
@@ -100,17 +100,17 @@
                                                     <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                                                 </svg>
                                             }
-                                            The assistant wants to <strong>@msg.PendingConfirmation.Description</strong>
+                                            The assistant wants to <strong>@confirmation.Request.Description</strong>
                                         </p>
                                         <div class="cc-ai-confirmation-actions">
-                                            <button class="cc-ai-btn-allow" @onclick="() => HandleConfirmation(msg, true)">Allow</button>
-                                            <button class="cc-ai-btn-deny" @onclick="() => HandleConfirmation(msg, false)">Deny</button>
+                                            <button class="cc-ai-btn-allow" @onclick="() => HandleConfirmation(confirmation, true)">Allow</button>
+                                            <button class="cc-ai-btn-deny" @onclick="() => HandleConfirmation(confirmation, false)">Deny</button>
                                         </div>
                                     }
                                     else
                                     {
                                         <p class="cc-ai-confirmation-resolved">
-                                            @(msg.ConfirmationResult == true ? "Allowed" : "Denied"): <strong>@msg.PendingConfirmation.Description</strong>
+                                            @(confirmation.Result == true ? "Allowed" : "Denied"): <strong>@confirmation.Request.Description</strong>
                                         </p>
                                     }
                                 </div>
@@ -312,7 +312,10 @@
             {
                 if (evt.ConfirmationRequest is not null)
                 {
-                    assistantMsg.PendingConfirmation = evt.ConfirmationRequest;
+                    assistantMsg.Confirmations.Add(new ConfirmationRecord
+                    {
+                        Request = evt.ConfirmationRequest
+                    });
                     assistantMsg.ToolStatus = null;
                     StateHasChanged();
                     // Stream naturally pauses here waiting for user response
@@ -370,13 +373,13 @@
         }
     }
 
-    private void HandleConfirmation(ChatMessage msg, bool allowed)
+    private void HandleConfirmation(ConfirmationRecord confirmation, bool allowed)
     {
-        if (msg.PendingConfirmation is null || msg.ConfirmationResult is not null)
+        if (confirmation.Result is not null)
             return;
 
-        msg.ConfirmationResult = allowed;
-        AiAgent.RespondToConfirmation(msg.PendingConfirmation.ToolCallId, allowed);
+        confirmation.Result = allowed;
+        AiAgent.RespondToConfirmation(confirmation.Request.ToolCallId, allowed);
         StateHasChanged();
     }
 
@@ -642,13 +645,24 @@
         return (null, null);
     }
 
+    private class ConfirmationRecord
+    {
+        public ToolConfirmationRequest Request { get; init; } = default!;
+        public bool? Result { get; set; }
+    }
+
     private class ChatMessage
     {
         public string Role { get; init; } = "";
         public string Text { get; set; } = "";
         public string? ToolStatus { get; set; }
-        public ToolConfirmationRequest? PendingConfirmation { get; set; }
-        public bool? ConfirmationResult { get; set; }
+        public List<ConfirmationRecord> Confirmations { get; } = [];
+
+        /// <summary>
+        /// Returns the active (unresolved) confirmation, if any.
+        /// </summary>
+        public ConfirmationRecord? ActiveConfirmation =>
+            Confirmations.LastOrDefault(c => c.Result is null);
     }
 
     public void Dispose()
