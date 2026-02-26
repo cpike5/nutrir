@@ -232,6 +232,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         _firstName = user.FindFirst("FirstName")?.Value

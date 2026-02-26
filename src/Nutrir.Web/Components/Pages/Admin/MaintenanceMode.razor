@@ -171,8 +171,9 @@
     private bool _isSubmitting;
     private string? _error;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         _state = MaintenanceService.GetState();
     }
 

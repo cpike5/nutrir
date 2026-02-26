@@ -175,6 +175,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await TimeZoneService.InitializeAsync();
         var now = TimeZoneService.UserNow;
         _fromDate = now.ToString("yyyy-MM-dd");
         _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
@@ -190,10 +191,10 @@
         AppointmentStatus? status = null;
 
         if (DateTime.TryParse(_fromDate, out var parsedFrom))
-            from = DateTime.SpecifyKind(parsedFrom, DateTimeKind.Utc);
+            from = TimeZoneService.ToUtc(parsedFrom);
 
         if (DateTime.TryParse(_toDate, out var parsedTo))
-            to = DateTime.SpecifyKind(parsedTo.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            to = TimeZoneService.ToUtc(parsedTo.AddDays(1).AddTicks(-1));
 
         if (!string.IsNullOrEmpty(_statusFilter) && Enum.TryParse<AppointmentStatus>(_statusFilter, out var parsedStatus))
             status = parsedStatus;

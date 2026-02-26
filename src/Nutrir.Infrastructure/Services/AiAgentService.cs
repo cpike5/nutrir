@@ -172,6 +172,7 @@ public class AiAgentService : IAiAgentService
             }
         }
 
+        await _timeZoneService.InitializeAsync();
         var overallStopwatch = Stopwatch.StartNew();
 
         _conversationHistory.Add(new MessageParam
