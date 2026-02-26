@@ -247,13 +247,15 @@ See [AI Assistant Phase 2b](ai-assistant-phase2b.md) for full implementation det
 - **Entity link chips** — AI responses use `[[type:id:display]]` syntax, rendered as styled inline chips with navigation links. Supported types: `client`, `appointment`, `meal_plan`, `user`. Regex applied after HTML encoding for XSS safety.
 - **Contextual page awareness** — `IAiAgentService.SetPageContext(entityType, entityId)` stores current page context injected into the system prompt. Panel subscribes to `NavigationManager.LocationChanged` and parses URLs to resolve entity context. Sub-paths (e.g., `/clients/5/progress`) correctly resolve to the parent entity.
 
-### Phase 2c — Production Hardening
+### Phase 2c — Production Hardening (Complete)
 
-Important for scale and reliability as usage grows. Can be deferred until the feature proves its value.
+Hardens the AI assistant for real-world use with persistence, rate limiting, and usage tracking.
 
-- **Conversation persistence** — Store chat history per user in the database so context survives circuit disconnects, page reloads, and browser sessions
-- **Per-user rate limiting** — 30 requests/minute, 500 requests/day, enforced server-side with in-memory tracking (persistent tracking via Redis/database is a future consideration)
-- **Usage tracking** — Per-user API consumption visibility for practice administrators
+See [AI Assistant Phase 2c](ai-assistant-phase2c.md) for full implementation details.
+
+- **Conversation persistence** — DB-backed chat history per user with session-based expiry (8h idle timeout). Conversations survive circuit disconnects, page reloads, and browser sessions. 100-message cap per conversation with automatic trimming.
+- **Per-user rate limiting** — Configurable limits (default 30/min, 500/day) enforced via in-memory Singleton service. Configurable through `appsettings.json`.
+- **Usage tracking** — Per-request logging of tokens, duration, and tool calls. Admin page at `/admin/ai-usage` with summary table and per-user daily drill-down.
 
 ## Future Enhancements
 

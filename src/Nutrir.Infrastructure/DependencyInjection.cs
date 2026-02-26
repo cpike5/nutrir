@@ -34,7 +34,11 @@ public static class DependencyInjection
 
         // AI Assistant
         services.Configure<AnthropicOptions>(configuration.GetSection(AnthropicOptions.SectionName));
+        services.Configure<AiRateLimitOptions>(configuration.GetSection(AiRateLimitOptions.SectionName));
         services.AddScoped<AiToolExecutor>();
+        services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
+        services.AddScoped<IAiUsageTracker, AiUsageTracker>();
+        services.AddScoped<IAiConversationStore, AiConversationStore>();
         services.AddScoped<IAiAgentService, AiAgentService>();
 
         return services;

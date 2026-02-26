@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Anthropic;
@@ -16,6 +17,9 @@ public class AiAgentService : IAiAgentService
     private readonly AnthropicOptions _options;
     private readonly AiToolExecutor _toolExecutor;
     private readonly IAuditSourceProvider _auditSourceProvider;
+    private readonly IAiConversationStore _conversationStore;
+    private readonly IAiRateLimiter _rateLimiter;
+    private readonly IAiUsageTracker _usageTracker;
     private readonly ILogger<AiAgentService> _logger;
     private readonly List<MessageParam> _conversationHistory = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingConfirmations = new();
@@ -25,6 +29,7 @@ public class AiAgentService : IAiAgentService
     private string? _userId;
     private string? _pageEntityType;
     private string? _pageEntityId;
+    private bool _historyLoaded;
 
     private const int MaxToolLoopIterations = 10;
 
@@ -129,11 +134,17 @@ public class AiAgentService : IAiAgentService
         IOptions<AnthropicOptions> options,
         AiToolExecutor toolExecutor,
         IAuditSourceProvider auditSourceProvider,
+        IAiConversationStore conversationStore,
+        IAiRateLimiter rateLimiter,
+        IAiUsageTracker usageTracker,
         ILogger<AiAgentService> logger)
     {
         _options = options.Value;
         _toolExecutor = toolExecutor;
         _auditSourceProvider = auditSourceProvider;
+        _conversationStore = conversationStore;
+        _rateLimiter = rateLimiter;
+        _usageTracker = usageTracker;
         _logger = logger;
     }
 
@@ -147,14 +158,38 @@ public class AiAgentService : IAiAgentService
             yield break;
         }
 
+        // Rate limit check
+        if (_userId is not null)
+        {
+            var (allowed, rateLimitMessage) = _rateLimiter.CheckAndRecord(_userId);
+            if (!allowed)
+            {
+                yield return new AgentStreamEvent { Error = rateLimitMessage };
+                yield break;
+            }
+        }
+
+        var overallStopwatch = Stopwatch.StartNew();
+
         _conversationHistory.Add(new MessageParam
         {
             Role = Role.User,
             Content = userMessage,
         });
 
+        // Track new messages added during this exchange for persistence
+        var newMessages = new List<MessageParam>();
+        var displayTexts = new List<string?>();
+
+        newMessages.Add(new MessageParam { Role = Role.User, Content = userMessage });
+        displayTexts.Add(userMessage);
+
         var client = new AnthropicClient { ApiKey = _options.ApiKey };
         var tools = AiToolExecutor.GetToolDefinitions();
+
+        int totalInputTokens = 0;
+        int totalOutputTokens = 0;
+        int totalToolCalls = 0;
 
         for (int iteration = 0; iteration < MaxToolLoopIterations; iteration++)
         {
@@ -170,9 +205,13 @@ public class AiAgentService : IAiAgentService
             // Stream the response, collecting content blocks and yielding text deltas
             var result = await StreamAndCollectAsync(client, parameters, cancellationToken);
 
+            totalInputTokens += result.InputTokens;
+            totalOutputTokens += result.OutputTokens;
+
             if (result.Error is not null)
             {
                 yield return new AgentStreamEvent { Error = result.Error };
+                await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
                 yield break;
             }
 
@@ -183,11 +222,17 @@ public class AiAgentService : IAiAgentService
             }
 
             // Add assistant response to conversation history
-            _conversationHistory.Add(new MessageParam
+            var assistantMessage = new MessageParam
             {
                 Role = Role.Assistant,
                 Content = new List<ContentBlockParam>(result.ContentBlocks),
-            });
+            };
+            _conversationHistory.Add(assistantMessage);
+            newMessages.Add(assistantMessage);
+
+            // Extract display text from text content blocks
+            var assistantText = string.Concat(result.TextDeltas);
+            displayTexts.Add(string.IsNullOrEmpty(assistantText) ? null : assistantText);
 
             // Handle tool use
             if (result.StopReason == StopReason.ToolUse)
@@ -199,6 +244,7 @@ public class AiAgentService : IAiAgentService
                     if (!block.TryPickToolUse(out var toolUse))
                         continue;
 
+                    totalToolCalls++;
                     var confirmationTier = _toolExecutor.GetConfirmationTier(toolUse.Name);
 
                     if (confirmationTier is not null)
@@ -220,20 +266,21 @@ public class AiAgentService : IAiAgentService
                                 toolUse.ID, toolUse.Name, description, confirmationTier.Value)
                         };
 
-                        bool allowed;
+                        bool userAllowed;
                         try
                         {
-                            allowed = await tcs.Task;
+                            userAllowed = await tcs.Task;
                         }
                         catch (OperationCanceledException)
                         {
                             _pendingConfirmations.TryRemove(toolUse.ID, out _);
+                            await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
                             yield break;
                         }
 
                         _pendingConfirmations.TryRemove(toolUse.ID, out _);
 
-                        if (!allowed)
+                        if (!userAllowed)
                         {
                             _logger.LogInformation("Tool {ToolName} denied by user", toolUse.Name);
                             toolResults.Add(new ToolResultBlockParam(toolUse.ID)
@@ -275,26 +322,77 @@ public class AiAgentService : IAiAgentService
                     }
                 }
 
-                _conversationHistory.Add(new MessageParam
+                var toolResultMessage = new MessageParam
                 {
                     Role = Role.User,
                     Content = new List<ContentBlockParam>(toolResults),
-                });
+                };
+                _conversationHistory.Add(toolResultMessage);
+                newMessages.Add(toolResultMessage);
+                displayTexts.Add(null); // Tool results don't have display text
 
                 continue;
             }
 
             // end_turn or max_tokens — done
             yield return new AgentStreamEvent { IsComplete = true };
+            await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
             yield break;
         }
 
         yield return new AgentStreamEvent { Error = "Maximum tool call iterations reached. Please try a simpler question." };
+        await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
     }
 
-    public void ClearHistory()
+    public async Task<List<ChatDisplayMessage>?> LoadHistoryAsync()
+    {
+        if (_historyLoaded || _userId is null)
+            return null;
+
+        _historyLoaded = true;
+
+        var snapshot = await _conversationStore.LoadActiveSessionAsync(_userId);
+        if (snapshot is null)
+            return null;
+
+        _conversationHistory.Clear();
+        foreach (var item in snapshot.History)
+        {
+            if (item is MessageParam mp)
+                _conversationHistory.Add(mp);
+        }
+        return snapshot.DisplayMessages;
+    }
+
+    public async Task ClearHistoryAsync()
     {
         _conversationHistory.Clear();
+        if (_userId is not null)
+        {
+            await _conversationStore.ClearHistoryAsync(_userId);
+        }
+    }
+
+    private async Task SaveAndLogAsync(
+        List<MessageParam> newMessages,
+        List<string?> displayTexts,
+        int inputTokens,
+        int outputTokens,
+        int toolCallCount,
+        Stopwatch stopwatch)
+    {
+        if (_userId is null)
+            return;
+
+        try
+        {
+            await _conversationStore.SaveMessagesAsync(_userId, newMessages.Cast<object>().ToList(), displayTexts);
+            await _usageTracker.LogAsync(_userId, inputTokens, outputTokens, toolCallCount, (int)stopwatch.ElapsedMilliseconds, _options.Model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save conversation/usage data");
+        }
     }
 
     public void SetUserContext(string userName, string userRole)
@@ -334,6 +432,8 @@ public class AiAgentService : IAiAgentService
         var textDeltas = new List<string>();
         var contentBlocks = new List<ContentBlockParam>();
         StopReason? stopReason = null;
+        int inputTokens = 0;
+        int outputTokens = 0;
 
         var currentTextBuilder = new System.Text.StringBuilder();
         string? currentToolId = null;
@@ -383,11 +483,22 @@ public class AiAgentService : IAiAgentService
                     FlushCurrentBlock(ref inTextBlock, ref inToolUseBlock, contentBlocks,
                         currentTextBuilder, currentToolId, currentToolName, currentToolInputBuilder);
                 }
+                else if (rawEvent.TryPickStart(out var startMessage))
+                {
+                    if (startMessage.Message?.Usage is { } usage)
+                    {
+                        inputTokens = (int)usage.InputTokens;
+                    }
+                }
                 else if (rawEvent.TryPickDelta(out var messageDelta))
                 {
                     if (messageDelta.Delta.StopReason is { } sr)
                     {
                         stopReason = sr;
+                    }
+                    if (messageDelta.Usage is { } deltaUsage)
+                    {
+                        outputTokens = (int)deltaUsage.OutputTokens;
                     }
                 }
             }
@@ -411,6 +522,8 @@ public class AiAgentService : IAiAgentService
             TextDeltas = textDeltas,
             ContentBlocks = contentBlocks,
             StopReason = stopReason,
+            InputTokens = inputTokens,
+            OutputTokens = outputTokens,
         };
     }
 
@@ -454,5 +567,7 @@ public class AiAgentService : IAiAgentService
         public List<ContentBlockParam> ContentBlocks { get; init; } = [];
         public StopReason? StopReason { get; init; }
         public string? Error { get; init; }
+        public int InputTokens { get; init; }
+        public int OutputTokens { get; init; }
     }
 }

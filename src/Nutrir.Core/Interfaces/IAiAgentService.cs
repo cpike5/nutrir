@@ -21,7 +21,8 @@ public record AgentStreamEvent
 public interface IAiAgentService
 {
     IAsyncEnumerable<AgentStreamEvent> SendMessageAsync(string userMessage, CancellationToken cancellationToken = default);
-    void ClearHistory();
+    Task<List<ChatDisplayMessage>?> LoadHistoryAsync();
+    Task ClearHistoryAsync();
     void SetUserContext(string userName, string userRole);
     void SetUserId(string userId);
     void RespondToConfirmation(string toolCallId, bool allowed);

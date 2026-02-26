@@ -32,6 +32,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ConsentEvent> ConsentEvents => Set<ConsentEvent>();
 
+    public DbSet<AiConversation> AiConversations => Set<AiConversation>();
+
+    public DbSet<AiConversationMessage> AiConversationMessages => Set<AiConversationMessage>();
+
+    public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -249,6 +255,45 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(ce => ce.RecordedByUserId).HasMaxLength(450);
             entity.Property(ce => ce.Notes).HasColumnType("text");
             entity.Property(ce => ce.Timestamp).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<AiConversation>(entity =>
+        {
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(c => c.UserId);
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+            entity.Property(c => c.LastMessageAt).HasDefaultValueSql("now() at time zone 'utc'");
+
+            entity.HasMany(c => c.Messages)
+                .WithOne()
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AiConversationMessage>(entity =>
+        {
+            entity.HasIndex(m => m.ConversationId);
+            entity.Property(m => m.Role).HasMaxLength(20).IsRequired();
+            entity.Property(m => m.ContentJson).HasColumnType("text").IsRequired();
+            entity.Property(m => m.DisplayText).HasColumnType("text");
+            entity.Property(m => m.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<AiUsageLog>(entity =>
+        {
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(l => l.UserId);
+            entity.HasIndex(l => l.RequestedAt);
+            entity.Property(l => l.RequestedAt).HasDefaultValueSql("now() at time zone 'utc'");
+            entity.Property(l => l.Model).HasMaxLength(100);
         });
     }
 

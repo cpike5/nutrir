@@ -137,6 +137,7 @@
     private readonly List<ChatMessage> _messages = [];
     private bool _jsInitialized;
     private bool _userContextSet;
+    private bool _historyLoaded;
     private CancellationTokenSource? _streamCts;
 
     private static readonly string[] _starters =
@@ -184,6 +185,27 @@
                 _userContextSet = true;
             }
 
+            if (!_historyLoaded)
+            {
+                _historyLoaded = true;
+                try
+                {
+                    var displayMessages = await AiAgent.LoadHistoryAsync();
+                    if (displayMessages is { Count: > 0 })
+                    {
+                        foreach (var dm in displayMessages)
+                        {
+                            _messages.Add(new ChatMessage
+                            {
+                                Role = dm.Role,
+                                Text = dm.Text ?? ""
+                            });
+                        }
+                        StateHasChanged();
+                    }
+                }
+                catch { /* Don't block panel if history load fails */ }
+            }
         }
 
         if (_isOpen && _messages.Count > 0)
@@ -315,11 +337,11 @@
         StateHasChanged();
     }
 
-    private void ClearConversation()
+    private async Task ClearConversation()
     {
         _streamCts?.Cancel();
         _messages.Clear();
-        AiAgent.ClearHistory();
+        await AiAgent.ClearHistoryAsync();
         StateHasChanged();
     }
 

@@ -1,0 +1,210 @@
+@page "/admin/ai-usage"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin")]
+@inject IAiUsageTracker UsageTracker
+
+<PageTitle>AI Usage — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Admin"), new BreadcrumbItem("AI Usage") })" />
+
+<div class="ai-usage-page">
+    <div class="ai-usage-header">
+        <h1 class="ai-usage-title">AI Assistant Usage</h1>
+        <p class="ai-usage-subtitle">Monitor AI assistant usage across all users.</p>
+    </div>
+
+    <div class="ai-usage-filters">
+        <div class="ai-usage-filter-range">
+            <FormGroup Label="Date Range" Id="date-range">
+                <FormSelect Id="date-range"
+                            Value="@_dateRange"
+                            ValueChanged="OnDateRangeChanged">
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </FormSelect>
+            </FormGroup>
+        </div>
+        @if (_selectedUser is not null)
+        {
+            <button class="ai-usage-back-btn" @onclick="BackToSummary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to summary
+            </button>
+        }
+    </div>
+
+    @if (_isLoading)
+    {
+        <Card>
+            <p class="ai-usage-loading">Loading usage data...</p>
+        </Card>
+    }
+    else if (_selectedUser is not null)
+    {
+        <Card>
+            <div class="ai-usage-detail-header">
+                <h2 class="ai-usage-detail-title">@_selectedUser.Value.UserName</h2>
+                <p class="ai-usage-detail-email">@_selectedUser.Value.Email</p>
+            </div>
+
+            @if (_dailyUsage is null || _dailyUsage.Count == 0)
+            {
+                <div class="ai-usage-empty">
+                    <p class="ai-usage-empty-title">No usage data</p>
+                    <p class="ai-usage-empty-desc">No AI assistant usage found for this user in the selected period.</p>
+                </div>
+            }
+            else
+            {
+                <table class="ai-usage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th class="ai-usage-num">Requests</th>
+                            <th class="ai-usage-num">Input Tokens</th>
+                            <th class="ai-usage-num">Output Tokens</th>
+                            <th class="ai-usage-num">Tool Calls</th>
+                            <th class="ai-usage-num">Avg Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var day in _dailyUsage)
+                        {
+                            <tr>
+                                <td>@day.Date.ToString("MMM d, yyyy")</td>
+                                <td class="ai-usage-num">@day.Requests.ToString("N0")</td>
+                                <td class="ai-usage-num">@day.InputTokens.ToString("N0")</td>
+                                <td class="ai-usage-num">@day.OutputTokens.ToString("N0")</td>
+                                <td class="ai-usage-num">@day.ToolCalls.ToString("N0")</td>
+                                <td class="ai-usage-num">@FormatDuration(day.AvgDurationMs)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="ai-usage-totals">
+                            <td><strong>Total</strong></td>
+                            <td class="ai-usage-num"><strong>@_dailyUsage.Sum(d => d.Requests).ToString("N0")</strong></td>
+                            <td class="ai-usage-num"><strong>@_dailyUsage.Sum(d => d.InputTokens).ToString("N0")</strong></td>
+                            <td class="ai-usage-num"><strong>@_dailyUsage.Sum(d => d.OutputTokens).ToString("N0")</strong></td>
+                            <td class="ai-usage-num"><strong>@_dailyUsage.Sum(d => d.ToolCalls).ToString("N0")</strong></td>
+                            <td class="ai-usage-num">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            }
+        </Card>
+    }
+    else
+    {
+        <Card>
+            @if (_summaries is null || _summaries.Count == 0)
+            {
+                <div class="ai-usage-empty">
+                    <p class="ai-usage-empty-title">No usage data</p>
+                    <p class="ai-usage-empty-desc">No AI assistant usage found in the selected period.</p>
+                </div>
+            }
+            else
+            {
+                <table class="ai-usage-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="ai-usage-num">Requests</th>
+                            <th class="ai-usage-num">Input Tokens</th>
+                            <th class="ai-usage-num">Output Tokens</th>
+                            <th>Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var summary in _summaries)
+                        {
+                            <tr class="ai-usage-clickable" @onclick="() => DrillDown(summary)">
+                                <td>
+                                    <div class="ai-usage-user-name">@(summary.UserName ?? "Unknown")</div>
+                                    <div class="ai-usage-user-email">@summary.Email</div>
+                                </td>
+                                <td class="ai-usage-num">@summary.TotalRequests.ToString("N0")</td>
+                                <td class="ai-usage-num">@summary.TotalInputTokens.ToString("N0")</td>
+                                <td class="ai-usage-num">@summary.TotalOutputTokens.ToString("N0")</td>
+                                <td class="ai-usage-date">@(summary.LastActive?.ToString("MMM d, yyyy h:mm tt") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </Card>
+    }
+</div>
+
+@code {
+    private List<AiUsageSummary>? _summaries;
+    private List<AiDailyUsage>? _dailyUsage;
+    private (string UserId, string? UserName, string? Email)? _selectedUser;
+    private string _dateRange = "30";
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSummaryAsync();
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        _isLoading = true;
+        var (from, to) = GetDateRange();
+        _summaries = await UsageTracker.GetSummaryAsync(from, to);
+        _isLoading = false;
+    }
+
+    private async Task DrillDown(AiUsageSummary summary)
+    {
+        _isLoading = true;
+        _selectedUser = (summary.UserId, summary.UserName, summary.Email);
+        StateHasChanged();
+
+        var (from, to) = GetDateRange();
+        _dailyUsage = await UsageTracker.GetDailyUsageAsync(summary.UserId, from, to);
+        _isLoading = false;
+    }
+
+    private async Task BackToSummary()
+    {
+        _selectedUser = null;
+        _dailyUsage = null;
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnDateRangeChanged(string value)
+    {
+        _dateRange = value;
+        if (_selectedUser is not null)
+        {
+            _isLoading = true;
+            var (from, to) = GetDateRange();
+            _dailyUsage = await UsageTracker.GetDailyUsageAsync(_selectedUser.Value.UserId, from, to);
+            _isLoading = false;
+        }
+        else
+        {
+            await LoadSummaryAsync();
+        }
+    }
+
+    private (DateTime from, DateTime to) GetDateRange()
+    {
+        var days = int.Parse(_dateRange);
+        return (DateTime.UtcNow.AddDays(-days), DateTime.UtcNow);
+    }
+
+    private static string FormatDuration(int ms)
+    {
+        if (ms < 1000) return $"{ms}ms";
+        return $"{ms / 1000.0:F1}s";
+    }
+}
