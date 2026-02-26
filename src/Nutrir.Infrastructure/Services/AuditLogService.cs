@@ -10,11 +10,13 @@ namespace Nutrir.Infrastructure.Services;
 public class AuditLogService : IAuditLogService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IAuditSourceProvider _auditSourceProvider;
     private readonly ILogger<AuditLogService> _logger;
 
-    public AuditLogService(AppDbContext dbContext, ILogger<AuditLogService> logger)
+    public AuditLogService(AppDbContext dbContext, IAuditSourceProvider auditSourceProvider, ILogger<AuditLogService> logger)
     {
         _dbContext = dbContext;
+        _auditSourceProvider = auditSourceProvider;
         _logger = logger;
     }
 
@@ -34,7 +36,8 @@ public class AuditLogService : IAuditLogService
             EntityType = entityType,
             EntityId = entityId,
             Details = details,
-            IpAddress = ipAddress
+            IpAddress = ipAddress,
+            Source = _auditSourceProvider.CurrentSource
         };
 
         _dbContext.AuditLogEntries.Add(entry);
@@ -57,7 +60,8 @@ public class AuditLogService : IAuditLogService
                 e.Action,
                 e.EntityType,
                 e.EntityId,
-                e.Details))
+                e.Details,
+                e.Source))
             .ToListAsync();
     }
 }

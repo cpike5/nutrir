@@ -213,30 +213,48 @@ Per-user limits enforced server-side in `AgentHub`:
 
 Limits are tracked in-memory per session for v1. Persistent tracking (e.g., Redis or database) is a v2 consideration.
 
-## Future Enhancements
+## Implementation Phases
 
-- **Conversation history persistence** — Store chat history per user in the database so context survives page reloads and browser sessions
-- **Contextual awareness** — Inject the current page context (e.g., currently viewed client ID) into the system prompt so the user can say "create a goal for this client" without specifying an ID
-- **Multi-step workflow templates** — Pre-built prompts for common workflows (new client onboarding, end-of-session notes, weekly review) accessible via slash commands
-- **Audit source column** — Dedicated `Source` enum on audit entries (replacing the free-text tag) to enable reliable filtering between `Web`, `Cli`, and `AiAssistant` actions
-- **Structured output mode** — For batch operations, the assistant streams a structured progress indicator rather than prose
+### Phase 1 — Read-Only Proof of Concept (Complete)
 
-## Phase 1 Implementation
-
-Phase 1 has been implemented as a read-only proof of concept. It proves the agent loop works with streaming and the existing service layer, and delivers immediate value as a natural language query interface for practice data.
+Phase 1 proves the agent loop works with streaming and the existing service layer, delivering immediate value as a natural language query interface for practice data.
 
 See [AI Assistant Phase 1](ai-assistant-phase1.md) for full implementation details including key files, configuration, streaming flow, and known limitations.
-
-Phase 1 scope:
 
 - 14 read-only tools covering clients, appointments, meal plans, goals, progress, users, search, and dashboard
 - Streaming text output via `IAsyncEnumerable<AgentStreamEvent>` consumed directly in the Blazor component
 - Tool-use loop with a 10-iteration safety limit
 - Collapsible panel UI toggled from the TopBar, with open/closed state persisted in localStorage
 
-Out of scope for Phase 1 (deferred to Phase 2 / Phase B):
+### Phase 2a — Write Operations (Complete)
 
-- Write operations (create, update, delete, cancel)
-- Confirmation dialogs
-- SignalR hub — Phase 1 uses the Blazor InteractiveServer circuit directly as the streaming channel
-- Entity links, conversation persistence, rate limiting, and rich markdown rendering
+The highest-value phase — enables the assistant to modify data, not just read it. These items are tightly coupled: write tools require confirmation dialogs to be safe, and audit source tagging should ship alongside mutations.
+
+See [AI Assistant Phase 2a](ai-assistant-phase2a.md) for full implementation details including key files, confirmation flow architecture, audit source tracking, and verification steps.
+
+- **Write tools** — 21 write tools across clients, appointments, meal plans, goals, progress, and users. Four tools deferred: `save_meal_plan_content`, `update_progress_entry`, `update_user_profile`, `force_mfa`.
+- **Inline confirmation dialogs** — Two-tier permission model: Standard (bordered card) for client/clinical mutations, Elevated (warning-styled card with caution icon) for user management. Confirmation pauses the `IAsyncEnumerable` stream via `TaskCompletionSource` until the user allows or denies. Rendered in the chat thread, not as modals.
+- **Audit source tagging** — `AuditSource` enum (`Web`, `Cli`, `AiAssistant`) on audit entries. Ambient scoped `IAuditSourceProvider` set by `AiAgentService` around approved write tool calls; read by `AuditLogService` when creating entries.
+
+### Phase 2b — UX Polish
+
+Independent improvements that significantly enhance daily usability. Each can be built and shipped independently.
+
+- **Rich markdown rendering** — Parse and render bold, code blocks, and tables in assistant responses (currently displayed as raw markdown syntax)
+- **Entity link chips** — Clickable inline chips that navigate to the detail page within the main content area (e.g., `[John Smith →]` links to the client profile)
+- **Contextual awareness** — Inject the current page's entity context into the system prompt so users can say "create a goal for this client" without specifying an ID
+
+### Phase 2c — Production Hardening
+
+Important for scale and reliability as usage grows. Can be deferred until the feature proves its value.
+
+- **Conversation persistence** — Store chat history per user in the database so context survives circuit disconnects, page reloads, and browser sessions
+- **Per-user rate limiting** — 30 requests/minute, 500 requests/day, enforced server-side with in-memory tracking (persistent tracking via Redis/database is a future consideration)
+- **Usage tracking** — Per-user API consumption visibility for practice administrators
+
+## Future Enhancements
+
+Items beyond the current Phase 2 roadmap, to be considered for later iterations:
+
+- **Multi-step workflow templates** — Pre-built prompts for common workflows (new client onboarding, end-of-session notes, weekly review) accessible via slash commands
+- **Structured output mode** — For batch operations, the assistant streams a structured progress indicator rather than prose

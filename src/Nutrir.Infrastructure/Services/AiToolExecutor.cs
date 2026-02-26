@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text.Json;
 using Anthropic.Models.Messages;
 using Microsoft.Extensions.Logging;
+using Nutrir.Core.DTOs;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 
@@ -18,6 +20,88 @@ public class AiToolExecutor
     private readonly ILogger<AiToolExecutor> _logger;
 
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
+
+    private string? _currentUserId;
+
+    // --- Confirmation Tier Map ---
+
+    private static readonly Dictionary<string, ConfirmationTier> ConfirmationTierMap = new()
+    {
+        // Standard tier — CRUD on domain entities
+        ["create_client"] = ConfirmationTier.Standard,
+        ["update_client"] = ConfirmationTier.Standard,
+        ["delete_client"] = ConfirmationTier.Standard,
+        ["create_appointment"] = ConfirmationTier.Standard,
+        ["update_appointment"] = ConfirmationTier.Standard,
+        ["cancel_appointment"] = ConfirmationTier.Standard,
+        ["delete_appointment"] = ConfirmationTier.Standard,
+        ["create_meal_plan"] = ConfirmationTier.Standard,
+        ["update_meal_plan"] = ConfirmationTier.Standard,
+        ["activate_meal_plan"] = ConfirmationTier.Standard,
+        ["archive_meal_plan"] = ConfirmationTier.Standard,
+        ["duplicate_meal_plan"] = ConfirmationTier.Standard,
+        ["delete_meal_plan"] = ConfirmationTier.Standard,
+        ["create_goal"] = ConfirmationTier.Standard,
+        ["update_goal"] = ConfirmationTier.Standard,
+        ["achieve_goal"] = ConfirmationTier.Standard,
+        ["abandon_goal"] = ConfirmationTier.Standard,
+        ["delete_goal"] = ConfirmationTier.Standard,
+        ["create_progress_entry"] = ConfirmationTier.Standard,
+        ["delete_progress_entry"] = ConfirmationTier.Standard,
+
+        // Elevated tier — user/identity management
+        ["create_user"] = ConfirmationTier.Elevated,
+        ["change_user_role"] = ConfirmationTier.Elevated,
+        ["deactivate_user"] = ConfirmationTier.Elevated,
+        ["reactivate_user"] = ConfirmationTier.Elevated,
+        ["reset_user_password"] = ConfirmationTier.Elevated,
+    };
+
+    public ConfirmationTier? GetConfirmationTier(string toolName)
+    {
+        return ConfirmationTierMap.TryGetValue(toolName, out var tier) ? tier : null;
+    }
+
+    // --- Description Builder ---
+
+    public static string BuildConfirmationDescription(string toolName, JsonElement input)
+    {
+        return toolName switch
+        {
+            "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
+            "update_client" => $"update client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "delete_client" => $"delete client #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+
+            "create_appointment" => $"create an appointment for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
+            "update_appointment" => $"update appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "cancel_appointment" => $"cancel appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "delete_appointment" => $"delete appointment #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+
+            "create_meal_plan" => $"create a meal plan titled '{GetOptionalString(input, "title") ?? "?"}' for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
+            "update_meal_plan" => $"update meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "activate_meal_plan" => $"activate meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "archive_meal_plan" => $"archive meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "duplicate_meal_plan" => $"duplicate meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "delete_meal_plan" => $"delete meal plan #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+
+            "create_goal" => $"create a goal titled '{GetOptionalString(input, "title") ?? "?"}' for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
+            "update_goal" => $"update goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+            "achieve_goal" => $"mark goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"} as achieved",
+            "abandon_goal" => $"mark goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"} as abandoned",
+            "delete_goal" => $"delete goal #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+
+            "create_progress_entry" => $"log a progress entry for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
+            "delete_progress_entry" => $"delete progress entry #{GetOptionalInt(input, "id")?.ToString() ?? "?"}",
+
+            "create_user" => $"create a user account for {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
+            "change_user_role" => $"change role of user {GetOptionalString(input, "user_id") ?? "?"} to {GetOptionalString(input, "new_role") ?? "?"}",
+            "deactivate_user" => $"deactivate user {GetOptionalString(input, "user_id") ?? "?"}",
+            "reactivate_user" => $"reactivate user {GetOptionalString(input, "user_id") ?? "?"}",
+            "reset_user_password" => $"reset password for user {GetOptionalString(input, "user_id") ?? "?"}",
+
+            _ => toolName.Replace('_', ' '),
+        };
+    }
 
     public AiToolExecutor(
         IClientService clientService,
@@ -40,6 +124,7 @@ public class AiToolExecutor
 
         _handlers = new Dictionary<string, Func<JsonElement, Task<string>>>
         {
+            // Read tools
             ["list_clients"] = HandleListClients,
             ["get_client"] = HandleGetClient,
             ["list_appointments"] = HandleListAppointments,
@@ -54,11 +139,50 @@ public class AiToolExecutor
             ["get_user"] = HandleGetUser,
             ["search"] = HandleSearch,
             ["get_dashboard"] = HandleGetDashboard,
+
+            // Write tools — Clients
+            ["create_client"] = HandleCreateClient,
+            ["update_client"] = HandleUpdateClient,
+            ["delete_client"] = HandleDeleteClient,
+
+            // Write tools — Appointments
+            ["create_appointment"] = HandleCreateAppointment,
+            ["update_appointment"] = HandleUpdateAppointment,
+            ["cancel_appointment"] = HandleCancelAppointment,
+            ["delete_appointment"] = HandleDeleteAppointment,
+
+            // Write tools — Meal Plans
+            ["create_meal_plan"] = HandleCreateMealPlan,
+            ["update_meal_plan"] = HandleUpdateMealPlan,
+            ["activate_meal_plan"] = HandleActivateMealPlan,
+            ["archive_meal_plan"] = HandleArchiveMealPlan,
+            ["duplicate_meal_plan"] = HandleDuplicateMealPlan,
+            ["delete_meal_plan"] = HandleDeleteMealPlan,
+
+            // Write tools — Goals
+            ["create_goal"] = HandleCreateGoal,
+            ["update_goal"] = HandleUpdateGoal,
+            ["achieve_goal"] = HandleAchieveGoal,
+            ["abandon_goal"] = HandleAbandonGoal,
+            ["delete_goal"] = HandleDeleteGoal,
+
+            // Write tools — Progress Entries
+            ["create_progress_entry"] = HandleCreateProgressEntry,
+            ["delete_progress_entry"] = HandleDeleteProgressEntry,
+
+            // Write tools — User Management
+            ["create_user"] = HandleCreateUser,
+            ["change_user_role"] = HandleChangeUserRole,
+            ["deactivate_user"] = HandleDeactivateUser,
+            ["reactivate_user"] = HandleReactivateUser,
+            ["reset_user_password"] = HandleResetUserPassword,
         };
     }
 
-    public async Task<string> ExecuteAsync(string toolName, IReadOnlyDictionary<string, JsonElement> input)
+    public async Task<string> ExecuteAsync(string toolName, IReadOnlyDictionary<string, JsonElement> input, string? userId = null)
     {
+        _currentUserId = userId;
+
         // Convert dictionary to JsonElement for handler convenience
         var jsonElement = JsonSerializer.SerializeToElement(input);
 
@@ -82,6 +206,8 @@ public class AiToolExecutor
     {
         return
         [
+            // --- Read Tools ---
+
             CreateTool("list_clients", "List all clients in the practice. Optionally filter by search term.",
                 new Dictionary<string, object>
                 {
@@ -177,6 +303,282 @@ public class AiToolExecutor
 
             CreateTool("get_dashboard", "Get dashboard overview: metrics, today's appointments, weekly appointment count, and active meal plan count.",
                 new Dictionary<string, object>()),
+
+            // --- Write Tools: Clients ---
+
+            CreateTool("create_client", "Create a new client in the practice.",
+                new Dictionary<string, object>
+                {
+                    ["first_name"] = new { type = "string", description = "Client's first name" },
+                    ["last_name"] = new { type = "string", description = "Client's last name" },
+                    ["email"] = new { type = "string", description = "Client's email address" },
+                    ["phone"] = new { type = "string", description = "Client's phone number" },
+                    ["date_of_birth"] = new { type = "string", description = "Date of birth (yyyy-MM-dd)" },
+                    ["primary_nutritionist_id"] = new { type = "string", description = "User ID of the primary nutritionist" },
+                    ["notes"] = new { type = "string", description = "Optional notes about the client" },
+                },
+                "first_name", "last_name", "primary_nutritionist_id"),
+
+            CreateTool("update_client", "Update an existing client's information.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The client ID to update" },
+                    ["first_name"] = new { type = "string", description = "Client's first name" },
+                    ["last_name"] = new { type = "string", description = "Client's last name" },
+                    ["email"] = new { type = "string", description = "Client's email address" },
+                    ["phone"] = new { type = "string", description = "Client's phone number" },
+                    ["date_of_birth"] = new { type = "string", description = "Date of birth (yyyy-MM-dd)" },
+                    ["primary_nutritionist_id"] = new { type = "string", description = "User ID of the primary nutritionist" },
+                    ["notes"] = new { type = "string", description = "Optional notes about the client" },
+                },
+                "id", "first_name", "last_name", "primary_nutritionist_id"),
+
+            CreateTool("delete_client", "Soft-delete a client.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The client ID to delete" },
+                },
+                "id"),
+
+            // --- Write Tools: Appointments ---
+
+            CreateTool("create_appointment", "Create a new appointment.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["type"] = new { type = "string", description = "Appointment type: InitialConsultation, FollowUp, CheckIn" },
+                    ["start_time"] = new { type = "string", description = "Start time (ISO 8601 UTC, e.g. 2025-06-15T10:00:00Z)" },
+                    ["duration_minutes"] = new { type = "integer", description = "Duration in minutes" },
+                    ["location"] = new { type = "string", description = "Location: InPerson, Virtual, Phone" },
+                    ["virtual_meeting_url"] = new { type = "string", description = "URL for virtual meetings" },
+                    ["location_notes"] = new { type = "string", description = "Notes about the location" },
+                    ["notes"] = new { type = "string", description = "Appointment notes" },
+                },
+                "client_id", "type", "start_time", "duration_minutes", "location"),
+
+            CreateTool("update_appointment", "Update an existing appointment.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The appointment ID" },
+                    ["type"] = new { type = "string", description = "Appointment type: InitialConsultation, FollowUp, CheckIn" },
+                    ["status"] = new { type = "string", description = "Status: Scheduled, Confirmed, Completed, NoShow, LateCancellation, Cancelled" },
+                    ["start_time"] = new { type = "string", description = "Start time (ISO 8601 UTC)" },
+                    ["duration_minutes"] = new { type = "integer", description = "Duration in minutes" },
+                    ["location"] = new { type = "string", description = "Location: InPerson, Virtual, Phone" },
+                    ["virtual_meeting_url"] = new { type = "string", description = "URL for virtual meetings" },
+                    ["location_notes"] = new { type = "string", description = "Notes about the location" },
+                    ["notes"] = new { type = "string", description = "Appointment notes" },
+                },
+                "id", "type", "status", "start_time", "duration_minutes", "location"),
+
+            CreateTool("cancel_appointment", "Cancel an appointment.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The appointment ID to cancel" },
+                    ["cancellation_reason"] = new { type = "string", description = "Reason for cancellation" },
+                },
+                "id"),
+
+            CreateTool("delete_appointment", "Soft-delete an appointment.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The appointment ID to delete" },
+                },
+                "id"),
+
+            // --- Write Tools: Meal Plans ---
+
+            CreateTool("create_meal_plan", "Create a new meal plan for a client.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["title"] = new { type = "string", description = "Meal plan title" },
+                    ["description"] = new { type = "string", description = "Meal plan description" },
+                    ["start_date"] = new { type = "string", description = "Start date (yyyy-MM-dd)" },
+                    ["end_date"] = new { type = "string", description = "End date (yyyy-MM-dd)" },
+                    ["calorie_target"] = new { type = "number", description = "Daily calorie target" },
+                    ["protein_target_g"] = new { type = "number", description = "Daily protein target in grams" },
+                    ["carbs_target_g"] = new { type = "number", description = "Daily carbs target in grams" },
+                    ["fat_target_g"] = new { type = "number", description = "Daily fat target in grams" },
+                    ["notes"] = new { type = "string", description = "Notes for the meal plan" },
+                    ["instructions"] = new { type = "string", description = "Instructions for the client" },
+                    ["number_of_days"] = new { type = "integer", description = "Number of days in the plan" },
+                },
+                "client_id", "title", "number_of_days"),
+
+            CreateTool("update_meal_plan", "Update an existing meal plan's metadata.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID" },
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["title"] = new { type = "string", description = "Meal plan title" },
+                    ["description"] = new { type = "string", description = "Meal plan description" },
+                    ["start_date"] = new { type = "string", description = "Start date (yyyy-MM-dd)" },
+                    ["end_date"] = new { type = "string", description = "End date (yyyy-MM-dd)" },
+                    ["calorie_target"] = new { type = "number", description = "Daily calorie target" },
+                    ["protein_target_g"] = new { type = "number", description = "Daily protein target in grams" },
+                    ["carbs_target_g"] = new { type = "number", description = "Daily carbs target in grams" },
+                    ["fat_target_g"] = new { type = "number", description = "Daily fat target in grams" },
+                    ["notes"] = new { type = "string", description = "Notes for the meal plan" },
+                    ["instructions"] = new { type = "string", description = "Instructions for the client" },
+                    ["number_of_days"] = new { type = "integer", description = "Number of days in the plan" },
+                },
+                "id", "client_id", "title", "number_of_days"),
+
+            CreateTool("activate_meal_plan", "Set a meal plan's status to Active.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID" },
+                },
+                "id"),
+
+            CreateTool("archive_meal_plan", "Archive a meal plan.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID" },
+                },
+                "id"),
+
+            CreateTool("duplicate_meal_plan", "Create a copy of an existing meal plan.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID to duplicate" },
+                },
+                "id"),
+
+            CreateTool("delete_meal_plan", "Soft-delete a meal plan.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID to delete" },
+                },
+                "id"),
+
+            // --- Write Tools: Goals ---
+
+            CreateTool("create_goal", "Create a new progress goal for a client.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["title"] = new { type = "string", description = "Goal title" },
+                    ["description"] = new { type = "string", description = "Goal description" },
+                    ["goal_type"] = new { type = "string", description = "Goal type: Weight, BodyComposition, Dietary, Custom" },
+                    ["target_value"] = new { type = "number", description = "Target value" },
+                    ["target_unit"] = new { type = "string", description = "Unit for the target value (e.g. kg, lbs, %)" },
+                    ["target_date"] = new { type = "string", description = "Target date (yyyy-MM-dd)" },
+                },
+                "client_id", "title", "goal_type"),
+
+            CreateTool("update_goal", "Update an existing progress goal.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The goal ID" },
+                    ["title"] = new { type = "string", description = "Goal title" },
+                    ["description"] = new { type = "string", description = "Goal description" },
+                    ["goal_type"] = new { type = "string", description = "Goal type: Weight, BodyComposition, Dietary, Custom" },
+                    ["target_value"] = new { type = "number", description = "Target value" },
+                    ["target_unit"] = new { type = "string", description = "Unit for the target value" },
+                    ["target_date"] = new { type = "string", description = "Target date (yyyy-MM-dd)" },
+                },
+                "id", "title", "goal_type"),
+
+            CreateTool("achieve_goal", "Mark a goal as achieved.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The goal ID" },
+                },
+                "id"),
+
+            CreateTool("abandon_goal", "Mark a goal as abandoned.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The goal ID" },
+                },
+                "id"),
+
+            CreateTool("delete_goal", "Soft-delete a goal.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The goal ID to delete" },
+                },
+                "id"),
+
+            // --- Write Tools: Progress Entries ---
+
+            CreateTool("create_progress_entry", "Log a new progress entry with measurements for a client.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["entry_date"] = new { type = "string", description = "Entry date (yyyy-MM-dd)" },
+                    ["notes"] = new { type = "string", description = "Notes for this entry" },
+                    ["measurements"] = new
+                    {
+                        type = "array",
+                        description = "List of measurements",
+                        items = new
+                        {
+                            type = "object",
+                            properties = new Dictionary<string, object>
+                            {
+                                ["metric_type"] = new { type = "string", description = "Metric type: Weight, BodyFatPercentage, WaistCircumference, HipCircumference, BMI, BloodPressureSystolic, BloodPressureDiastolic, RestingHeartRate, Custom" },
+                                ["custom_metric_name"] = new { type = "string", description = "Custom metric name (required if metric_type is Custom)" },
+                                ["value"] = new { type = "number", description = "Measurement value" },
+                                ["unit"] = new { type = "string", description = "Unit of measurement (e.g. kg, lbs, cm, %)" },
+                            },
+                            required = new[] { "metric_type", "value" },
+                        },
+                    },
+                },
+                "client_id", "entry_date", "measurements"),
+
+            CreateTool("delete_progress_entry", "Soft-delete a progress entry.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The progress entry ID to delete" },
+                },
+                "id"),
+
+            // --- Write Tools: User Management ---
+
+            CreateTool("create_user", "Create a new user account (nutritionist or admin).",
+                new Dictionary<string, object>
+                {
+                    ["first_name"] = new { type = "string", description = "User's first name" },
+                    ["last_name"] = new { type = "string", description = "User's last name" },
+                    ["email"] = new { type = "string", description = "User's email address" },
+                    ["role"] = new { type = "string", description = "Role: Admin, Nutritionist" },
+                    ["password"] = new { type = "string", description = "Optional password (generated if not provided)" },
+                },
+                "first_name", "last_name", "email", "role"),
+
+            CreateTool("change_user_role", "Change a user's role.",
+                new Dictionary<string, object>
+                {
+                    ["user_id"] = new { type = "string", description = "The user ID" },
+                    ["new_role"] = new { type = "string", description = "New role: Admin, Nutritionist" },
+                },
+                "user_id", "new_role"),
+
+            CreateTool("deactivate_user", "Deactivate a user account.",
+                new Dictionary<string, object>
+                {
+                    ["user_id"] = new { type = "string", description = "The user ID to deactivate" },
+                },
+                "user_id"),
+
+            CreateTool("reactivate_user", "Reactivate a previously deactivated user account.",
+                new Dictionary<string, object>
+                {
+                    ["user_id"] = new { type = "string", description = "The user ID to reactivate" },
+                },
+                "user_id"),
+
+            CreateTool("reset_user_password", "Reset a user's password.",
+                new Dictionary<string, object>
+                {
+                    ["user_id"] = new { type = "string", description = "The user ID" },
+                    ["new_password"] = new { type = "string", description = "The new password" },
+                },
+                "user_id", "new_password"),
         ];
     }
 
@@ -197,7 +599,9 @@ public class AiToolExecutor
         };
     }
 
-    // --- Tool Handlers ---
+    // =====================================================
+    // Read Tool Handlers
+    // =====================================================
 
     private async Task<string> HandleListClients(JsonElement input)
     {
@@ -328,7 +732,371 @@ public class AiToolExecutor
         }, SerializerOptions);
     }
 
-    // --- Helpers ---
+    // =====================================================
+    // Write Tool Handlers — Clients
+    // =====================================================
+
+    private async Task<string> HandleCreateClient(JsonElement input)
+    {
+        var dto = new ClientDto(
+            Id: 0,
+            FirstName: GetRequiredString(input, "first_name"),
+            LastName: GetRequiredString(input, "last_name"),
+            Email: GetOptionalString(input, "email"),
+            Phone: GetOptionalString(input, "phone"),
+            DateOfBirth: GetOptionalDateOnly(input, "date_of_birth"),
+            PrimaryNutritionistId: GetRequiredString(input, "primary_nutritionist_id"),
+            PrimaryNutritionistName: null,
+            ConsentGiven: false,
+            ConsentTimestamp: null,
+            ConsentPolicyVersion: null,
+            Notes: GetOptionalString(input, "notes"),
+            IsDeleted: false,
+            CreatedAt: DateTime.UtcNow,
+            UpdatedAt: null,
+            DeletedAt: null);
+
+        var result = await _clientService.CreateAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, client = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateClient(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new ClientDto(
+            Id: id,
+            FirstName: GetRequiredString(input, "first_name"),
+            LastName: GetRequiredString(input, "last_name"),
+            Email: GetOptionalString(input, "email"),
+            Phone: GetOptionalString(input, "phone"),
+            DateOfBirth: GetOptionalDateOnly(input, "date_of_birth"),
+            PrimaryNutritionistId: GetRequiredString(input, "primary_nutritionist_id"),
+            PrimaryNutritionistName: null,
+            ConsentGiven: false,
+            ConsentTimestamp: null,
+            ConsentPolicyVersion: null,
+            Notes: GetOptionalString(input, "notes"),
+            IsDeleted: false,
+            CreatedAt: DateTime.UtcNow,
+            UpdatedAt: null,
+            DeletedAt: null);
+
+        var success = await _clientService.UpdateAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Client #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Client #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleDeleteClient(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _clientService.SoftDeleteAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Client #{id} deleted" })
+            : JsonSerializer.Serialize(new { error = $"Client #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — Appointments
+    // =====================================================
+
+    private async Task<string> HandleCreateAppointment(JsonElement input)
+    {
+        var dto = new CreateAppointmentDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Type: GetRequiredEnum<AppointmentType>(input, "type"),
+            StartTime: GetRequiredDate(input, "start_time"),
+            DurationMinutes: GetRequiredInt(input, "duration_minutes"),
+            Location: GetRequiredEnum<AppointmentLocation>(input, "location"),
+            VirtualMeetingUrl: GetOptionalString(input, "virtual_meeting_url"),
+            LocationNotes: GetOptionalString(input, "location_notes"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var result = await _appointmentService.CreateAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, appointment = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateAppointment(JsonElement input)
+    {
+        var dto = new UpdateAppointmentDto(
+            Id: GetRequiredInt(input, "id"),
+            Type: GetRequiredEnum<AppointmentType>(input, "type"),
+            Status: GetRequiredEnum<AppointmentStatus>(input, "status"),
+            StartTime: GetRequiredDate(input, "start_time"),
+            DurationMinutes: GetRequiredInt(input, "duration_minutes"),
+            Location: GetRequiredEnum<AppointmentLocation>(input, "location"),
+            VirtualMeetingUrl: GetOptionalString(input, "virtual_meeting_url"),
+            LocationNotes: GetOptionalString(input, "location_notes"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var success = await _appointmentService.UpdateAsync(dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Appointment #{dto.Id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Appointment #{dto.Id} not found or update failed" });
+    }
+
+    private async Task<string> HandleCancelAppointment(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var reason = GetOptionalString(input, "cancellation_reason");
+        var success = await _appointmentService.UpdateStatusAsync(id, AppointmentStatus.Cancelled, _currentUserId ?? "system", reason);
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Appointment #{id} cancelled" })
+            : JsonSerializer.Serialize(new { error = $"Appointment #{id} not found or cancellation failed" });
+    }
+
+    private async Task<string> HandleDeleteAppointment(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _appointmentService.SoftDeleteAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Appointment #{id} deleted" })
+            : JsonSerializer.Serialize(new { error = $"Appointment #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — Meal Plans
+    // =====================================================
+
+    private async Task<string> HandleCreateMealPlan(JsonElement input)
+    {
+        var dto = new CreateMealPlanDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Title: GetRequiredString(input, "title"),
+            Description: GetOptionalString(input, "description"),
+            StartDate: GetOptionalDateOnly(input, "start_date"),
+            EndDate: GetOptionalDateOnly(input, "end_date"),
+            CalorieTarget: GetOptionalDecimal(input, "calorie_target"),
+            ProteinTargetG: GetOptionalDecimal(input, "protein_target_g"),
+            CarbsTargetG: GetOptionalDecimal(input, "carbs_target_g"),
+            FatTargetG: GetOptionalDecimal(input, "fat_target_g"),
+            Notes: GetOptionalString(input, "notes"),
+            Instructions: GetOptionalString(input, "instructions"),
+            NumberOfDays: GetRequiredInt(input, "number_of_days"));
+
+        var result = await _mealPlanService.CreateAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, meal_plan = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateMealPlan(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new CreateMealPlanDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Title: GetRequiredString(input, "title"),
+            Description: GetOptionalString(input, "description"),
+            StartDate: GetOptionalDateOnly(input, "start_date"),
+            EndDate: GetOptionalDateOnly(input, "end_date"),
+            CalorieTarget: GetOptionalDecimal(input, "calorie_target"),
+            ProteinTargetG: GetOptionalDecimal(input, "protein_target_g"),
+            CarbsTargetG: GetOptionalDecimal(input, "carbs_target_g"),
+            FatTargetG: GetOptionalDecimal(input, "fat_target_g"),
+            Notes: GetOptionalString(input, "notes"),
+            Instructions: GetOptionalString(input, "instructions"),
+            NumberOfDays: GetRequiredInt(input, "number_of_days"));
+
+        var success = await _mealPlanService.UpdateMetadataAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleActivateMealPlan(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Active, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} activated" })
+            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or activation failed" });
+    }
+
+    private async Task<string> HandleArchiveMealPlan(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Archived, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} archived" })
+            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or archive failed" });
+    }
+
+    private async Task<string> HandleDuplicateMealPlan(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _mealPlanService.DuplicateAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} duplicated" })
+            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or duplication failed" });
+    }
+
+    private async Task<string> HandleDeleteMealPlan(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _mealPlanService.SoftDeleteAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} deleted" })
+            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — Goals
+    // =====================================================
+
+    private async Task<string> HandleCreateGoal(JsonElement input)
+    {
+        var dto = new CreateProgressGoalDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Title: GetRequiredString(input, "title"),
+            Description: GetOptionalString(input, "description"),
+            GoalType: GetRequiredEnum<GoalType>(input, "goal_type"),
+            TargetValue: GetOptionalDecimal(input, "target_value"),
+            TargetUnit: GetOptionalString(input, "target_unit"),
+            TargetDate: GetOptionalDateOnly(input, "target_date"));
+
+        var result = await _progressService.CreateGoalAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, goal = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateGoal(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new UpdateProgressGoalDto(
+            Title: GetRequiredString(input, "title"),
+            Description: GetOptionalString(input, "description"),
+            GoalType: GetRequiredEnum<GoalType>(input, "goal_type"),
+            TargetValue: GetOptionalDecimal(input, "target_value"),
+            TargetUnit: GetOptionalString(input, "target_unit"),
+            TargetDate: GetOptionalDateOnly(input, "target_date"));
+
+        var success = await _progressService.UpdateGoalAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Goal #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Goal #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleAchieveGoal(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _progressService.UpdateGoalStatusAsync(id, GoalStatus.Achieved, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Goal #{id} marked as achieved" })
+            : JsonSerializer.Serialize(new { error = $"Goal #{id} not found or status update failed" });
+    }
+
+    private async Task<string> HandleAbandonGoal(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _progressService.UpdateGoalStatusAsync(id, GoalStatus.Abandoned, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Goal #{id} marked as abandoned" })
+            : JsonSerializer.Serialize(new { error = $"Goal #{id} not found or status update failed" });
+    }
+
+    private async Task<string> HandleDeleteGoal(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _progressService.SoftDeleteGoalAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Goal #{id} deleted" })
+            : JsonSerializer.Serialize(new { error = $"Goal #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — Progress Entries
+    // =====================================================
+
+    private async Task<string> HandleCreateProgressEntry(JsonElement input)
+    {
+        var measurements = new List<CreateProgressMeasurementDto>();
+
+        if (input.TryGetProperty("measurements", out var measArray) && measArray.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var m in measArray.EnumerateArray())
+            {
+                measurements.Add(new CreateProgressMeasurementDto(
+                    MetricType: GetRequiredEnum<MetricType>(m, "metric_type"),
+                    CustomMetricName: GetOptionalString(m, "custom_metric_name"),
+                    Value: GetRequiredDecimal(m, "value"),
+                    Unit: GetOptionalString(m, "unit")));
+            }
+        }
+
+        var dto = new CreateProgressEntryDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            EntryDate: GetRequiredDateOnly(input, "entry_date"),
+            Notes: GetOptionalString(input, "notes"),
+            Measurements: measurements);
+
+        var result = await _progressService.CreateEntryAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, progress_entry = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleDeleteProgressEntry(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _progressService.SoftDeleteEntryAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Progress entry #{id} deleted" })
+            : JsonSerializer.Serialize(new { error = $"Progress entry #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — User Management
+    // =====================================================
+
+    private async Task<string> HandleCreateUser(JsonElement input)
+    {
+        var dto = new CreateUserDto(
+            FirstName: GetRequiredString(input, "first_name"),
+            LastName: GetRequiredString(input, "last_name"),
+            Email: GetRequiredString(input, "email"),
+            Role: GetRequiredString(input, "role"),
+            Password: GetOptionalString(input, "password"));
+
+        var result = await _userManagementService.CreateUserAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, user = result.User, generated_password = result.GeneratedPassword }, SerializerOptions);
+    }
+
+    private async Task<string> HandleChangeUserRole(JsonElement input)
+    {
+        var userId = GetRequiredString(input, "user_id");
+        var newRole = GetRequiredString(input, "new_role");
+        var success = await _userManagementService.ChangeRoleAsync(userId, newRole, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"User {userId} role changed to {newRole}" })
+            : JsonSerializer.Serialize(new { error = $"User {userId} not found or role change failed" });
+    }
+
+    private async Task<string> HandleDeactivateUser(JsonElement input)
+    {
+        var userId = GetRequiredString(input, "user_id");
+        var success = await _userManagementService.DeactivateAsync(userId, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"User {userId} deactivated" })
+            : JsonSerializer.Serialize(new { error = $"User {userId} not found or deactivation failed" });
+    }
+
+    private async Task<string> HandleReactivateUser(JsonElement input)
+    {
+        var userId = GetRequiredString(input, "user_id");
+        var success = await _userManagementService.ReactivateAsync(userId, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"User {userId} reactivated" })
+            : JsonSerializer.Serialize(new { error = $"User {userId} not found or reactivation failed" });
+    }
+
+    private async Task<string> HandleResetUserPassword(JsonElement input)
+    {
+        var userId = GetRequiredString(input, "user_id");
+        var newPassword = GetRequiredString(input, "new_password");
+        var success = await _userManagementService.ResetPasswordAsync(userId, newPassword, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Password reset for user {userId}" })
+            : JsonSerializer.Serialize(new { error = $"User {userId} not found or password reset failed" });
+    }
+
+    // =====================================================
+    // Helpers
+    // =====================================================
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -364,6 +1132,20 @@ public class AiToolExecutor
             : null;
     }
 
+    private static decimal GetRequiredDecimal(JsonElement input, string property)
+    {
+        if (input.TryGetProperty(property, out var val) && val.ValueKind == JsonValueKind.Number)
+            return val.GetDecimal();
+        throw new ArgumentException($"Required parameter '{property}' is missing or not a number");
+    }
+
+    private static decimal? GetOptionalDecimal(JsonElement input, string property)
+    {
+        return input.TryGetProperty(property, out var val) && val.ValueKind == JsonValueKind.Number
+            ? val.GetDecimal()
+            : null;
+    }
+
     private static bool? GetOptionalBool(JsonElement input, string property)
     {
         if (input.TryGetProperty(property, out var val))
@@ -378,14 +1160,49 @@ public class AiToolExecutor
     {
         var str = GetOptionalString(input, property);
         if (str is null) return null;
-        return DateTime.TryParse(str, System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+        return DateTime.TryParse(str, CultureInfo.InvariantCulture,
+            DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
             out var dt) ? dt : null;
+    }
+
+    private static DateTime GetRequiredDate(JsonElement input, string property)
+    {
+        var str = GetRequiredString(input, property);
+        if (DateTime.TryParse(str, CultureInfo.InvariantCulture,
+            DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+            out var dt))
+            return dt;
+        throw new ArgumentException($"Required parameter '{property}' is not a valid date/time");
+    }
+
+    private static DateOnly? GetOptionalDateOnly(JsonElement input, string property)
+    {
+        var str = GetOptionalString(input, property);
+        if (str is null) return null;
+        return DateOnly.TryParseExact(str, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d
+            : null;
+    }
+
+    private static DateOnly GetRequiredDateOnly(JsonElement input, string property)
+    {
+        var str = GetRequiredString(input, property);
+        if (DateOnly.TryParseExact(str, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            return d;
+        throw new ArgumentException($"Required parameter '{property}' is not a valid date (expected yyyy-MM-dd)");
     }
 
     private static TEnum? GetOptionalEnum<TEnum>(JsonElement input, string property) where TEnum : struct, Enum
     {
         var str = GetOptionalString(input, property);
         return str is not null && Enum.TryParse<TEnum>(str, ignoreCase: true, out var val) ? val : null;
+    }
+
+    private static TEnum GetRequiredEnum<TEnum>(JsonElement input, string property) where TEnum : struct, Enum
+    {
+        var str = GetRequiredString(input, property);
+        if (Enum.TryParse<TEnum>(str, ignoreCase: true, out var val))
+            return val;
+        throw new ArgumentException($"Required parameter '{property}' is not a valid {typeof(TEnum).Name}");
     }
 }

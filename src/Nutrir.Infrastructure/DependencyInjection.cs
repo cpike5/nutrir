@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
         services.AddScoped<DatabaseSeeder>();
 
+        services.AddScoped<IAuditSourceProvider, AuditSourceProvider>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IInviteCodeService, InviteCodeService>();
         services.AddScoped<IUserManagementService, UserManagementService>();

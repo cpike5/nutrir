@@ -1,9 +1,11 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Models.Messages;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Configuration;
 
@@ -13,11 +15,14 @@ public class AiAgentService : IAiAgentService
 {
     private readonly AnthropicOptions _options;
     private readonly AiToolExecutor _toolExecutor;
+    private readonly IAuditSourceProvider _auditSourceProvider;
     private readonly ILogger<AiAgentService> _logger;
     private readonly List<MessageParam> _conversationHistory = [];
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingConfirmations = new();
 
     private string _userName = "User";
     private string _userRole = "Unknown";
+    private string? _userId;
 
     private const int MaxToolLoopIterations = 10;
 
@@ -27,10 +32,30 @@ public class AiAgentService : IAiAgentService
         You are Nutrir Assistant, an AI helper for a nutrition practice management application used by dietitians and nutritionists.
 
         ## Capabilities
-        - You can ONLY READ data. You cannot create, update, or delete anything.
-        - When asked to make changes (create appointments, update clients, delete meal plans, etc.), politely explain that write operations are coming in a future update and suggest what they can do in the UI instead.
+
+        ### Read Operations
         - Use tools to look up real data before answering. Never guess or make up data.
         - If a search returns no results, say so clearly.
+
+        ### Write Operations
+        You can create, update, and delete data across all domains:
+        - **Clients**: Create, update, and delete client records
+        - **Appointments**: Create, update, cancel, and delete appointments
+        - **Meal Plans**: Create, update metadata, activate, archive, duplicate, and delete meal plans (note: you cannot edit meal plan content — days, slots, and items — via chat)
+        - **Goals**: Create, update, achieve, abandon, and delete progress goals
+        - **Progress Entries**: Create and delete progress measurement entries
+        - **Users** (elevated): Create users, change roles, deactivate/reactivate, reset passwords
+
+        ### Confirmation Flow
+        All write operations require user confirmation before execution. The user will see a confirmation dialog describing what you want to do. User management operations show an elevated (warning-styled) confirmation.
+        - If the user **allows** the action, it will execute and you'll receive the result.
+        - If the user **denies** the action, you'll receive a denial result. Acknowledge it gracefully and do not retry the same action. Ask if they'd like to do something different instead.
+
+        ### Multi-Step Workflows
+        When the user refers to entities by name rather than ID:
+        1. First search for the entity using `search` or the appropriate `list_` tool
+        2. Confirm you found the right entity with the user if ambiguous
+        3. Then proceed with the write operation using the resolved ID
 
         ## Data Model Reference
 
@@ -44,6 +69,7 @@ public class AiAgentService : IAiAgentService
 
         ### Conventions
         - Dates use ISO 8601 format and en-CA locale
+        - Date-only values use yyyy-MM-dd format
         - IDs are integers for most entities, GUIDs for users
         - "Today" means the current server date
 
@@ -51,6 +77,9 @@ public class AiAgentService : IAiAgentService
         - For "today's appointments" or general daily overview, prefer `get_dashboard` — it returns today's appointments with no parameters needed.
         - Use `list_appointments` for specific date ranges, client filters, or status filters. Always pass dates as full UTC timestamps (e.g. `2025-06-15T00:00:00Z`), not bare dates.
         - Use `search` for finding entities by name/keyword before drilling into details with a specific get tool.
+        - For write operations, gather all required fields before calling the tool. Ask the user for missing required information rather than guessing.
+        - When creating appointments, always resolve the client ID first if the user gives a name.
+        - There is no undo/rollback capability. Inform the user if they ask to undo something.
 
         ## Response Guidelines
         - Be concise and professional
@@ -61,15 +90,18 @@ public class AiAgentService : IAiAgentService
         - When showing clients, include name, email, and consent status
         - Round nutritional values to whole numbers
         - For multi-step lookups (e.g., "Tell me about Maria Santos"), use the search tool first, then get details with the specific ID
+        - After a successful write operation, briefly confirm what was done (e.g., "Client #12 - Sarah Johnson has been created.")
         """;
 
     public AiAgentService(
         IOptions<AnthropicOptions> options,
         AiToolExecutor toolExecutor,
+        IAuditSourceProvider auditSourceProvider,
         ILogger<AiAgentService> logger)
     {
         _options = options.Value;
         _toolExecutor = toolExecutor;
+        _auditSourceProvider = auditSourceProvider;
         _logger = logger;
     }
 
@@ -135,15 +167,80 @@ public class AiAgentService : IAiAgentService
                     if (!block.TryPickToolUse(out var toolUse))
                         continue;
 
-                    yield return new AgentStreamEvent { ToolName = toolUse.Name };
+                    var confirmationTier = _toolExecutor.GetConfirmationTier(toolUse.Name);
 
-                    _logger.LogInformation("Executing tool {ToolName}", toolUse.Name);
-                    var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input);
-
-                    toolResults.Add(new ToolResultBlockParam(toolUse.ID)
+                    if (confirmationTier is not null)
                     {
-                        Content = toolResult,
-                    });
+                        // Write tool — requires user confirmation
+                        var inputElement = JsonSerializer.SerializeToElement(toolUse.Input);
+                        var description = AiToolExecutor.BuildConfirmationDescription(toolUse.Name, inputElement);
+
+                        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        _pendingConfirmations[toolUse.ID] = tcs;
+
+                        // Register cancellation to prevent leaked tasks
+                        await using var ctr = cancellationToken.Register(() => tcs.TrySetCanceled());
+
+                        yield return new AgentStreamEvent
+                        {
+                            ToolName = toolUse.Name,
+                            ConfirmationRequest = new ToolConfirmationRequest(
+                                toolUse.ID, toolUse.Name, description, confirmationTier.Value)
+                        };
+
+                        bool allowed;
+                        try
+                        {
+                            allowed = await tcs.Task;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            _pendingConfirmations.TryRemove(toolUse.ID, out _);
+                            yield break;
+                        }
+
+                        _pendingConfirmations.TryRemove(toolUse.ID, out _);
+
+                        if (!allowed)
+                        {
+                            _logger.LogInformation("Tool {ToolName} denied by user", toolUse.Name);
+                            toolResults.Add(new ToolResultBlockParam(toolUse.ID)
+                            {
+                                Content = JsonSerializer.Serialize(new { status = "denied", message = "The user denied this action." }),
+                            });
+                            continue;
+                        }
+
+                        // Allowed — set audit source and execute
+                        _auditSourceProvider.SetSource(AuditSource.AiAssistant);
+                        try
+                        {
+                            _logger.LogInformation("Executing write tool {ToolName} (approved by user)", toolUse.Name);
+                            var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId);
+
+                            toolResults.Add(new ToolResultBlockParam(toolUse.ID)
+                            {
+                                Content = toolResult,
+                            });
+                        }
+                        finally
+                        {
+                            _auditSourceProvider.SetSource(AuditSource.Web);
+                        }
+                    }
+                    else
+                    {
+                        // Read tool — execute immediately
+                        yield return new AgentStreamEvent { ToolName = toolUse.Name };
+
+                        _logger.LogInformation("Executing tool {ToolName}", toolUse.Name);
+                        var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input);
+
+                        toolResults.Add(new ToolResultBlockParam(toolUse.ID)
+                        {
+                            Content = toolResult,
+                        });
+                    }
                 }
 
                 _conversationHistory.Add(new MessageParam
@@ -172,6 +269,19 @@ public class AiAgentService : IAiAgentService
     {
         _userName = userName;
         _userRole = userRole;
+    }
+
+    public void SetUserId(string userId)
+    {
+        _userId = userId;
+    }
+
+    public void RespondToConfirmation(string toolCallId, bool allowed)
+    {
+        if (_pendingConfirmations.TryRemove(toolCallId, out var tcs))
+        {
+            tcs.TrySetResult(allowed);
+        }
     }
 
     /// <summary>

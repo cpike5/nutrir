@@ -45,7 +45,7 @@
                         <line x1="10" y1="22" x2="14" y2="22"/>
                     </svg>
                 </div>
-                <p class="cc-ai-welcome-text">Ask me anything about your practice data.</p>
+                <p class="cc-ai-welcome-text">Ask me anything about your practice data, or tell me to make changes.</p>
                 <div class="cc-ai-starters">
                     @foreach (var starter in _starters)
                     {
@@ -67,6 +67,35 @@
                         else
                         {
                             @((MarkupString)RenderMarkdown(msg.Text))
+                            @if (msg.PendingConfirmation is not null)
+                            {
+                                var isElevated = msg.PendingConfirmation.Tier == ConfirmationTier.Elevated;
+                                <div class="cc-ai-confirmation @(isElevated ? "cc-ai-confirmation--elevated" : "")">
+                                    @if (msg.ConfirmationResult is null)
+                                    {
+                                        <p class="cc-ai-confirmation-desc">
+                                            @if (isElevated)
+                                            {
+                                                <svg class="cc-ai-confirmation-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                                </svg>
+                                            }
+                                            The assistant wants to <strong>@msg.PendingConfirmation.Description</strong>
+                                        </p>
+                                        <div class="cc-ai-confirmation-actions">
+                                            <button class="cc-ai-btn-allow" @onclick="() => HandleConfirmation(msg, true)">Allow</button>
+                                            <button class="cc-ai-btn-deny" @onclick="() => HandleConfirmation(msg, false)">Deny</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="cc-ai-confirmation-resolved">
+                                            @(msg.ConfirmationResult == true ? "Allowed" : "Denied"): <strong>@msg.PendingConfirmation.Description</strong>
+                                        </p>
+                                    }
+                                </div>
+                            }
                             @if (!string.IsNullOrEmpty(msg.ToolStatus))
                             {
                                 <div class="cc-ai-tool-status">
@@ -112,12 +141,12 @@
     [
         "What appointments are today?",
         "Give me a practice overview",
-        "Which clients haven't given consent?",
+        "Create a new client",
+        "Schedule an appointment",
         "Search for a client by name",
-        "Show appointments for this week",
         "List draft meal plans needing review",
-        "Show progress goals for a client",
-        "Who's on the team?",
+        "Create a goal for a client",
+        "Log a progress entry",
     ];
 
     protected override void OnInitialized()
@@ -143,6 +172,11 @@
                     : user.Identity?.Name?.Split('@')[0] ?? "User";
                 var role = user.FindFirst(ClaimTypes.Role)?.Value ?? "User";
                 AiAgent.SetUserContext(name, role);
+
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId is not null)
+                    AiAgent.SetUserId(userId);
+
                 _userContextSet = true;
             }
 
@@ -211,6 +245,15 @@
         {
             await foreach (var evt in AiAgent.SendMessageAsync(userText))
             {
+                if (evt.ConfirmationRequest is not null)
+                {
+                    assistantMsg.PendingConfirmation = evt.ConfirmationRequest;
+                    assistantMsg.ToolStatus = null;
+                    StateHasChanged();
+                    // Stream naturally pauses here waiting for user response
+                    continue;
+                }
+
                 if (evt.TextDelta is not null)
                 {
                     assistantMsg.Text += evt.TextDelta;
@@ -250,6 +293,16 @@
         }
     }
 
+    private void HandleConfirmation(ChatMessage msg, bool allowed)
+    {
+        if (msg.PendingConfirmation is null || msg.ConfirmationResult is not null)
+            return;
+
+        msg.ConfirmationResult = allowed;
+        AiAgent.RespondToConfirmation(msg.PendingConfirmation.ToolCallId, allowed);
+        StateHasChanged();
+    }
+
     private void ClearConversation()
     {
         _messages.Clear();
@@ -261,16 +314,41 @@
     {
         "list_clients" => "clients",
         "get_client" => "client details",
+        "create_client" => "creating client",
+        "update_client" => "updating client",
+        "delete_client" => "deleting client",
         "list_appointments" => "appointments",
         "get_appointment" => "appointment details",
+        "create_appointment" => "creating appointment",
+        "update_appointment" => "updating appointment",
+        "cancel_appointment" => "cancelling appointment",
+        "delete_appointment" => "deleting appointment",
         "list_meal_plans" => "meal plans",
         "get_meal_plan" => "meal plan details",
+        "create_meal_plan" => "creating meal plan",
+        "update_meal_plan" => "updating meal plan",
+        "activate_meal_plan" => "activating meal plan",
+        "archive_meal_plan" => "archiving meal plan",
+        "duplicate_meal_plan" => "duplicating meal plan",
+        "delete_meal_plan" => "deleting meal plan",
         "list_goals" => "goals",
         "get_goal" => "goal details",
+        "create_goal" => "creating goal",
+        "update_goal" => "updating goal",
+        "achieve_goal" => "achieving goal",
+        "abandon_goal" => "abandoning goal",
+        "delete_goal" => "deleting goal",
         "list_progress" => "progress entries",
         "get_progress_entry" => "progress details",
+        "create_progress_entry" => "creating progress entry",
+        "delete_progress_entry" => "deleting progress entry",
         "list_users" => "users",
         "get_user" => "user details",
+        "create_user" => "creating user",
+        "change_user_role" => "changing user role",
+        "deactivate_user" => "deactivating user",
+        "reactivate_user" => "reactivating user",
+        "reset_user_password" => "resetting password",
         "search" => "search results",
         "get_dashboard" => "dashboard data",
         _ => toolName.Replace('_', ' ')
@@ -412,6 +490,8 @@
         public string Role { get; init; } = "";
         public string Text { get; set; } = "";
         public string? ToolStatus { get; set; }
+        public ToolConfirmationRequest? PendingConfirmation { get; set; }
+        public bool? ConfirmationResult { get; set; }
     }
 
     public void Dispose()

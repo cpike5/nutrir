@@ -1,3 +1,5 @@
+using Nutrir.Core.Enums;
+
 namespace Nutrir.Core.Entities;
 
 public class AuditLogEntry
@@ -17,4 +19,6 @@ public class AuditLogEntry
     public string? Details { get; set; }
 
     public string? IpAddress { get; set; }
+
+    public AuditSource Source { get; set; } = AuditSource.Web;
 }

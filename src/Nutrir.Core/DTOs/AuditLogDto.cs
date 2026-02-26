@@ -1,3 +1,5 @@
+using Nutrir.Core.Enums;
+
 namespace Nutrir.Core.DTOs;
 
 public record AuditLogDto(
@@ -7,4 +9,5 @@ public record AuditLogDto(
     string Action,
     string EntityType,
     string? EntityId,
-    string? Details);
+    string? Details,
+    AuditSource Source = AuditSource.Web);

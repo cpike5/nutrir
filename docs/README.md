@@ -28,6 +28,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [CLI Tool](infrastructure/cli-tool.md) | Nutrir CLI reference — all commands, options, output format, and examples |
 | [AI Assistant Spec](infrastructure/ai-assistant-spec.md) | Phase B design spec for the AI assistant panel — architecture, tools, permissions, UI |
 | [AI Assistant Phase 1](infrastructure/ai-assistant-phase1.md) | Phase 1 read-only AI assistant — architecture, tools, streaming, configuration |
+| [AI Assistant Phase 2a](infrastructure/ai-assistant-phase2a.md) | Phase 2a write tools + confirmation dialogs — 21 write tools, pause-resume stream flow, audit source tagging |
 
 ## Design System Documents
 

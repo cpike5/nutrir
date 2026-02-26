@@ -209,13 +209,10 @@ The following are known Phase 1 limitations, all intentional scope constraints:
 | No entity links | Entity IDs in responses are plain text. There are no clickable chips that navigate to detail pages. |
 | English only | The system prompt is English. The model responds in English regardless of browser locale. |
 
-## Phase 2 Roadmap
+## Next Phases
 
-The following items are deferred to Phase 2. See [AI Assistant Spec](ai-assistant-spec.md) for the full Phase B design.
+The remaining work is split into three phases. See [AI Assistant Spec](ai-assistant-spec.md) for full details.
 
-- Write operations (create, update, delete, cancel) with inline confirmation dialogs
-- Clickable entity chips that navigate to the detail page within the main content area
-- Conversation persistence across circuit disconnects and browser sessions
-- Per-user rate limiting and usage tracking
-- Rich message rendering (markdown parser for bold, code, tables)
-- Contextual awareness — inject the current page's entity ID into the system prompt
+- **Phase 2a — Write Operations** (Complete): Write tools (21), inline confirmation dialogs, audit source tagging. See [AI Assistant Phase 2a](ai-assistant-phase2a.md) for full implementation details.
+- **Phase 2b — UX Polish**: Rich markdown rendering, entity link chips, contextual awareness
+- **Phase 2c — Production Hardening**: Conversation persistence, per-user rate limiting, usage tracking
