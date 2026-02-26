@@ -69,17 +69,26 @@ public class AiUsageTracker : IAiUsageTracker
 
     public async Task<List<AiDailyUsage>> GetDailyUsageAsync(string userId, DateTime from, DateTime to)
     {
-        return await _db.AiUsageLogs
+        var rows = await _db.AiUsageLogs
             .Where(l => l.UserId == userId && l.RequestedAt >= from && l.RequestedAt <= to)
             .GroupBy(l => l.RequestedAt.Date)
-            .Select(g => new AiDailyUsage(
-                DateOnly.FromDateTime(g.Key),
-                g.Count(),
-                g.Sum(l => l.InputTokens),
-                g.Sum(l => l.OutputTokens),
-                g.Sum(l => l.ToolCallCount),
-                (int)g.Average(l => l.DurationMs)))
-            .OrderByDescending(d => d.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Count = g.Count(),
+                InputTokens = g.Sum(l => l.InputTokens),
+                OutputTokens = g.Sum(l => l.OutputTokens),
+                ToolCalls = g.Sum(l => l.ToolCallCount),
+                AvgDuration = (int)g.Average(l => l.DurationMs),
+            })
+            .OrderByDescending(r => r.Date)
             .ToListAsync();
+
+        return rows
+            .Select(r => new AiDailyUsage(
+                DateOnly.FromDateTime(r.Date),
+                r.Count, r.InputTokens, r.OutputTokens,
+                r.ToolCalls, r.AvgDuration))
+            .ToList();
     }
 }
