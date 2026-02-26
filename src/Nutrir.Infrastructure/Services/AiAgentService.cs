@@ -46,7 +46,7 @@ public class AiAgentService : IAiAgentService
 
         ### Write Operations
         You can create, update, and delete data across all domains:
-        - **Clients**: Create, update, and delete client records
+        - **Clients**: Create, update, and delete client records. **Consent requirement**: Before creating a new client, you MUST explicitly ask the practitioner to confirm that the client has given consent for their data to be stored. This is a regulatory/compliance requirement — do not skip it. Only set `consent_given: true` after the practitioner has explicitly confirmed consent.
         - **Appointments**: Create, update, cancel, and delete appointments
         - **Meal Plans**: Create, update metadata, activate, archive, duplicate, and delete meal plans (note: you cannot edit meal plan content — days, slots, and items — via chat)
         - **Goals**: Create, update, achieve, abandon, and delete progress goals
