@@ -158,6 +158,7 @@
     private bool _userContextSet;
     private bool _historyLoaded;
     private CancellationTokenSource? _streamCts;
+    private bool _justCompletedTool;
 
     private static readonly string[] _starters =
     [
@@ -297,6 +298,7 @@
         var userText = _inputText.Trim();
         _inputText = "";
         _isStreaming = true;
+        _justCompletedTool = false;
         _streamCts = new CancellationTokenSource();
 
         _messages.Add(new ChatMessage { Role = "user", Text = userText });
@@ -319,12 +321,18 @@
 
                 if (evt.TextDelta is not null)
                 {
+                    if (_justCompletedTool && !string.IsNullOrEmpty(assistantMsg.Text))
+                    {
+                        assistantMsg.Text += "\n\n";
+                    }
                     assistantMsg.Text += evt.TextDelta;
                     assistantMsg.ToolStatus = null;
+                    _justCompletedTool = false;
                 }
                 else if (evt.ToolName is not null)
                 {
                     assistantMsg.ToolStatus = $"Looking up {FormatToolName(evt.ToolName)}...";
+                    _justCompletedTool = true;
                 }
                 else if (evt.IsComplete)
                 {

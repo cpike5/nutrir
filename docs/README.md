@@ -21,6 +21,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](infrastructure/architecture.md) | Three-layer architecture, DI patterns, middleware pipeline, UI structure, design system |
+| [Architecture Diagrams](infrastructure/architecture-diagrams.md) | Mermaid diagrams — C4 context/container, domain model ER, middleware pipeline, AI flow, dependency graph |
 | [Docker & Deployment](infrastructure/docker-and-deployment.md) | Docker Compose services, Dockerfile, environment variables, local dev setup |
 | [Database & EF Core](infrastructure/database.md) | PostgreSQL setup, AppDbContext, migrations, schema, conventions |
 | [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
@@ -47,6 +48,13 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Privacy Research](compliance/privacy-research.md) | Canadian privacy law analysis — PIPEDA, PHIPA, HIA, provincial frameworks, and technical recommendations |
 | [Compliance Requirements](compliance/requirements.md) | Actionable application-level requirements (v1 must-have, v2 should-have) distilled from the legal research |
 | [Consent Form](compliance/consent-form.md) | Nine-section PIPEDA-compliant intake consent form — PDF/DOCX generation, digital and physical signing workflows, `ConsentForm` entity |
+
+## Scheduling Documents
+
+| Document | Description |
+|----------|-------------|
+| [Calendar View](scheduling/calendar-view.md) | PoC spec — Radzen Blazor Scheduler integration for appointment calendar view |
+| [Domain Summary](scheduling/domain-summary.md) | Current state of the scheduling domain — entities, services, gaps |
 
 ## Architecture Decision Records
 
