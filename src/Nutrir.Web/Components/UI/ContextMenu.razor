@@ -1,0 +1,187 @@
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<nav @ref="_menuRef" class="ctx-menu" role="menu" aria-label="@AriaLabel">
+    <ul class="menu-list" role="none">
+        @foreach (var item in Items)
+        {
+            @RenderMenuItem(item)
+        }
+    </ul>
+</nav>
+
+@code {
+    private ElementReference _menuRef;
+    private DotNetObjectReference<ContextMenu>? _dotNetRef;
+    private bool _jsInitialized;
+
+    [Parameter] public List<ContextMenuItem> Items { get; set; } = [];
+    [Parameter] public EventCallback<string> OnAction { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Context menu";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                await JS.InvokeVoidAsync("contextMenu.init", _dotNetRef, _menuRef);
+                _jsInitialized = true;
+            }
+            catch (JSException) { }
+        }
+    }
+
+    public async Task OpenAsync(double x, double y)
+    {
+        if (!_jsInitialized) return;
+        try { await JS.InvokeVoidAsync("contextMenu.open", x, y); }
+        catch (JSException) { }
+    }
+
+    public async Task CloseAsync()
+    {
+        if (!_jsInitialized) return;
+        try { await JS.InvokeVoidAsync("contextMenu.close"); }
+        catch (JSException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnItemClicked(string actionId)
+    {
+        try { await JS.InvokeVoidAsync("contextMenu.close"); }
+        catch (JSException) { }
+        await OnAction.InvokeAsync(actionId);
+    }
+
+    [JSInvokable]
+    public async Task OnClickOutside()
+    {
+        try { await JS.InvokeVoidAsync("contextMenu.close"); }
+        catch (JSException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnEscapePressed()
+    {
+        try { await JS.InvokeVoidAsync("contextMenu.close"); }
+        catch (JSException) { }
+    }
+
+    private RenderFragment RenderMenuItem(ContextMenuItem item) => builder =>
+    {
+        switch (item.Type)
+        {
+            case ContextMenuItemType.Separator:
+                builder.OpenElement(0, "li");
+                builder.AddAttribute(1, "class", "menu-separator");
+                builder.AddAttribute(2, "role", "separator");
+                builder.CloseElement();
+                break;
+
+            case ContextMenuItemType.SectionLabel:
+                builder.OpenElement(0, "li");
+                builder.AddAttribute(1, "class", "menu-section-label");
+                builder.AddContent(2, item.Label);
+                builder.CloseElement();
+                break;
+
+            case ContextMenuItemType.Action:
+                builder.OpenElement(0, "li");
+
+                var actionCss = "menu-item";
+                if (item.IsDanger) actionCss += " danger";
+                if (item.IsDisabled) actionCss += " disabled";
+                builder.AddAttribute(1, "class", actionCss);
+                builder.AddAttribute(2, "role", "menuitem");
+                builder.AddAttribute(3, "tabindex", -1);
+                builder.AddAttribute(4, "data-action", item.Id);
+
+                if (item.Icon is not null)
+                {
+                    builder.OpenElement(5, "span");
+                    builder.AddAttribute(6, "class", "item-icon");
+                    builder.AddContent(7, item.Icon);
+                    builder.CloseElement();
+                }
+
+                builder.OpenElement(8, "span");
+                builder.AddAttribute(9, "class", "item-label");
+                builder.AddContent(10, item.Label);
+                builder.CloseElement();
+
+                if (item.ShortcutText is not null)
+                {
+                    builder.OpenElement(11, "span");
+                    builder.AddAttribute(12, "class", "item-shortcut");
+                    builder.AddContent(13, item.ShortcutText);
+                    builder.CloseElement();
+                }
+
+                builder.CloseElement();
+                break;
+
+            case ContextMenuItemType.Submenu:
+                builder.OpenElement(0, "li");
+
+                var submenuCss = "menu-item has-submenu";
+                if (item.IsDisabled) submenuCss += " disabled";
+                builder.AddAttribute(1, "class", submenuCss);
+                builder.AddAttribute(2, "role", "menuitem");
+                builder.AddAttribute(3, "tabindex", -1);
+                builder.AddAttribute(4, "aria-haspopup", "true");
+                builder.AddAttribute(5, "aria-expanded", "false");
+
+                if (item.Icon is not null)
+                {
+                    builder.OpenElement(6, "span");
+                    builder.AddAttribute(7, "class", "item-icon");
+                    builder.AddContent(8, item.Icon);
+                    builder.CloseElement();
+                }
+
+                builder.OpenElement(9, "span");
+                builder.AddAttribute(10, "class", "item-label");
+                builder.AddContent(11, item.Label);
+                builder.CloseElement();
+
+                builder.OpenElement(12, "span");
+                builder.AddAttribute(13, "class", "item-arrow");
+                builder.AddMarkupContent(14, "&#x276F;");
+                builder.CloseElement();
+
+                // Submenu wrapper with nested children
+                builder.OpenElement(15, "div");
+                builder.AddAttribute(16, "class", "submenu-wrapper");
+                builder.AddAttribute(17, "role", "menu");
+                builder.AddAttribute(18, "aria-label", $"{item.Label} submenu");
+
+                builder.OpenElement(19, "ul");
+                builder.AddAttribute(20, "class", "menu-list");
+                builder.AddAttribute(21, "role", "none");
+
+                var seq = 22;
+                foreach (var child in item.Children)
+                {
+                    builder.AddContent(seq++, RenderMenuItem(child));
+                }
+
+                builder.CloseElement(); // ul
+                builder.CloseElement(); // div.submenu-wrapper
+                builder.CloseElement(); // li
+                break;
+        }
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsInitialized)
+        {
+            try { await JS.InvokeVoidAsync("contextMenu.dispose"); }
+            catch (JSException) { }
+        }
+        _dotNetRef?.Dispose();
+    }
+}

@@ -1,0 +1,169 @@
+/* ─────────────────────────────────────────────────────────────
+   Context Menu — Root container
+───────────────────────────────────────────────────────────── */
+.ctx-menu {
+    position: fixed;
+    z-index: 9000;
+    display: none;
+    min-width: 220px;
+}
+
+.ctx-menu.open {
+    display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Menu list
+───────────────────────────────────────────────────────────── */
+.menu-list {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+    min-width: 220px;
+    animation: ctx-menu-appear 0.12s ease;
+}
+
+@keyframes ctx-menu-appear {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Submenus slide in from the side */
+.submenu-wrapper .menu-list {
+    animation: ctx-submenu-appear 0.12s ease;
+}
+
+@keyframes ctx-submenu-appear {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Menu items
+───────────────────────────────────────────────────────────── */
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--color-text);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.08s ease, color 0.08s ease;
+    white-space: nowrap;
+    list-style: none;
+}
+
+.menu-item:hover,
+.menu-item.hovered {
+    background: var(--color-bg-alt);
+}
+
+.menu-item.active-submenu {
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+}
+
+.menu-item .item-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 0.9375rem;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.menu-item .item-label {
+    flex: 1;
+}
+
+.menu-item .item-shortcut {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
+}
+
+.menu-item .item-arrow {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    margin-left: 4px;
+    transition: transform 0.1s ease;
+}
+
+.menu-item.active-submenu .item-arrow {
+    transform: translateX(2px);
+}
+
+/* Danger variant */
+.menu-item.danger {
+    color: var(--color-error);
+}
+
+.menu-item.danger .item-icon {
+    opacity: 1;
+}
+
+.menu-item.danger:hover,
+.menu-item.danger.hovered {
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+/* Disabled variant */
+.menu-item.disabled {
+    color: var(--color-text-muted);
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Separators
+───────────────────────────────────────────────────────────── */
+.menu-separator {
+    height: 1px;
+    background: var(--color-border);
+    margin: 4px 8px;
+    list-style: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Section labels
+───────────────────────────────────────────────────────────── */
+.menu-section-label {
+    padding: 6px 10px 2px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    list-style: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Submenu positioning wrapper
+───────────────────────────────────────────────────────────── */
+.submenu-wrapper {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    padding-left: 4px;
+    display: none;
+    z-index: 1;
+}
+
+.submenu-wrapper.open {
+    display: block;
+}
+
+/* Flip to left when near right edge */
+.submenu-wrapper.flip-left {
+    left: auto;
+    right: 100%;
+    padding-left: 0;
+    padding-right: 4px;
+}
