@@ -67,7 +67,9 @@ public class AuditLogGenerator
         foreach (var appointment in appointments)
         {
             entries.Add(CreateEntry(
-                timestamp: appointment.CreatedAt,
+                timestamp: appointment.CreatedAt > DateTime.UtcNow
+                    ? DateTime.UtcNow.AddMinutes(-_faker.Random.Int(5, 120))
+                    : appointment.CreatedAt,
                 action: "AppointmentCreated",
                 entityType: "Appointment",
                 entityId: appointment.Id.ToString(),
@@ -79,7 +81,9 @@ public class AuditLogGenerator
         foreach (var mealPlan in mealPlans)
         {
             entries.Add(CreateEntry(
-                timestamp: mealPlan.CreatedAt,
+                timestamp: mealPlan.CreatedAt > DateTime.UtcNow
+                    ? DateTime.UtcNow.AddMinutes(-_faker.Random.Int(5, 120))
+                    : mealPlan.CreatedAt,
                 action: "MealPlanCreated",
                 entityType: "MealPlan",
                 entityId: mealPlan.Id.ToString(),

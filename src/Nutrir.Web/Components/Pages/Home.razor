@@ -305,6 +305,7 @@ else
     {
         var elapsed = DateTime.UtcNow - utcTimestamp;
 
+        if (elapsed.TotalSeconds < 0) return "now";
         if (elapsed.TotalMinutes < 1) return "now";
         if (elapsed.TotalMinutes < 60) return $"{(int)elapsed.TotalMinutes}m";
         if (elapsed.TotalHours < 24) return $"{(int)elapsed.TotalHours}h";
