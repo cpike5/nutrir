@@ -10,7 +10,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
-<div class="cc-ai-panel @(_isOpen ? "cc-ai-panel--open" : "")">
+<div class="cc-ai-panel @(_isOpen ? "cc-ai-panel--open" : "") @(_isWide ? "cc-ai-panel--wide" : "")">
     <div class="cc-ai-header">
         <div class="cc-ai-header-left">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -28,6 +28,24 @@
                     </svg>
                 </button>
             }
+            <button class="cc-ai-header-btn cc-ai-wide-toggle @(_isWide ? "cc-ai-wide-toggle--active" : "")" title="@(_isWide ? "Narrow panel" : "Widen panel")" @onclick="ToggleWide">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    @if (_isWide)
+                    {
+                        <polyline points="15 3 9 3"/><polyline points="15 21 9 21"/>
+                        <line x1="20" y1="12" x2="15" y2="8"/><line x1="20" y1="12" x2="15" y2="16"/>
+                        <line x1="4" y1="12" x2="9" y2="8"/><line x1="4" y1="12" x2="9" y2="16"/>
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                    }
+                    else
+                    {
+                        <polyline points="4 3 9 3"/><polyline points="4 21 9 21"/>
+                        <line x1="4" y1="12" x2="9" y2="8"/><line x1="4" y1="12" x2="9" y2="16"/>
+                        <line x1="20" y1="12" x2="15" y2="8"/><line x1="20" y1="12" x2="15" y2="16"/>
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                    }
+                </svg>
+            </button>
             <button class="cc-ai-header-btn" title="Close panel" @onclick="Close">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -132,6 +150,7 @@
 
 @code {
     private bool _isOpen;
+    private bool _isWide;
     private bool _isStreaming;
     private string _inputText = "";
     private readonly List<ChatMessage> _messages = [];
@@ -165,6 +184,13 @@
         if (firstRender)
         {
             _jsInitialized = true;
+
+            try
+            {
+                _isWide = await JS.InvokeAsync<bool>("aiPanel.getStoredWideState");
+                StateHasChanged();
+            }
+            catch (JSException) { }
 
             if (!_userContextSet)
             {
@@ -238,6 +264,16 @@
     {
         _streamCts?.Cancel();
         PanelState.Close();
+    }
+
+    private async Task ToggleWide()
+    {
+        _isWide = !_isWide;
+        if (_jsInitialized)
+        {
+            try { await JS.InvokeVoidAsync("aiPanel.saveWideState", _isWide); }
+            catch (JSException) { }
+        }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
