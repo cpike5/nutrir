@@ -130,14 +130,39 @@
     </div>
 
     <div class="cc-ai-input-area">
+        @if (_showSuggestions && _filteredSuggestions.Count > 0)
+        {
+            <div class="cc-ai-suggestions" role="listbox" id="ai-suggestions">
+                @for (var i = 0; i < _filteredSuggestions.Count; i++)
+                {
+                    var idx = i;
+                    var isActive = i == _selectedSuggestionIndex;
+                    <div class="cc-ai-suggestion @(isActive ? "cc-ai-suggestion--active" : "")"
+                         role="option"
+                         id="ai-suggestion-@idx"
+                         aria-selected="@isActive"
+                         @onclick="() => SelectSuggestion(idx)"
+                         @onmouseenter="() => _selectedSuggestionIndex = idx">
+                        @_filteredSuggestions[idx]
+                    </div>
+                }
+            </div>
+        }
         <div class="cc-ai-input-row">
             <input id="ai-input"
                    type="text"
                    placeholder="Ask about clients, appointments, meal plans..."
                    autocomplete="off"
-                   @bind="_inputText"
-                   @bind:event="oninput"
+                   value="@_inputText"
+                   @oninput="OnInputChanged"
                    @onkeydown="HandleKeyDown"
+                   @onkeydown:preventDefault="_shouldPreventDefault"
+                   @onfocusout="OnInputFocusOut"
+                   role="combobox"
+                   aria-autocomplete="list"
+                   aria-expanded="@(_showSuggestions && _filteredSuggestions.Count > 0)"
+                   aria-controls="ai-suggestions"
+                   aria-activedescendant="@(_selectedSuggestionIndex >= 0 ? $"ai-suggestion-{_selectedSuggestionIndex}" : null)"
                    disabled="@_isStreaming" />
             <button class="cc-ai-send-btn" @onclick="SendMessage" disabled="@(_isStreaming || string.IsNullOrWhiteSpace(_inputText))">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -160,6 +185,13 @@
     private CancellationTokenSource? _streamCts;
     private bool _justCompletedTool;
 
+    // Suggestion state
+    private List<string> _filteredSuggestions = [];
+    private int _selectedSuggestionIndex = -1;
+    private bool _showSuggestions;
+    private Timer? _debounceTimer;
+    private bool _shouldPreventDefault;
+
     private static readonly string[] _starters =
     [
         "What appointments are today?",
@@ -171,6 +203,59 @@
         "Create a goal for a client",
         "Log a progress entry",
     ];
+
+    private static readonly string[] _generalSuggestions =
+    [
+        "What appointments are today?",
+        "Give me a practice overview",
+        "Create a new client",
+        "Schedule an appointment",
+        "Search for a client by name",
+        "List draft meal plans needing review",
+        "Create a goal for a client",
+        "Log a progress entry",
+        "Update a client",
+        "List all appointments",
+        "Cancel an appointment",
+        "Create a meal plan",
+        "Duplicate a meal plan",
+        "Show dashboard overview",
+        "List all goals",
+        "Log a progress entry for a client",
+        "Show all clients",
+        "Reschedule an appointment",
+        "Archive a meal plan",
+        "Activate a meal plan",
+        "Show upcoming appointments",
+        "List overdue goals",
+        "Search appointments by date",
+        "Create an appointment for a client",
+        "Show recent progress entries",
+    ];
+
+    private static readonly Dictionary<string, string[]> _contextSuggestions = new()
+    {
+        ["client"] =
+        [
+            "Show this client's appointments",
+            "Create a meal plan for this client",
+            "Show this client's goals",
+            "Create a goal for this client",
+            "Log a progress entry for this client",
+            "Schedule an appointment for this client",
+        ],
+        ["appointment"] =
+        [
+            "Reschedule this appointment",
+            "Cancel this appointment",
+        ],
+        ["meal_plan"] =
+        [
+            "Duplicate this meal plan",
+            "Activate this meal plan",
+            "Archive this meal plan",
+        ],
+    };
 
     protected override void OnInitialized()
     {
@@ -276,10 +361,126 @@
         }
     }
 
+    private void OnInputChanged(ChangeEventArgs e)
+    {
+        _inputText = e.Value?.ToString() ?? "";
+        _selectedSuggestionIndex = -1;
+
+        if (string.IsNullOrWhiteSpace(_inputText) || _isStreaming)
+        {
+            HideSuggestions();
+            return;
+        }
+
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                UpdateSuggestions();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void UpdateSuggestions()
+    {
+        var query = _inputText.Trim();
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            HideSuggestions();
+            return;
+        }
+
+        var corpus = new List<string>();
+
+        // Add context-aware suggestions first (higher priority)
+        var (entityType, _) = ParsePageContext(Navigation.Uri);
+        if (entityType is not null && _contextSuggestions.TryGetValue(entityType, out var contextItems))
+        {
+            corpus.AddRange(contextItems);
+        }
+
+        corpus.AddRange(_generalSuggestions);
+
+        _filteredSuggestions = corpus
+            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToList();
+
+        _showSuggestions = _filteredSuggestions.Count > 0;
+        _selectedSuggestionIndex = -1;
+    }
+
+    private void HideSuggestions()
+    {
+        _showSuggestions = false;
+        _filteredSuggestions.Clear();
+        _selectedSuggestionIndex = -1;
+        _shouldPreventDefault = false;
+    }
+
+    private async Task SelectSuggestion(int index)
+    {
+        if (index >= 0 && index < _filteredSuggestions.Count)
+        {
+            _inputText = _filteredSuggestions[index];
+            HideSuggestions();
+            try { await JS.InvokeVoidAsync("aiPanel.focusInput", "ai-input"); }
+            catch (JSException) { }
+        }
+    }
+
+    private async Task OnInputFocusOut()
+    {
+        // Small delay to allow click on suggestion to register before hiding
+        await Task.Delay(200);
+        HideSuggestions();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
+        _shouldPreventDefault = false;
+
+        if (_showSuggestions && _filteredSuggestions.Count > 0)
+        {
+            switch (e.Key)
+            {
+                case "ArrowDown":
+                    _selectedSuggestionIndex = (_selectedSuggestionIndex + 1) % _filteredSuggestions.Count;
+                    _shouldPreventDefault = true;
+                    return;
+                case "ArrowUp":
+                    _selectedSuggestionIndex = _selectedSuggestionIndex <= 0
+                        ? _filteredSuggestions.Count - 1
+                        : _selectedSuggestionIndex - 1;
+                    _shouldPreventDefault = true;
+                    return;
+                case "Tab":
+                    if (_selectedSuggestionIndex >= 0)
+                    {
+                        _inputText = _filteredSuggestions[_selectedSuggestionIndex];
+                        HideSuggestions();
+                        _shouldPreventDefault = true;
+                    }
+                    else if (_filteredSuggestions.Count > 0)
+                    {
+                        _inputText = _filteredSuggestions[0];
+                        HideSuggestions();
+                        _shouldPreventDefault = true;
+                    }
+                    return;
+                case "Escape":
+                    HideSuggestions();
+                    return;
+            }
+        }
+
         if (e.Key == "Enter" && !_isStreaming && !string.IsNullOrWhiteSpace(_inputText))
         {
+            HideSuggestions();
             await SendMessage();
         }
     }
@@ -287,6 +488,7 @@
     private Task SendStarter(string text)
     {
         _inputText = text;
+        HideSuggestions();
         return SendMessage();
     }
 
@@ -297,6 +499,7 @@
 
         var userText = _inputText.Trim();
         _inputText = "";
+        HideSuggestions();
         _isStreaming = true;
         _justCompletedTool = false;
         _streamCts = new CancellationTokenSource();
@@ -669,6 +872,7 @@
     {
         PanelState.OnToggle -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
+        _debounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
     }
@@ -677,6 +881,7 @@
     {
         PanelState.OnToggle -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
+        _debounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
         return ValueTask.CompletedTask;
