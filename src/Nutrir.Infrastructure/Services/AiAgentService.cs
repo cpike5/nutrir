@@ -255,7 +255,7 @@ public class AiAgentService : IAiAgentService
                     {
                         // Write tool — requires user confirmation
                         var inputElement = JsonSerializer.SerializeToElement(toolUse.Input);
-                        var description = AiToolExecutor.BuildConfirmationDescription(toolUse.Name, inputElement);
+                        var description = await _toolExecutor.BuildConfirmationDescriptionAsync(toolUse.Name, inputElement);
 
                         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         _pendingConfirmations[toolUse.ID] = tcs;
