@@ -425,7 +425,10 @@
 
     private void OnEntityChanged(EntityChangeNotification notification)
     {
-        if (notification.EntityType != "Client" || notification.EntityId != Id)
+        var isThisClient = notification.EntityType == "Client" && notification.EntityId == Id;
+        var isRelatedEntity = notification.EntityType is "MealPlan" or "Appointment";
+
+        if (!isThisClient && !isRelatedEntity)
             return;
 
         _ = InvokeAsync(async () =>
