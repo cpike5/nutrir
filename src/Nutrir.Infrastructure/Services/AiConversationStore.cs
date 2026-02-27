@@ -212,6 +212,9 @@ public class AiConversationStore : IAiConversationStore
                 return null;
 
             var contentBlocks = new List<ContentBlockParam>();
+            var hasToolResult = false;
+            var hasToolUse = false;
+
             foreach (var block in blocks)
             {
                 switch (block.Type)
@@ -220,6 +223,7 @@ public class AiConversationStore : IAiConversationStore
                         contentBlocks.Add(new TextBlockParam { Text = block.Text ?? "" });
                         break;
                     case "tool_use":
+                        hasToolUse = true;
                         var input = !string.IsNullOrEmpty(block.Input)
                             ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(block.Input)
                                 ?? new Dictionary<string, JsonElement>()
@@ -232,12 +236,25 @@ public class AiConversationStore : IAiConversationStore
                         });
                         break;
                     case "tool_result":
+                        hasToolResult = true;
                         contentBlocks.Add(new ToolResultBlockParam(block.ToolUseId ?? "")
                         {
                             Content = block.Content ?? ""
                         });
                         break;
                 }
+            }
+
+            // Safeguard: API requires tool_result in user messages, tool_use in assistant messages
+            if (hasToolResult && msg.Role != "user")
+            {
+                _logger.LogWarning("Message {Id} has tool_result blocks but stored role '{Role}' — correcting to 'user'", msg.Id, msg.Role);
+                role = Role.User;
+            }
+            else if (hasToolUse && msg.Role != "assistant")
+            {
+                _logger.LogWarning("Message {Id} has tool_use blocks but stored role '{Role}' — correcting to 'assistant'", msg.Id, msg.Role);
+                role = Role.Assistant;
             }
 
             return new MessageParam

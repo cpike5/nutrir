@@ -206,6 +206,22 @@ public class AiAgentService : IAiAgentService
                 Tools = tools.Select(t => (ToolUnion)t).ToArray(),
             };
 
+            // Log message summary for debugging API errors
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                for (int m = 0; m < _conversationHistory.Count; m++)
+                {
+                    var h = _conversationHistory[m];
+                    var contentTypes = "string";
+                    if (h.Content.TryPickContentBlockParams(out var blocks))
+                        contentTypes = string.Join("+", blocks.Select(b =>
+                            b.TryPickText(out _) ? "text" :
+                            b.TryPickToolUse(out _) ? "tool_use" :
+                            b.TryPickToolResult(out _) ? "tool_result" : "unknown"));
+                    _logger.LogDebug("messages[{Index}]: role={Role}, content=[{ContentTypes}]", m, h.Role, contentTypes);
+                }
+            }
+
             // Stream the response, collecting content blocks and yielding text deltas
             var result = await StreamAndCollectAsync(client, parameters, cancellationToken);
 
