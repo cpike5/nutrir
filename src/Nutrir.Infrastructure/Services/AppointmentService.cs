@@ -11,17 +11,20 @@ namespace Nutrir.Infrastructure.Services;
 public class AppointmentService : IAppointmentService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
         AppDbContext dbContext,
+        IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         INotificationDispatcher notificationDispatcher,
         ILogger<AppointmentService> logger)
     {
         _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
@@ -65,6 +68,91 @@ public class AppointmentService : IAppointmentService
             .ToListAsync();
 
         return await MapToDtoListAsync(entities);
+    }
+
+    public async Task<PagedResult<AppointmentDto>> GetPagedAsync(AppointmentListQuery query)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var page = Math.Max(1, query.Page);
+        var pageSize = query.PageSize;
+
+        var dbQuery = db.Appointments.AsQueryable();
+
+        // Date range filters
+        if (query.From.HasValue)
+            dbQuery = dbQuery.Where(a => a.StartTime >= query.From.Value);
+
+        if (query.To.HasValue)
+            dbQuery = dbQuery.Where(a => a.StartTime <= query.To.Value);
+
+        // Status filter
+        if (query.StatusFilter.HasValue)
+            dbQuery = dbQuery.Where(a => a.Status == query.StatusFilter.Value);
+
+        var totalCount = await dbQuery.CountAsync();
+
+        // Determine if sorting by a column that requires in-memory sort
+        var sortColumn = query.SortColumn?.ToLowerInvariant();
+        var isDescending = query.SortDirection == SortDirection.Descending;
+        var requiresInMemorySort = sortColumn == "client";
+
+        // Apply DB-level sorting for supported columns
+        if (!requiresInMemorySort)
+        {
+            dbQuery = sortColumn switch
+            {
+                "date" => isDescending
+                    ? dbQuery.OrderByDescending(a => a.StartTime)
+                    : dbQuery.OrderBy(a => a.StartTime),
+                "status" => isDescending
+                    ? dbQuery.OrderByDescending(a => a.Status)
+                    : dbQuery.OrderBy(a => a.Status),
+                _ => dbQuery.OrderBy(a => a.StartTime)
+            };
+        }
+        else
+        {
+            // Apply default ordering for consistent Skip/Take before in-memory re-sort
+            dbQuery = dbQuery.OrderBy(a => a.StartTime);
+        }
+
+        var entities = await dbQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        // Batch-resolve client names (same pattern as MapToDtoListAsync)
+        var clientIds = entities.Select(a => a.ClientId).Distinct().ToList();
+        var clients = await db.Clients
+            .IgnoreQueryFilters()
+            .Where(c => clientIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, c => new { c.FirstName, c.LastName });
+
+        // Batch-resolve nutritionist names
+        var nutritionistIds = entities.Select(a => a.NutritionistId).Distinct().ToList();
+        var nutritionists = await db.Users
+            .Where(u => nutritionistIds.Contains(u.Id))
+            .OfType<ApplicationUser>()
+            .ToDictionaryAsync(u => u.Id, u =>
+                !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : $"{u.FirstName} {u.LastName}".Trim());
+
+        var dtos = entities.Select(e =>
+        {
+            var client = clients.GetValueOrDefault(e.ClientId);
+            var nutritionistName = nutritionists.GetValueOrDefault(e.NutritionistId);
+            return MapToDto(e, client?.FirstName ?? "", client?.LastName ?? "", nutritionistName);
+        }).ToList();
+
+        // In-memory sort for client column (only within the page)
+        if (requiresInMemorySort)
+        {
+            dtos = isDescending
+                ? dtos.OrderByDescending(d => d.ClientLastName).ThenByDescending(d => d.ClientFirstName).ToList()
+                : dtos.OrderBy(d => d.ClientLastName).ThenBy(d => d.ClientFirstName).ToList();
+        }
+
+        return new PagedResult<AppointmentDto>(dtos, totalCount, page, pageSize);
     }
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId)

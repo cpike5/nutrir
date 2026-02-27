@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
@@ -29,45 +30,101 @@
         </Button>
     </div>
 
-    <div class="toolbar" role="toolbar" aria-label="Client list controls">
-        <div class="search-wrapper" role="search">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="7" cy="7" r="4.5"/>
-                <path d="m10.5 10.5 3 3"/>
-            </svg>
-            <label for="client-search" class="sr-only">Search clients</label>
-            <input type="search"
-                   id="client-search"
-                   class="search-input"
-                   placeholder="Search by name, email, or phone..."
-                   autocomplete="off"
-                   value="@_searchTerm"
-                   @oninput="OnSearchInput" />
-        </div>
-
-        <div class="filter-group">
-            <label for="consent-filter" class="filter-label">Consent</label>
-            <select id="consent-filter" class="filter-select" value="@_consentFilter" @onchange="OnConsentFilterChanged">
-                <option value="">All</option>
-                <option value="Given">Given</option>
-                <option value="Pending">Pending</option>
-            </select>
-        </div>
-
-        <span class="client-count" aria-live="polite">
-            <strong>@(FilteredClients.Count)</strong> clients
-        </span>
-    </div>
-
-    @if (_isLoading)
-    {
-        <div class="table-card">
-            <p class="clients-loading">Loading clients...</p>
-        </div>
-    }
-    else if (_clients is null || _clients.Count == 0)
-    {
-        <div class="table-card">
+    <DataGrid TItem="ClientDto"
+              Items="@_result?.Items"
+              TotalCount="@(_result?.TotalCount ?? 0)"
+              Page="@_query.Page"
+              PageSize="@_query.PageSize"
+              SortColumn="@_query.SortColumn"
+              SortDirection="@_query.SortDirection"
+              OnQueryChanged="HandleQueryChanged"
+              IsLoading="@_isLoading"
+              ShowRealtimeBanner="@_refreshedByRealTime">
+        <ToolbarContent>
+            <div class="search-wrapper" role="search">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="7" cy="7" r="4.5"/>
+                    <path d="m10.5 10.5 3 3"/>
+                </svg>
+                <label for="client-search" class="sr-only">Search clients</label>
+                <input type="search"
+                       id="client-search"
+                       class="search-input"
+                       placeholder="Search by name, email, or phone..."
+                       autocomplete="off"
+                       value="@_query.SearchTerm"
+                       @oninput="OnSearchInput" />
+            </div>
+            <div class="filter-group">
+                <label for="consent-filter" class="filter-label">Consent</label>
+                <select id="consent-filter" class="filter-select" @onchange="OnConsentFilterChanged">
+                    <option value="">All</option>
+                    <option value="Given" selected="@(_query.ConsentFilter == "Given")">Given</option>
+                    <option value="Pending" selected="@(_query.ConsentFilter == "Pending")">Pending</option>
+                </select>
+            </div>
+            <span class="client-count" aria-live="polite">
+                <strong>@(_result?.TotalCount ?? 0)</strong> clients
+            </span>
+        </ToolbarContent>
+        <Columns>
+            <DataGridColumn TItem="ClientDto" Key="name" Header="Client" Sortable>
+                <CellTemplate Context="client">
+                    <div class="client-identity">
+                        <div class="client-avatar" aria-hidden="true">@GetInitials(client)</div>
+                        <div class="client-info">
+                            <div class="client-name">@client.FirstName @client.LastName</div>
+                            <div class="client-email">@(client.Email ?? "—")</div>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="phone" Header="Phone" HideBelow="hide-below-860">
+                <CellTemplate Context="client">
+                    <span class="cell-phone">@(PhoneFormatter.FormatOrNull(client.Phone) ?? "—")</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="nutritionist" Header="Nutritionist" HideBelow="hide-below-860">
+                <CellTemplate Context="client">
+                    <span class="cell-nutritionist">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="consent" Header="Consent" Sortable HideBelow="hide-below-600">
+                <CellTemplate Context="client">
+                    @if (client.ConsentGiven)
+                    {
+                        <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Given</Badge>
+                    }
+                    else
+                    {
+                        <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> Pending</Badge>
+                    }
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="lastappointment" Header="Last Appt" Sortable HideBelow="hide-below-860">
+                <CellTemplate Context="client">
+                    <span class="cell-date">@(client.LastAppointmentDate?.ToString("MMM d, yyyy") ?? "—")</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="created" Header="Created" Sortable HideBelow="hide-below-600">
+                <CellTemplate Context="client">
+                    <span class="cell-date">@client.CreatedAt.ToString("MMM d, yyyy")</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="ClientDto" Key="actions" Header="">
+                <CellTemplate Context="client">
+                    <div class="row-actions">
+                        <a href="clients/@client.Id" class="btn-icon" aria-label="View @client.FirstName @client.LastName">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
+                        </a>
+                        <a href="clients/@client.Id/edit" class="btn-icon" aria-label="Edit @client.FirstName @client.LastName">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                        </a>
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+        </Columns>
+        <EmptyContent>
             <div class="empty-state" role="status">
                 <svg class="empty-state-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="32" cy="24" r="10" stroke-opacity="0.5"/>
@@ -76,179 +133,75 @@
                 </svg>
                 <p class="empty-state-title">No clients found</p>
                 <p class="empty-state-desc">
-                    @if (string.IsNullOrEmpty(_searchTerm))
+                    @if (string.IsNullOrEmpty(_query.SearchTerm) && _query.ConsentFilter is null)
                     {
                         <span>Get started by adding your first client.</span>
                     }
                     else
                     {
-                        <span>Try adjusting your search criteria.</span>
+                        <span>Try adjusting your search or filter criteria.</span>
                     }
                 </p>
             </div>
-        </div>
-    }
-    else if (FilteredClients.Count == 0)
-    {
-        <div class="table-card">
-            <div class="empty-state" role="status">
-                <svg class="empty-state-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="32" cy="24" r="10" stroke-opacity="0.5"/>
-                    <path d="M14 54c0-8 7-14 18-14s18 6 18 14" stroke-opacity="0.5"/>
-                    <path d="M44 12l8 8M52 12l-8 8" stroke-opacity="0.35"/>
-                </svg>
-                <p class="empty-state-title">No matching clients</p>
-                <p class="empty-state-desc">
-                    <span>Try adjusting your filter or search criteria.</span>
-                </p>
-            </div>
-        </div>
-    }
-    else
-    {
-        @if (_refreshedByRealTime)
-        {
-            <div class="realtime-banner" role="status" aria-live="polite">
-                <span class="realtime-dot"></span>
-                Updated in real time
-            </div>
-        }
-        <div class="table-card">
-            <table class="clients-table" role="grid">
-                <thead>
-                    <tr>
-                        <th scope="col" class="col-client sortable" aria-sort="@GetAriaSort("Name")" tabindex="0"
-                            @onclick="@(() => OnSortColumn("Name"))" @onkeydown="@(e => OnSortKeyDown(e, "Name"))">
-                            Client <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Name")</span>
-                        </th>
-                        <th scope="col" class="col-phone">Phone</th>
-                        <th scope="col" class="col-nutritionist sortable" aria-sort="@GetAriaSort("Nutritionist")" tabindex="0"
-                            @onclick="@(() => OnSortColumn("Nutritionist"))" @onkeydown="@(e => OnSortKeyDown(e, "Nutritionist"))">
-                            Nutritionist <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Nutritionist")</span>
-                        </th>
-                        <th scope="col" class="col-consent sortable" aria-sort="@GetAriaSort("Consent")" tabindex="0"
-                            @onclick="@(() => OnSortColumn("Consent"))" @onkeydown="@(e => OnSortKeyDown(e, "Consent"))">
-                            Consent <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Consent")</span>
-                        </th>
-                        <th scope="col" class="col-last-appt sortable" aria-sort="@GetAriaSort("LastAppointment")" tabindex="0"
-                            @onclick="@(() => OnSortColumn("LastAppointment"))" @onkeydown="@(e => OnSortKeyDown(e, "LastAppointment"))">
-                            Last Appt <span class="sort-indicator" aria-hidden="true">@GetSortIcon("LastAppointment")</span>
-                        </th>
-                        <th scope="col" class="col-date sortable" aria-sort="@GetAriaSort("Created")" tabindex="0"
-                            @onclick="@(() => OnSortColumn("Created"))" @onkeydown="@(e => OnSortKeyDown(e, "Created"))">
-                            Created <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Created")</span>
-                        </th>
-                        <th scope="col"><span class="sr-only">Actions</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var client in FilteredClients)
-                    {
-                        <tr>
-                            <td>
-                                <div class="client-identity">
-                                    <div class="client-avatar" aria-hidden="true">@GetInitials(client)</div>
-                                    <div class="client-info">
-                                        <div class="client-name">@client.FirstName @client.LastName</div>
-                                        <div class="client-email">@(client.Email ?? "—")</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="col-phone cell-phone">@(PhoneFormatter.FormatOrNull(client.Phone) ?? "—")</td>
-                            <td class="col-nutritionist cell-nutritionist">@(client.PrimaryNutritionistName ?? client.PrimaryNutritionistId)</td>
-                            <td class="col-consent cell-consent">
-                                @if (client.ConsentGiven)
-                                {
-                                    <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Given</Badge>
-                                }
-                                else
-                                {
-                                    <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> Pending</Badge>
-                                }
-                            </td>
-                            <td class="col-last-appt cell-date">@(client.LastAppointmentDate?.ToString("MMM d, yyyy") ?? "—")</td>
-                            <td class="col-date cell-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a href="clients/@client.Id" class="btn-icon" aria-label="View @client.FirstName @client.LastName">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
-                                    </a>
-                                    <a href="clients/@client.Id/edit" class="btn-icon" aria-label="Edit @client.FirstName @client.LastName">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+        </EmptyContent>
+    </DataGrid>
 </div>
 
 @code {
-    private List<ClientDto>? _clients;
-    private string? _searchTerm;
+    private PagedResult<ClientDto>? _result;
+    private ClientListQuery _query = new();
     private bool _isLoading = true;
     private bool _refreshedByRealTime;
     private System.Threading.Timer? _debounceTimer;
     private System.Threading.Timer? _notificationDebounceTimer;
 
-    private string? _sortColumn;
-    private bool _sortAscending = true;
-    private string _consentFilter = "";
-
-    private IReadOnlyList<ClientDto> FilteredClients
-    {
-        get
-        {
-            if (_clients is null || _clients.Count == 0)
-                return Array.Empty<ClientDto>();
-
-            IEnumerable<ClientDto> result = _clients;
-
-            // Apply consent filter
-            if (_consentFilter == "Given")
-                result = result.Where(c => c.ConsentGiven);
-            else if (_consentFilter == "Pending")
-                result = result.Where(c => !c.ConsentGiven);
-
-            // Apply sort
-            if (!string.IsNullOrEmpty(_sortColumn))
-            {
-                result = (_sortColumn, _sortAscending) switch
-                {
-                    ("Name", true) => result.OrderBy(c => c.LastName).ThenBy(c => c.FirstName),
-                    ("Name", false) => result.OrderByDescending(c => c.LastName).ThenByDescending(c => c.FirstName),
-                    ("Nutritionist", true) => result.OrderBy(c => c.PrimaryNutritionistName ?? string.Empty),
-                    ("Nutritionist", false) => result.OrderByDescending(c => c.PrimaryNutritionistName ?? string.Empty),
-                    ("Consent", true) => result.OrderBy(c => c.ConsentGiven),
-                    ("Consent", false) => result.OrderByDescending(c => c.ConsentGiven),
-                    ("LastAppointment", true) => result.OrderBy(c => c.LastAppointmentDate ?? DateTime.MinValue),
-                    ("LastAppointment", false) => result.OrderByDescending(c => c.LastAppointmentDate ?? DateTime.MinValue),
-                    ("Created", true) => result.OrderBy(c => c.CreatedAt),
-                    ("Created", false) => result.OrderByDescending(c => c.CreatedAt),
-                    _ => result
-                };
-            }
-
-            return result.ToList();
-        }
-    }
-
     protected override async Task OnInitializedAsync()
     {
         NotificationService.OnEntityChanged += OnEntityChanged;
         await NotificationService.StartAsync();
-        await LoadClientsAsync();
+        await LoadDataAsync();
     }
 
-    private async Task LoadClientsAsync()
+    private async Task LoadDataAsync()
     {
         _refreshedByRealTime = false;
         _isLoading = true;
-        _clients = await ClientService.GetListAsync(_searchTerm);
+        _result = await ClientService.GetPagedAsync(_query);
         _isLoading = false;
+    }
+
+    private async Task HandleQueryChanged(GridQuery gridQuery)
+    {
+        _query = _query with
+        {
+            Page = gridQuery.Page,
+            PageSize = gridQuery.PageSize,
+            SortColumn = gridQuery.SortColumn,
+            SortDirection = gridQuery.SortDirection
+        };
+        await LoadDataAsync();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        var searchTerm = e.Value?.ToString();
+        _query = _query with { SearchTerm = searchTerm, Page = 1 };
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadDataAsync();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private async Task OnConsentFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        _query = _query with { ConsentFilter = string.IsNullOrEmpty(value) ? null : value, Page = 1 };
+        await LoadDataAsync();
     }
 
     private void OnEntityChanged(EntityChangeNotification notification)
@@ -261,73 +214,11 @@
         {
             await InvokeAsync(async () =>
             {
-                await LoadClientsAsync();
+                await LoadDataAsync();
                 _refreshedByRealTime = true;
                 StateHasChanged();
             });
         }, null, 1500, Timeout.Infinite);
-    }
-
-    private void OnSearchInput(ChangeEventArgs e)
-    {
-        _searchTerm = e.Value?.ToString();
-        _sortColumn = null;
-        _sortAscending = true;
-        _debounceTimer?.Dispose();
-        _debounceTimer = new System.Threading.Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                await LoadClientsAsync();
-                StateHasChanged();
-            });
-        }, null, 300, Timeout.Infinite);
-    }
-
-    private void OnSortColumn(string column)
-    {
-        if (_sortColumn == column)
-        {
-            if (_sortAscending)
-            {
-                _sortAscending = false;
-            }
-            else
-            {
-                _sortColumn = null;
-                _sortAscending = true;
-            }
-        }
-        else
-        {
-            _sortColumn = column;
-            _sortAscending = true;
-        }
-    }
-
-    private void OnSortKeyDown(KeyboardEventArgs e, string column)
-    {
-        if (e.Key == "Enter" || e.Key == " ")
-            OnSortColumn(column);
-    }
-
-    private void OnConsentFilterChanged(ChangeEventArgs e)
-    {
-        _consentFilter = e.Value?.ToString() ?? "";
-    }
-
-    private string GetAriaSort(string column)
-    {
-        if (_sortColumn != column)
-            return "none";
-        return _sortAscending ? "ascending" : "descending";
-    }
-
-    private string GetSortIcon(string column)
-    {
-        if (_sortColumn != column)
-            return "\u2195"; // ↕ up-down arrow (unsorted)
-        return _sortAscending ? "\u2191" : "\u2193"; // ↑ or ↓
     }
 
     private static string GetInitials(ClientDto client)

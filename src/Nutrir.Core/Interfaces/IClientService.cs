@@ -10,6 +10,8 @@ public interface IClientService
 
     Task<List<ClientDto>> GetListAsync(string? searchTerm = null);
 
+    Task<PagedResult<ClientDto>> GetPagedAsync(ClientListQuery query);
+
     Task<bool> UpdateAsync(int id, ClientDto dto, string updatedByUserId);
 
     Task<bool> SoftDeleteAsync(int id, string deletedByUserId);

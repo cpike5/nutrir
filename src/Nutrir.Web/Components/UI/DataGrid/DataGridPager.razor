@@ -1,0 +1,63 @@
+<div class="datagrid-pager">
+    <span class="pager-info">Showing @StartItem&ndash;@EndItem of @TotalCount</span>
+    <nav class="pager-nav" aria-label="Pagination">
+        <button class="pager-btn" disabled="@(!HasPrevious)" @onclick="GoToPrevious" aria-label="Previous page">
+            &larr; Prev
+        </button>
+        @foreach (var p in GetPageNumbers())
+        {
+            var pageNum = p;
+            <button class="pager-btn @(pageNum == Page ? "pager-btn-active" : "")"
+                    @onclick="() => GoToPage(pageNum)"
+                    aria-label="@($"Page {pageNum}")"
+                    aria-current="@(pageNum == Page ? "page" : null)">
+                @pageNum
+            </button>
+        }
+        <button class="pager-btn" disabled="@(!HasNext)" @onclick="GoToNext" aria-label="Next page">
+            Next &rarr;
+        </button>
+    </nav>
+</div>
+
+@code {
+    [Parameter] public int Page { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+    private int StartItem => (Page - 1) * PageSize + 1;
+    private int EndItem => Math.Min(Page * PageSize, TotalCount);
+    private bool HasPrevious => Page > 1;
+    private bool HasNext => Page < TotalPages;
+
+    private async Task GoToPrevious()
+    {
+        if (HasPrevious)
+            await OnPageChanged.InvokeAsync(Page - 1);
+    }
+
+    private async Task GoToNext()
+    {
+        if (HasNext)
+            await OnPageChanged.InvokeAsync(Page + 1);
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page != Page)
+            await OnPageChanged.InvokeAsync(page);
+    }
+
+    private IEnumerable<int> GetPageNumbers()
+    {
+        var half = 2;
+        var start = Math.Max(1, Page - half);
+        var end = Math.Min(TotalPages, start + 4);
+        start = Math.Max(1, end - 4);
+
+        for (var i = start; i <= end; i++)
+            yield return i;
+    }
+}

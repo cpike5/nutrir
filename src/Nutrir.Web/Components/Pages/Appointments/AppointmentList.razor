@@ -29,51 +29,114 @@
         </Button>
     </div>
 
-    <div class="toolbar">
-        <div class="filter-group">
-            <label for="filter-from" class="filter-label">From</label>
-            <input type="date" id="filter-from" class="filter-input"
-                   value="@_fromDate"
-                   @onchange="@(e => OnFromDateChanged(e.Value?.ToString() ?? ""))" />
-        </div>
-
-        <div class="filter-group">
-            <label for="filter-to" class="filter-label">To</label>
-            <input type="date" id="filter-to" class="filter-input"
-                   value="@_toDate"
-                   @onchange="@(e => OnToDateChanged(e.Value?.ToString() ?? ""))" />
-        </div>
-
-        <div class="filter-divider" aria-hidden="true"></div>
-
-        <div class="filter-group">
-            <label for="filter-status" class="filter-label">Status</label>
-            <select id="filter-status" class="filter-select"
-                    value="@_statusFilter"
-                    @onchange="@(e => OnStatusChanged(e.Value?.ToString() ?? ""))">
-                <option value="">All Statuses</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Completed">Completed</option>
-                <option value="NoShow">No-Show</option>
-                <option value="Cancelled">Cancelled</option>
-            </select>
-        </div>
-
-        <span class="appt-count" aria-live="polite">
-            <strong>@(_appointments?.Count ?? 0)</strong> appointments
-        </span>
-    </div>
-
-    @if (_isLoading)
-    {
-        <div class="table-card">
-            <p class="appt-loading">Loading appointments...</p>
-        </div>
-    }
-    else if (_appointments is null || _appointments.Count == 0)
-    {
-        <div class="table-card">
+    <DataGrid TItem="AppointmentDto"
+              Items="@_result?.Items"
+              TotalCount="@(_result?.TotalCount ?? 0)"
+              Page="@_query.Page"
+              PageSize="@_query.PageSize"
+              SortColumn="@_query.SortColumn"
+              SortDirection="@_query.SortDirection"
+              OnQueryChanged="HandleQueryChanged"
+              IsLoading="@_isLoading"
+              ShowRealtimeBanner="@_refreshedByRealTime">
+        <ToolbarContent>
+            <div class="filter-group">
+                <label for="filter-from" class="filter-label">From</label>
+                <input type="date" id="filter-from" class="filter-input"
+                       value="@_fromDate"
+                       @onchange="@(e => OnFromDateChanged(e.Value?.ToString() ?? ""))" />
+            </div>
+            <div class="filter-group">
+                <label for="filter-to" class="filter-label">To</label>
+                <input type="date" id="filter-to" class="filter-input"
+                       value="@_toDate"
+                       @onchange="@(e => OnToDateChanged(e.Value?.ToString() ?? ""))" />
+            </div>
+            <div class="filter-divider" aria-hidden="true"></div>
+            <div class="filter-group">
+                <label for="filter-status" class="filter-label">Status</label>
+                <select id="filter-status" class="filter-select"
+                        @onchange="@(e => OnStatusChanged(e.Value?.ToString() ?? ""))">
+                    <option value="">All Statuses</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Completed">Completed</option>
+                    <option value="NoShow">No-Show</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <span class="appt-count" aria-live="polite">
+                <strong>@(_result?.TotalCount ?? 0)</strong> appointments
+            </span>
+        </ToolbarContent>
+        <Columns>
+            <DataGridColumn TItem="AppointmentDto" Key="date" Header="Date / Time" Sortable>
+                <CellTemplate Context="appt">
+                    <div class="appt-datetime">
+                        <span class="appt-date">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("MMM d")</span>
+                        <span class="appt-time">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm tt")</span>
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="client" Header="Client" Sortable>
+                <CellTemplate Context="appt">
+                    <div class="client-identity">
+                        <div class="client-avatar" aria-hidden="true">@GetInitials(appt)</div>
+                        <div class="client-name">@appt.ClientFirstName @appt.ClientLastName</div>
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="type" Header="Type" HideBelow="hide-below-600">
+                <CellTemplate Context="appt">
+                    <span class="cell-type">@FormatType(appt.Type)</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="duration" Header="Duration" HideBelow="hide-below-860">
+                <CellTemplate Context="appt">
+                    <span class="cell-duration">@appt.DurationMinutes min</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="location" Header="Location" HideBelow="hide-below-860">
+                <CellTemplate Context="appt">
+                    <span class="location-tag">
+                        @if (appt.Location == AppointmentLocation.InPerson)
+                        {
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
+                        }
+                        else if (appt.Location == AppointmentLocation.Virtual)
+                        {
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="M5 15h6M8 12.5V15"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 11.5c0 .5-.2 1-.5 1.4a7.4 7.4 0 0 1-2.3 1.8c-.3.2-.7.3-1 .3-.5 0-1-.1-1.5-.4A18 18 0 0 1 1.4 6.8c-.3-.5-.4-1-.4-1.5 0-.3.1-.7.3-1A7.4 7.4 0 0 1 3.1 2c.4-.3.9-.5 1.4-.5.2 0 .4 0 .6.1.2.1.3.2.4.4l1.8 2.5c.1.2.2.3.2.5s0 .3-.1.5l-.8 1.1c-.1.1-.1.3-.1.4 0 .1 0 .2.1.3.1.3.4.6.8 1 .4.5.8.8 1.1.9.1.1.2.1.3.1s.3 0 .4-.1l1.1-.8c.1-.1.3-.2.5-.2s.3 0 .5.1l2.5 1.8c.2.1.3.3.4.5.1.1.1.3.1.5Z"/></svg>
+                        }
+                        @FormatLocation(appt.Location)
+                    </span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="status" Header="Status" Sortable>
+                <CellTemplate Context="appt">
+                    <Badge Variant="@GetStatusVariant(appt.Status)"><span class="badge-dot"></span> @FormatStatus(appt.Status)</Badge>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="AppointmentDto" Key="actions" Header="">
+                <CellTemplate Context="appt">
+                    <div class="row-actions">
+                        <a href="appointments/@appt.Id" class="btn-icon" aria-label="View @appt.ClientFirstName @appt.ClientLastName">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
+                        </a>
+                        @if (appt.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed)
+                        {
+                            <a href="appointments/@appt.Id/edit" class="btn-icon" aria-label="Edit @appt.ClientFirstName @appt.ClientLastName">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                            </a>
+                        }
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+        </Columns>
+        <EmptyContent>
             <div class="empty-state" role="status">
                 <svg class="empty-state-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="10" y="12" width="44" height="44" rx="6"/>
@@ -83,7 +146,7 @@
                 </svg>
                 <p class="empty-state-title">No appointments found</p>
                 <p class="empty-state-desc">
-                    @if (string.IsNullOrEmpty(_statusFilter))
+                    @if (_query.StatusFilter is null)
                     {
                         <span>Schedule your first appointment to get started.</span>
                     }
@@ -93,92 +156,15 @@
                     }
                 </p>
             </div>
-        </div>
-    }
-    else
-    {
-        @if (_refreshedByRealTime)
-        {
-            <div class="realtime-banner" role="status" aria-live="polite">
-                <span class="realtime-dot"></span>
-                Updated in real time
-            </div>
-        }
-        <div class="table-card">
-            <table class="appt-table" role="grid">
-                <thead>
-                    <tr>
-                        <th scope="col">Date / Time</th>
-                        <th scope="col" class="col-client">Client</th>
-                        <th scope="col" class="col-type">Type</th>
-                        <th scope="col" class="col-duration">Duration</th>
-                        <th scope="col" class="col-location">Location</th>
-                        <th scope="col">Status</th>
-                        <th scope="col"><span class="sr-only">Actions</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var appt in _appointments)
-                    {
-                        <tr>
-                            <td>
-                                <div class="appt-datetime">
-                                    <span class="appt-date">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("MMM d")</span>
-                                    <span class="appt-time">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm tt")</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="client-identity">
-                                    <div class="client-avatar" aria-hidden="true">@GetInitials(appt)</div>
-                                    <div class="client-name">@appt.ClientFirstName @appt.ClientLastName</div>
-                                </div>
-                            </td>
-                            <td class="col-type cell-type">@FormatType(appt.Type)</td>
-                            <td class="col-duration cell-duration">@appt.DurationMinutes min</td>
-                            <td class="col-location">
-                                <span class="location-tag">
-                                    @if (appt.Location == AppointmentLocation.InPerson)
-                                    {
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
-                                    }
-                                    else if (appt.Location == AppointmentLocation.Virtual)
-                                    {
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="M5 15h6M8 12.5V15"/></svg>
-                                    }
-                                    else
-                                    {
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 11.5c0 .5-.2 1-.5 1.4a7.4 7.4 0 0 1-2.3 1.8c-.3.2-.7.3-1 .3-.5 0-1-.1-1.5-.4A18 18 0 0 1 1.4 6.8c-.3-.5-.4-1-.4-1.5 0-.3.1-.7.3-1A7.4 7.4 0 0 1 3.1 2c.4-.3.9-.5 1.4-.5.2 0 .4 0 .6.1.2.1.3.2.4.4l1.8 2.5c.1.2.2.3.2.5s0 .3-.1.5l-.8 1.1c-.1.1-.1.3-.1.4 0 .1 0 .2.1.3.1.3.4.6.8 1 .4.5.8.8 1.1.9.1.1.2.1.3.1s.3 0 .4-.1l1.1-.8c.1-.1.3-.2.5-.2s.3 0 .5.1l2.5 1.8c.2.1.3.3.4.5.1.1.1.3.1.5Z"/></svg>
-                                    }
-                                    @FormatLocation(appt.Location)
-                                </span>
-                            </td>
-                            <td><Badge Variant="@GetStatusVariant(appt.Status)"><span class="badge-dot"></span> @FormatStatus(appt.Status)</Badge></td>
-                            <td>
-                                <div class="row-actions">
-                                    <a href="appointments/@appt.Id" class="btn-icon" aria-label="View @appt.ClientFirstName @appt.ClientLastName">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
-                                    </a>
-                                    @if (appt.Status is AppointmentStatus.Scheduled or AppointmentStatus.Confirmed)
-                                    {
-                                        <a href="appointments/@appt.Id/edit" class="btn-icon" aria-label="Edit @appt.ClientFirstName @appt.ClientLastName">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
-                                        </a>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+        </EmptyContent>
+    </DataGrid>
 </div>
 
 @code {
-    private List<AppointmentDto>? _appointments;
+    private PagedResult<AppointmentDto>? _result;
+    private AppointmentListQuery _query = new();
     private string? _fromDate;
     private string? _toDate;
-    private string? _statusFilter;
     private bool _isLoading = true;
     private bool _refreshedByRealTime;
     private System.Threading.Timer? _debounceTimer;
@@ -192,29 +178,37 @@
         var now = TimeZoneService.UserNow;
         _fromDate = now.ToString("yyyy-MM-dd");
         _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
-        await LoadAppointmentsAsync();
+        await LoadDataAsync();
     }
 
-    private async Task LoadAppointmentsAsync()
+    private async Task LoadDataAsync()
     {
         _refreshedByRealTime = false;
         _isLoading = true;
 
         DateTime? from = null;
         DateTime? to = null;
-        AppointmentStatus? status = null;
 
         if (DateTime.TryParse(_fromDate, out var parsedFrom))
             from = TimeZoneService.ToUtc(parsedFrom);
-
         if (DateTime.TryParse(_toDate, out var parsedTo))
             to = TimeZoneService.ToUtc(parsedTo.AddDays(1).AddTicks(-1));
 
-        if (!string.IsNullOrEmpty(_statusFilter) && Enum.TryParse<AppointmentStatus>(_statusFilter, out var parsedStatus))
-            status = parsedStatus;
-
-        _appointments = await AppointmentService.GetListAsync(from, to, status: status);
+        _query = _query with { From = from, To = to };
+        _result = await AppointmentService.GetPagedAsync(_query);
         _isLoading = false;
+    }
+
+    private async Task HandleQueryChanged(GridQuery gridQuery)
+    {
+        _query = _query with
+        {
+            Page = gridQuery.Page,
+            PageSize = gridQuery.PageSize,
+            SortColumn = gridQuery.SortColumn,
+            SortDirection = gridQuery.SortDirection
+        };
+        await LoadDataAsync();
     }
 
     private void OnFromDateChanged(string value)
@@ -231,7 +225,10 @@
 
     private void OnStatusChanged(string value)
     {
-        _statusFilter = value;
+        AppointmentStatus? status = null;
+        if (!string.IsNullOrEmpty(value) && Enum.TryParse<AppointmentStatus>(value, out var parsed))
+            status = parsed;
+        _query = _query with { StatusFilter = status, Page = 1 };
         DebouncedLoad();
     }
 
@@ -242,7 +239,7 @@
         {
             await InvokeAsync(async () =>
             {
-                await LoadAppointmentsAsync();
+                await LoadDataAsync();
                 StateHasChanged();
             });
         }, null, 300, Timeout.Infinite);
@@ -309,8 +306,8 @@
             await InvokeAsync(async () =>
             {
                 _refreshedByRealTime = true;
-                await LoadAppointmentsAsync();
-                _refreshedByRealTime = true; // Re-set after LoadAppointmentsAsync clears it
+                await LoadDataAsync();
+                _refreshedByRealTime = true; // Re-set after LoadDataAsync clears it
                 StateHasChanged();
             });
         }, null, 1500, Timeout.Infinite);

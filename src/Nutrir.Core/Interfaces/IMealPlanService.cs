@@ -7,6 +7,7 @@ public interface IMealPlanService
 {
     Task<MealPlanDetailDto?> GetByIdAsync(int id);
     Task<List<MealPlanSummaryDto>> GetListAsync(int? clientId = null, MealPlanStatus? status = null);
+    Task<PagedResult<MealPlanSummaryDto>> GetPagedAsync(MealPlanListQuery query);
     Task<MealPlanDetailDto> CreateAsync(CreateMealPlanDto dto, string userId);
     Task<bool> UpdateMetadataAsync(int id, CreateMealPlanDto dto, string userId);
     Task<bool> SaveContentAsync(SaveMealPlanContentDto dto, string userId);

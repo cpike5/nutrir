@@ -1,0 +1,17 @@
+@typeparam TItem
+
+@code {
+    [CascadingParameter] private DataGrid<TItem>? ParentGrid { get; set; }
+
+    [Parameter] public string Key { get; set; } = "";
+    [Parameter] public string Header { get; set; } = "";
+    [Parameter] public RenderFragment<TItem>? CellTemplate { get; set; }
+    [Parameter] public bool Sortable { get; set; }
+    [Parameter] public string? HideBelow { get; set; }
+    [Parameter] public string? Width { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ParentGrid?.AddColumn(this);
+    }
+}

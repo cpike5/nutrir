@@ -11,17 +11,20 @@ namespace Nutrir.Infrastructure.Services;
 public class MealPlanService : IMealPlanService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<MealPlanService> _logger;
 
     public MealPlanService(
         AppDbContext dbContext,
+        IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         INotificationDispatcher notificationDispatcher,
         ILogger<MealPlanService> logger)
     {
         _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
@@ -64,6 +67,105 @@ public class MealPlanService : IMealPlanService
             .ToListAsync();
 
         return await MapToSummaryListAsync(entities);
+    }
+
+    public async Task<PagedResult<MealPlanSummaryDto>> GetPagedAsync(MealPlanListQuery query)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var page = Math.Max(1, query.Page);
+        var pageSize = query.PageSize;
+
+        var dbQuery = db.MealPlans
+            .Include(mp => mp.Days)
+                .ThenInclude(d => d.MealSlots)
+                    .ThenInclude(s => s.Items)
+            .AsQueryable();
+
+        // Client filter
+        if (query.ClientId.HasValue)
+            dbQuery = dbQuery.Where(mp => mp.ClientId == query.ClientId.Value);
+
+        // Status filter
+        if (query.StatusFilter.HasValue)
+            dbQuery = dbQuery.Where(mp => mp.Status == query.StatusFilter.Value);
+
+        var totalCount = await dbQuery.CountAsync();
+
+        // Determine if sorting by a column that requires in-memory sort
+        var sortColumn = query.SortColumn?.ToLowerInvariant();
+        var isDescending = query.SortDirection == SortDirection.Descending;
+        var requiresInMemorySort = sortColumn == "client";
+
+        // Apply DB-level sorting for supported columns
+        if (!requiresInMemorySort)
+        {
+            dbQuery = sortColumn switch
+            {
+                "title" => isDescending
+                    ? dbQuery.OrderByDescending(mp => mp.Title)
+                    : dbQuery.OrderBy(mp => mp.Title),
+                "status" => isDescending
+                    ? dbQuery.OrderByDescending(mp => mp.Status)
+                    : dbQuery.OrderBy(mp => mp.Status),
+                "created" => isDescending
+                    ? dbQuery.OrderByDescending(mp => mp.CreatedAt)
+                    : dbQuery.OrderBy(mp => mp.CreatedAt),
+                _ => dbQuery.OrderByDescending(mp => mp.CreatedAt)
+            };
+        }
+        else
+        {
+            // Apply default ordering for consistent Skip/Take before in-memory re-sort
+            dbQuery = dbQuery.OrderByDescending(mp => mp.CreatedAt);
+        }
+
+        var entities = await dbQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        // Batch-resolve client names (same pattern as MapToSummaryListAsync)
+        var clientIds = entities.Select(mp => mp.ClientId).Distinct().ToList();
+        var clients = await db.Clients
+            .IgnoreQueryFilters()
+            .Where(c => clientIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, c => new { c.FirstName, c.LastName });
+
+        // Batch-resolve user names
+        var userIds = entities.Select(mp => mp.CreatedByUserId).Distinct().ToList();
+        var users = await db.Users
+            .Where(u => userIds.Contains(u.Id))
+            .OfType<ApplicationUser>()
+            .ToDictionaryAsync(u => u.Id, u =>
+                !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : $"{u.FirstName} {u.LastName}".Trim());
+
+        var dtos = entities.Select(mp =>
+        {
+            var client = clients.GetValueOrDefault(mp.ClientId);
+            var userName = users.GetValueOrDefault(mp.CreatedByUserId);
+            var totalItems = mp.Days.SelectMany(d => d.MealSlots).SelectMany(s => s.Items).Count();
+
+            return new MealPlanSummaryDto(
+                mp.Id, mp.Title, mp.Status,
+                mp.ClientId, client?.FirstName ?? "", client?.LastName ?? "",
+                mp.CreatedByUserId, userName,
+                mp.StartDate, mp.EndDate,
+                mp.CalorieTarget, mp.ProteinTargetG,
+                mp.CarbsTargetG, mp.FatTargetG,
+                mp.Days.Count, totalItems,
+                mp.CreatedAt, mp.UpdatedAt);
+        }).ToList();
+
+        // In-memory sort for client column (only within the page)
+        if (requiresInMemorySort)
+        {
+            dtos = isDescending
+                ? dtos.OrderByDescending(d => d.ClientLastName).ThenByDescending(d => d.ClientFirstName).ToList()
+                : dtos.OrderBy(d => d.ClientLastName).ThenBy(d => d.ClientFirstName).ToList();
+        }
+
+        return new PagedResult<MealPlanSummaryDto>(dtos, totalCount, page, pageSize);
     }
 
     public async Task<MealPlanDetailDto> CreateAsync(CreateMealPlanDto dto, string userId)

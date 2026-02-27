@@ -26,32 +26,85 @@
         </Button>
     </div>
 
-    <div class="toolbar">
-        <div class="filter-group">
-            <span class="filter-label">Status</span>
-            <select class="filter-select" @onchange="OnStatusChanged">
-                <option value="">All Statuses</option>
-                <option value="Draft" selected="@(_statusFilter == "Draft")">Draft</option>
-                <option value="Active" selected="@(_statusFilter == "Active")">Active</option>
-                <option value="Archived" selected="@(_statusFilter == "Archived")">Archived</option>
-            </select>
-        </div>
-        @if (_mealPlans is not null && _mealPlans.Count > 0)
-        {
-            <span class="mp-count">
-                <span class="badge-dot" style="background: var(--color-primary);"></span>
-                @_mealPlans.Count plan@(_mealPlans.Count != 1 ? "s" : "")
-            </span>
-        }
-    </div>
-
-    <div class="table-card">
-        @if (_isLoading)
-        {
-            <p class="mp-loading">Loading meal plans...</p>
-        }
-        else if (_mealPlans is null || _mealPlans.Count == 0)
-        {
+    <DataGrid TItem="MealPlanSummaryDto"
+              Items="@_result?.Items"
+              TotalCount="@(_result?.TotalCount ?? 0)"
+              Page="@_query.Page"
+              PageSize="@_query.PageSize"
+              SortColumn="@_query.SortColumn"
+              SortDirection="@_query.SortDirection"
+              OnQueryChanged="HandleQueryChanged"
+              IsLoading="@_isLoading"
+              ShowRealtimeBanner="@_refreshedByRealTime">
+        <ToolbarContent>
+            <div class="filter-group">
+                <span class="filter-label">Status</span>
+                <select class="filter-select" @onchange="OnStatusChanged">
+                    <option value="">All Statuses</option>
+                    <option value="Draft" selected="@(_query.StatusFilter == MealPlanStatus.Draft)">Draft</option>
+                    <option value="Active" selected="@(_query.StatusFilter == MealPlanStatus.Active)">Active</option>
+                    <option value="Archived" selected="@(_query.StatusFilter == MealPlanStatus.Archived)">Archived</option>
+                </select>
+            </div>
+            @if (_result is not null && _result.TotalCount > 0)
+            {
+                <span class="mp-count">@_result.TotalCount plan@(_result.TotalCount != 1 ? "s" : "")</span>
+            }
+        </ToolbarContent>
+        <Columns>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="title" Header="Title" Sortable>
+                <CellTemplate Context="plan">
+                    <span class="cell-title">@plan.Title</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="client" Header="Client" Sortable>
+                <CellTemplate Context="plan">
+                    @plan.ClientFirstName @plan.ClientLastName
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="status" Header="Status" Sortable>
+                <CellTemplate Context="plan">
+                    <Badge Variant="@GetStatusVariant(plan.Status)">@plan.Status</Badge>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="days" Header="Days" HideBelow="hide-below-860">
+                <CellTemplate Context="plan">
+                    <span class="cell-muted">@plan.DayCount</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="startdate" Header="Start Date" HideBelow="hide-below-860">
+                <CellTemplate Context="plan">
+                    <span class="cell-muted">@(plan.StartDate?.ToString("MMM d, yyyy") ?? "—")</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="created" Header="Created" Sortable HideBelow="hide-below-860">
+                <CellTemplate Context="plan">
+                    <span class="cell-muted">@plan.CreatedAt.ToString("MMM d")</span>
+                </CellTemplate>
+            </DataGridColumn>
+            <DataGridColumn TItem="MealPlanSummaryDto" Key="actions" Header="Actions">
+                <CellTemplate Context="plan">
+                    <div class="row-actions">
+                        <a href="meal-plans/@plan.Id" class="btn-icon" title="View">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span class="sr-only">View</span>
+                        </a>
+                        @if (plan.Status is MealPlanStatus.Draft or MealPlanStatus.Active)
+                        {
+                            <a href="meal-plans/@plan.Id/edit-details" class="btn-icon" title="Edit Details">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                                <span class="sr-only">Edit Details</span>
+                            </a>
+                            <a href="meal-plans/@plan.Id/edit" class="btn-icon" title="Edit Meals">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                <span class="sr-only">Edit Meals</span>
+                            </a>
+                        }
+                    </div>
+                </CellTemplate>
+            </DataGridColumn>
+        </Columns>
+        <EmptyContent>
             <div class="empty-state">
                 <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
@@ -60,7 +113,7 @@
                 </svg>
                 <p class="empty-state-title">No meal plans found</p>
                 <p class="empty-state-desc">
-                    @if (string.IsNullOrEmpty(_statusFilter))
+                    @if (_query.StatusFilter is null)
                     {
                         <span>Create your first meal plan to get started.</span>
                     }
@@ -70,70 +123,15 @@
                     }
                 </p>
             </div>
-        }
-        else
-        {
-            @if (_refreshedByRealTime)
-            {
-                <div class="realtime-banner" role="status" aria-live="polite">
-                    <span class="realtime-dot"></span>
-                    Updated in real time
-                </div>
-            }
-            <table class="mp-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Client</th>
-                        <th>Status</th>
-                        <th class="col-days">Days</th>
-                        <th class="col-start-date">Start Date</th>
-                        <th class="col-created">Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var plan in _mealPlans)
-                    {
-                        <tr>
-                            <td class="cell-title">@plan.Title</td>
-                            <td>@plan.ClientFirstName @plan.ClientLastName</td>
-                            <td><Badge Variant="@GetStatusVariant(plan.Status)">@plan.Status</Badge></td>
-                            <td class="cell-muted col-days">@plan.DayCount</td>
-                            <td class="cell-muted col-start-date">@(plan.StartDate?.ToString("MMM d, yyyy") ?? "—")</td>
-                            <td class="cell-muted col-created">@plan.CreatedAt.ToString("MMM d")</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a href="meal-plans/@plan.Id" class="btn-icon" title="View">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        <span class="sr-only">View</span>
-                                    </a>
-                                    @if (plan.Status is MealPlanStatus.Draft or MealPlanStatus.Active)
-                                    {
-                                        <a href="meal-plans/@plan.Id/edit-details" class="btn-icon" title="Edit Details">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-                                            <span class="sr-only">Edit Details</span>
-                                        </a>
-                                        <a href="meal-plans/@plan.Id/edit" class="btn-icon" title="Edit Meals">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                                            <span class="sr-only">Edit Meals</span>
-                                        </a>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
+        </EmptyContent>
+    </DataGrid>
 </div>
 
 @code {
     [SupplyParameterFromQuery] public int? ClientId { get; set; }
 
-    private List<MealPlanSummaryDto>? _mealPlans;
-    private string? _statusFilter;
+    private PagedResult<MealPlanSummaryDto>? _result;
+    private MealPlanListQuery _query = new();
     private bool _isLoading = true;
     private bool _refreshedByRealTime;
     private System.Threading.Timer? _notificationDebounceTimer;
@@ -142,26 +140,38 @@
     {
         NotificationService.OnEntityChanged += OnEntityChanged;
         await NotificationService.StartAsync();
-        await LoadMealPlansAsync();
+        _query = _query with { ClientId = ClientId };
+        await LoadDataAsync();
     }
 
-    private async Task LoadMealPlansAsync()
+    private async Task LoadDataAsync()
     {
         _refreshedByRealTime = false;
         _isLoading = true;
-
-        MealPlanStatus? status = null;
-        if (!string.IsNullOrEmpty(_statusFilter) && Enum.TryParse<MealPlanStatus>(_statusFilter, out var parsed))
-            status = parsed;
-
-        _mealPlans = await MealPlanService.GetListAsync(ClientId, status);
+        _result = await MealPlanService.GetPagedAsync(_query);
         _isLoading = false;
+    }
+
+    private async Task HandleQueryChanged(GridQuery gridQuery)
+    {
+        _query = _query with
+        {
+            Page = gridQuery.Page,
+            PageSize = gridQuery.PageSize,
+            SortColumn = gridQuery.SortColumn,
+            SortDirection = gridQuery.SortDirection
+        };
+        await LoadDataAsync();
     }
 
     private async Task OnStatusChanged(ChangeEventArgs e)
     {
-        _statusFilter = e.Value?.ToString();
-        await LoadMealPlansAsync();
+        var value = e.Value?.ToString();
+        MealPlanStatus? status = null;
+        if (!string.IsNullOrEmpty(value) && Enum.TryParse<MealPlanStatus>(value, out var parsed))
+            status = parsed;
+        _query = _query with { StatusFilter = status, Page = 1 };
+        await LoadDataAsync();
     }
 
     private void NavigateToCreate()
@@ -180,7 +190,7 @@
         {
             await InvokeAsync(async () =>
             {
-                await LoadMealPlansAsync();
+                await LoadDataAsync();
                 _refreshedByRealTime = true;
                 StateHasChanged();
             });

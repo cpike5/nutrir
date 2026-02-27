@@ -13,6 +13,8 @@ public interface IAppointmentService
         int? clientId = null,
         AppointmentStatus? status = null);
 
+    Task<PagedResult<AppointmentDto>> GetPagedAsync(AppointmentListQuery query);
+
     Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId);
 
     Task<bool> UpdateAsync(UpdateAppointmentDto dto, string userId);

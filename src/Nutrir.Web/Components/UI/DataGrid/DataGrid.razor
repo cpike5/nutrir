@@ -1,0 +1,198 @@
+@typeparam TItem
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+
+<div class="datagrid">
+    @if (ToolbarContent != null)
+    {
+        <div class="toolbar">@ToolbarContent</div>
+    }
+
+    @if (ShowRealtimeBanner)
+    {
+        <div class="realtime-banner" role="status" aria-live="polite">
+            <span class="realtime-dot"></span>
+            Updated in real time
+        </div>
+    }
+
+    <div class="table-card">
+        @* Hidden div for column registration *@
+        <CascadingValue Value="this">
+            <div style="display:none" aria-hidden="true">@Columns</div>
+        </CascadingValue>
+
+        @if (IsLoading)
+        {
+            <table class="datagrid-table @TableClass" role="grid">
+                <thead>
+                    <tr>
+                        @foreach (var col in _columns)
+                        {
+                            <th scope="col" class="@col.HideBelow"
+                                style="@(col.Width != null ? $"width:{col.Width}" : null)">
+                                @col.Header
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < PageSize; i++)
+                    {
+                        <tr class="skeleton-row">
+                            @foreach (var col in _columns)
+                            {
+                                <td class="@col.HideBelow"><div class="skeleton-cell"></div></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else if (Items is null || Items.Count == 0)
+        {
+            @if (EmptyContent != null)
+            {
+                @EmptyContent
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p class="empty-state-title">No results found</p>
+                    <p class="empty-state-desc">Try adjusting your filters.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <table class="datagrid-table @TableClass" role="grid">
+                <thead>
+                    <tr>
+                        @foreach (var col in _columns)
+                        {
+                            if (col.Sortable)
+                            {
+                                <th scope="col" class="@col.HideBelow sortable"
+                                    style="@(col.Width != null ? $"width:{col.Width}" : null)"
+                                    aria-sort="@GetAriaSort(col.Key)"
+                                    tabindex="0"
+                                    @onclick="() => OnSortClicked(col.Key)"
+                                    @onkeydown="e => OnSortKeyDown(e, col.Key)">
+                                    @col.Header
+                                    <span class="sort-indicator" aria-hidden="true">@GetSortIcon(col.Key)</span>
+                                </th>
+                            }
+                            else
+                            {
+                                <th scope="col" class="@col.HideBelow"
+                                    style="@(col.Width != null ? $"width:{col.Width}" : null)">
+                                    @col.Header
+                                </th>
+                            }
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var index = 0; }
+                    @foreach (var item in Items)
+                    {
+                        var delay = index * 0.03;
+                        <tr style="animation-delay: @(delay.ToString("F2"))s">
+                            @foreach (var col in _columns)
+                            {
+                                <td class="@col.HideBelow">
+                                    @if (col.CellTemplate != null)
+                                    {
+                                        @col.CellTemplate(item)
+                                    }
+                                </td>
+                            }
+                        </tr>
+                        index++;
+                    }
+                </tbody>
+            </table>
+
+            @if (TotalCount > PageSize)
+            {
+                <DataGridPager Page="Page" PageSize="PageSize" TotalCount="TotalCount"
+                               OnPageChanged="OnPageChanged" />
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<DataGridColumn<TItem>> _columns = new();
+
+    [Parameter] public IReadOnlyList<TItem>? Items { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 25;
+    [Parameter] public string? SortColumn { get; set; }
+    [Parameter] public SortDirection SortDirection { get; set; } = SortDirection.None;
+    [Parameter] public EventCallback<GridQuery> OnQueryChanged { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public RenderFragment? ToolbarContent { get; set; }
+    [Parameter] public RenderFragment? EmptyContent { get; set; }
+    [Parameter] public RenderFragment? Columns { get; set; }
+    [Parameter] public bool ShowRealtimeBanner { get; set; }
+    [Parameter] public string? TableClass { get; set; }
+
+    public void AddColumn(DataGridColumn<TItem> column)
+    {
+        if (!_columns.Any(c => c.Key == column.Key))
+            _columns.Add(column);
+    }
+
+    private void OnSortClicked(string columnKey)
+    {
+        SortDirection newDirection;
+        string? newColumn;
+
+        if (SortColumn == columnKey)
+        {
+            newDirection = SortDirection switch
+            {
+                SortDirection.Ascending => SortDirection.Descending,
+                SortDirection.Descending => SortDirection.None,
+                _ => SortDirection.Ascending
+            };
+            newColumn = newDirection == SortDirection.None ? null : columnKey;
+        }
+        else
+        {
+            newColumn = columnKey;
+            newDirection = SortDirection.Ascending;
+        }
+
+        OnQueryChanged.InvokeAsync(new GridQuery(
+            Page: 1, PageSize: PageSize,
+            SortColumn: newColumn, SortDirection: newDirection));
+    }
+
+    private void OnSortKeyDown(KeyboardEventArgs e, string columnKey)
+    {
+        if (e.Key is "Enter" or " ")
+            OnSortClicked(columnKey);
+    }
+
+    private async Task OnPageChanged(int newPage)
+    {
+        await OnQueryChanged.InvokeAsync(new GridQuery(
+            Page: newPage, PageSize: PageSize,
+            SortColumn: SortColumn, SortDirection: SortDirection));
+    }
+
+    private string GetAriaSort(string columnKey)
+    {
+        if (SortColumn != columnKey) return "none";
+        return SortDirection == SortDirection.Ascending ? "ascending" : "descending";
+    }
+
+    private string GetSortIcon(string columnKey)
+    {
+        if (SortColumn != columnKey) return "\u2195";
+        return SortDirection == SortDirection.Ascending ? "\u2191" : "\u2193";
+    }
+}

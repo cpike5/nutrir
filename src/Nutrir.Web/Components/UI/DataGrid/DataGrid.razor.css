@@ -1,0 +1,311 @@
+/* ── Table Card Wrapper ──────────────────────────────── */
+.table-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    overflow: auto;
+}
+
+/* ── Empty State ─────────────────────────────────────── */
+.empty-state {
+    padding: var(--space-16) var(--space-6);
+    text-align: center;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto var(--space-4);
+    color: var(--color-accent);
+}
+
+.empty-state-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+}
+
+.empty-state-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+/* ── Table Base ──────────────────────────────────────── */
+.datagrid-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.datagrid-table thead th {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--color-text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.datagrid-table thead th:first-child {
+    padding-left: var(--space-6);
+}
+
+.datagrid-table thead th:last-child {
+    padding-right: var(--space-6);
+    text-align: right;
+}
+
+/* ── Sortable Headers ────────────────────────────────── */
+.sortable {
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+.sortable:hover,
+.sortable:focus-visible {
+    color: var(--color-text);
+}
+
+.sortable:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+}
+
+.sort-indicator {
+    display: inline-block;
+    margin-left: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+.sortable:hover .sort-indicator {
+    color: var(--color-primary);
+}
+
+.sortable[aria-sort="ascending"] .sort-indicator,
+.sortable[aria-sort="descending"] .sort-indicator {
+    color: var(--color-primary);
+}
+
+/* ── Table Rows ──────────────────────────────────────── */
+.datagrid-table tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.datagrid-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.datagrid-table tbody tr:hover {
+    background: var(--color-bg-alt);
+}
+
+/* Left border accent on hover */
+.datagrid-table tbody td:first-child {
+    position: relative;
+}
+
+.datagrid-table tbody td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--color-primary);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.datagrid-table tbody tr:hover td:first-child::before {
+    opacity: 1;
+}
+
+.datagrid-table tbody td {
+    padding: var(--space-4);
+    vertical-align: middle;
+    font-size: var(--text-sm);
+}
+
+.datagrid-table tbody td:first-child {
+    padding-left: var(--space-6);
+}
+
+.datagrid-table tbody td:last-child {
+    padding-right: var(--space-6);
+}
+
+/* ── Row Actions ─────────────────────────────────────── */
+::deep .row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.datagrid-table tbody tr:hover ::deep .row-actions {
+    opacity: 1;
+}
+
+::deep .btn-icon {
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-default);
+    text-decoration: none;
+    font-size: var(--text-sm);
+}
+
+::deep .btn-icon:hover {
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+}
+
+::deep .btn-icon:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ── Row Entrance Animation ──────────────────────────── */
+@keyframes rowFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.datagrid-table tbody tr {
+    animation: rowFadeIn 0.3s var(--ease-default) backwards;
+}
+
+/* ── Skeleton Loading ────────────────────────────────── */
+.skeleton-row td {
+    padding: var(--space-4);
+}
+
+.skeleton-cell {
+    height: 16px;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-sm);
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* ── Badge Dot ───────────────────────────────────────── */
+::deep .badge-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+}
+
+/* ── Real-Time Banner ────────────────────────────────── */
+.realtime-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+    background: rgba(var(--rgb-primary), 0.08);
+    border: 1px solid rgba(var(--rgb-primary), 0.20);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.realtime-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    flex-shrink: 0;
+    animation: realtimePulse 1.8s ease-in-out 3;
+}
+
+@keyframes realtimePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* ── Toolbar ─────────────────────────────────────────── */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+/* ── Accessibility ───────────────────────────────────── */
+::deep .sr-only,
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 860px) {
+    ::deep .hide-below-860 {
+        display: none;
+    }
+
+    .toolbar {
+        gap: var(--space-2);
+    }
+}
+
+@media (max-width: 600px) {
+    ::deep .hide-below-600 {
+        display: none;
+    }
+
+    .datagrid-table thead th,
+    .datagrid-table tbody td {
+        padding: var(--space-3);
+    }
+
+    .datagrid-table thead th:first-child,
+    .datagrid-table tbody td:first-child {
+        padding-left: var(--space-4);
+    }
+
+    .datagrid-table thead th:last-child,
+    .datagrid-table tbody td:last-child {
+        padding-right: var(--space-4);
+    }
+
+    .datagrid-table tbody tr:hover ::deep .row-actions,
+    ::deep .row-actions {
+        opacity: 1;
+    }
+}

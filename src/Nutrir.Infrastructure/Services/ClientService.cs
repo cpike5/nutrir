@@ -11,6 +11,7 @@ namespace Nutrir.Infrastructure.Services;
 public class ClientService : IClientService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly IConsentService _consentService;
     private readonly INotificationDispatcher _notificationDispatcher;
@@ -18,12 +19,14 @@ public class ClientService : IClientService
 
     public ClientService(
         AppDbContext dbContext,
+        IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         IConsentService consentService,
         INotificationDispatcher notificationDispatcher,
         ILogger<ClientService> logger)
     {
         _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _consentService = consentService;
         _notificationDispatcher = notificationDispatcher;
@@ -129,6 +132,109 @@ public class ClientService : IClientService
             e,
             nutritionists.GetValueOrDefault(e.PrimaryNutritionistId),
             lastAppointments.GetValueOrDefault(e.Id))).ToList();
+    }
+
+    public async Task<PagedResult<ClientDto>> GetPagedAsync(ClientListQuery query)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var page = Math.Max(1, query.Page);
+        var pageSize = query.PageSize;
+
+        var dbQuery = db.Clients.AsQueryable();
+
+        // Search filter (same logic as GetListAsync)
+        if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+        {
+            var terms = query.SearchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var term in terms)
+            {
+                dbQuery = dbQuery.Where(c =>
+                    c.FirstName.ToLower().Contains(term) ||
+                    c.LastName.ToLower().Contains(term) ||
+                    (c.Email != null && c.Email.ToLower().Contains(term)));
+            }
+        }
+
+        // Consent filter
+        if (!string.IsNullOrWhiteSpace(query.ConsentFilter))
+        {
+            dbQuery = query.ConsentFilter switch
+            {
+                "Given" => dbQuery.Where(c => c.ConsentGiven == true),
+                "Pending" => dbQuery.Where(c => c.ConsentGiven == false),
+                _ => dbQuery
+            };
+        }
+
+        var totalCount = await dbQuery.CountAsync();
+
+        // Determine if sorting by a column that requires in-memory sort
+        var sortColumn = query.SortColumn?.ToLowerInvariant();
+        var isDescending = query.SortDirection == SortDirection.Descending;
+        var requiresInMemorySort = sortColumn == "lastappointment";
+
+        // Apply DB-level sorting for supported columns
+        if (!requiresInMemorySort)
+        {
+            dbQuery = sortColumn switch
+            {
+                "email" => isDescending
+                    ? dbQuery.OrderByDescending(c => c.Email)
+                    : dbQuery.OrderBy(c => c.Email),
+                "consent" => isDescending
+                    ? dbQuery.OrderByDescending(c => c.ConsentGiven)
+                    : dbQuery.OrderBy(c => c.ConsentGiven),
+                "created" => isDescending
+                    ? dbQuery.OrderByDescending(c => c.CreatedAt)
+                    : dbQuery.OrderBy(c => c.CreatedAt),
+                "name" => isDescending
+                    ? dbQuery.OrderByDescending(c => c.LastName).ThenByDescending(c => c.FirstName)
+                    : dbQuery.OrderBy(c => c.LastName).ThenBy(c => c.FirstName),
+                _ => dbQuery.OrderBy(c => c.LastName).ThenBy(c => c.FirstName)
+            };
+        }
+        else
+        {
+            // Apply default ordering for consistent Skip/Take before in-memory re-sort
+            dbQuery = dbQuery.OrderBy(c => c.LastName).ThenBy(c => c.FirstName);
+        }
+
+        var entities = await dbQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        // Batch-resolve nutritionist names
+        var nutritionistIds = entities.Select(c => c.PrimaryNutritionistId).Distinct().ToList();
+        var nutritionists = await db.Users
+            .Where(u => nutritionistIds.Contains(u.Id))
+            .OfType<ApplicationUser>()
+            .ToDictionaryAsync(u => u.Id, u =>
+                !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : $"{u.FirstName} {u.LastName}".Trim());
+
+        // Batch-resolve last appointment dates
+        var clientIds = entities.Select(c => c.Id).ToList();
+        var lastAppointments = await db.Appointments
+            .Where(a => clientIds.Contains(a.ClientId) && !a.IsDeleted)
+            .GroupBy(a => a.ClientId)
+            .Select(g => new { ClientId = g.Key, LastDate = g.Max(a => a.StartTime) })
+            .ToDictionaryAsync(x => x.ClientId, x => x.LastDate);
+
+        var dtos = entities.Select(e => MapToDto(
+            e,
+            nutritionists.GetValueOrDefault(e.PrimaryNutritionistId),
+            lastAppointments.GetValueOrDefault(e.Id))).ToList();
+
+        // In-memory sort for lastappointment column (only within the page)
+        if (requiresInMemorySort)
+        {
+            dtos = isDescending
+                ? dtos.OrderByDescending(d => d.LastAppointmentDate).ToList()
+                : dtos.OrderBy(d => d.LastAppointmentDate).ToList();
+        }
+
+        return new PagedResult<ClientDto>(dtos, totalCount, page, pageSize);
     }
 
     public async Task<bool> UpdateAsync(int id, ClientDto dto, string updatedByUserId)
