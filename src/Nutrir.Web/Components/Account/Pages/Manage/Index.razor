@@ -36,6 +36,18 @@
                     <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-input" placeholder="Enter your phone number" />
                     <ValidationMessage For="() => Input.PhoneNumber" class="form-error" />
                 </div>
+                <div class="form-group">
+                    <label for="Input.TimeZoneId" class="form-label">Timezone</label>
+                    <InputSelect @bind-Value="Input.TimeZoneId" id="Input.TimeZoneId" class="form-input">
+                        <option value="America/St_Johns">Newfoundland (UTC−3:30)</option>
+                        <option value="America/Halifax">Atlantic (UTC−4)</option>
+                        <option value="America/Toronto">Eastern (UTC−5)</option>
+                        <option value="America/Winnipeg">Central (UTC−6)</option>
+                        <option value="America/Edmonton">Mountain (UTC−7)</option>
+                        <option value="America/Vancouver">Pacific (UTC−8)</option>
+                    </InputSelect>
+                    <span class="form-hint">Used for displaying dates and times throughout the app.</span>
+                </div>
                 <button type="submit" class="btn btn-primary">Save</button>
             </div>
         </EditForm>
@@ -60,6 +72,7 @@
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
         Input.PhoneNumber ??= phoneNumber;
+        Input.TimeZoneId ??= user.TimeZoneId ?? "America/Toronto";
     }
 
     private async Task OnValidSubmitAsync()
@@ -73,6 +86,16 @@
             }
         }
 
+        if (Input.TimeZoneId != user.TimeZoneId)
+        {
+            user.TimeZoneId = Input.TimeZoneId;
+            var updateResult = await UserManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to update timezone.", HttpContext);
+            }
+        }
+
         await SignInManager.RefreshSignInAsync(user);
         RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
     }
@@ -82,5 +105,8 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+
+        [Display(Name = "Timezone")]
+        public string? TimeZoneId { get; set; }
     }
 }
