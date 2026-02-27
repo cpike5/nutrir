@@ -271,7 +271,7 @@ public class AiAgentService : IAiAgentService
                     {
                         // Write tool — requires user confirmation
                         var inputElement = JsonSerializer.SerializeToElement(toolUse.Input);
-                        var description = await _toolExecutor.BuildConfirmationDescriptionAsync(toolUse.Name, inputElement);
+                        var (description, entityContext) = await _toolExecutor.BuildConfirmationDescriptionAsync(toolUse.Name, inputElement);
 
                         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         _pendingConfirmations[toolUse.ID] = tcs;
@@ -283,7 +283,7 @@ public class AiAgentService : IAiAgentService
                         {
                             ToolName = toolUse.Name,
                             ConfirmationRequest = new ToolConfirmationRequest(
-                                toolUse.ID, toolUse.Name, description, confirmationTier.Value)
+                                toolUse.ID, toolUse.Name, description, confirmationTier.Value, entityContext)
                         };
 
                         bool userAllowed;

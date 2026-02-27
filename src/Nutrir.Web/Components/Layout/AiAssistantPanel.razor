@@ -91,6 +91,7 @@
                             @foreach (var confirmation in msg.Confirmations)
                             {
                                 var isElevated = confirmation.Request.Tier == ConfirmationTier.Elevated;
+                                var entity = confirmation.Request.Entity;
                                 <div class="cc-ai-confirmation @(isElevated ? "cc-ai-confirmation--elevated" : "")">
                                     @if (confirmation.Result is null)
                                     {
@@ -102,8 +103,54 @@
                                                     <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                                                 </svg>
                                             }
-                                            The assistant wants to <strong>@confirmation.Request.Description</strong>
+                                            @if (entity is not null)
+                                            {
+                                                @:The assistant wants to <strong>@FormatOperationVerb(entity.OperationType)</strong> this <strong>@entity.EntityType</strong>:
+                                            }
+                                            else
+                                            {
+                                                @:The assistant wants to <strong>@confirmation.Request.Description</strong>
+                                            }
                                         </p>
+                                        @if (entity is not null)
+                                        {
+                                            <div class="cc-ai-entity-card">
+                                                <div class="cc-ai-entity-header">
+                                                    <span class="cc-ai-entity-name">@entity.DisplayName</span>
+                                                    @if (entity.EntityId is not null)
+                                                    {
+                                                        <span class="cc-ai-entity-id">#@entity.EntityId</span>
+                                                    }
+                                                </div>
+                                                @if (entity.Fields is { Count: > 0 })
+                                                {
+                                                    <div class="cc-ai-field-list">
+                                                        @foreach (var field in entity.Fields)
+                                                        {
+                                                            <div class="cc-ai-field-row">
+                                                                <span class="cc-ai-field-label">@field.FieldLabel</span>
+                                                                <span class="cc-ai-field-values">
+                                                                    @if (entity.OperationType == "create")
+                                                                    {
+                                                                        <span class="cc-ai-field-value--proposed">@(field.ProposedValue ?? "—")</span>
+                                                                    }
+                                                                    else if (entity.OperationType == "update")
+                                                                    {
+                                                                        <span class="cc-ai-field-value--current">@(field.CurrentValue ?? "—")</span>
+                                                                        <span class="cc-ai-field-arrow">&rarr;</span>
+                                                                        <span class="cc-ai-field-value--proposed">@(field.ProposedValue ?? "—")</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="cc-ai-field-value--current">@(field.CurrentValue ?? "—")</span>
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
                                         <div class="cc-ai-confirmation-actions">
                                             <button class="cc-ai-btn-allow" @onclick="() => HandleConfirmation(confirmation, true)">Allow</button>
                                             <button class="cc-ai-btn-deny" @onclick="() => HandleConfirmation(confirmation, false)">Deny</button>
@@ -542,6 +589,24 @@
     {
         AiAgent.SetPageContext(e.Location);
     }
+
+    private static string FormatOperationVerb(string operationType) => operationType switch
+    {
+        "create" => "create",
+        "update" => "update",
+        "delete" => "delete",
+        "cancel" => "cancel",
+        "activate" => "activate",
+        "archive" => "archive",
+        "duplicate" => "duplicate",
+        "achieve" => "mark as achieved",
+        "abandon" => "mark as abandoned",
+        "change_role" => "change role of",
+        "deactivate" => "deactivate",
+        "reactivate" => "reactivate",
+        "reset_password" => "reset password for",
+        _ => operationType.Replace('_', ' '),
+    };
 
     private class ConfirmationRecord
     {

@@ -535,6 +535,80 @@
     font-style: italic;
 }
 
+/* Entity detail card within confirmation */
+.cc-ai-entity-card {
+    margin: var(--space-2) 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-alt);
+}
+
+.cc-ai-entity-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.cc-ai-entity-name {
+    font-weight: 600;
+    font-size: var(--text-xs);
+    color: var(--color-text);
+}
+
+.cc-ai-entity-id {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.cc-ai-field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cc-ai-field-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+}
+
+.cc-ai-field-label {
+    flex-shrink: 0;
+    min-width: 80px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.cc-ai-field-values {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.cc-ai-field-value--current {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+}
+
+.cc-ai-field-arrow {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.cc-ai-field-value--proposed {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
     .cc-ai-panel {

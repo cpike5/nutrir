@@ -64,50 +64,50 @@ public class AiToolExecutor
 
     // --- Description Builder ---
 
-    public async Task<string> BuildConfirmationDescriptionAsync(string toolName, JsonElement input)
+    public async Task<(string Description, EntityContext? Entity)> BuildConfirmationDescriptionAsync(string toolName, JsonElement input)
     {
         try
         {
             return toolName switch
             {
-                "create_client" => $"create a client named {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"} (consent: {(GetOptionalBool(input, "consent_given") == true ? "confirmed" : "not confirmed")})",
-                "update_client" => await BuildClientDescription("update", input),
-                "delete_client" => await BuildClientDescription("delete", input),
+                "create_client" => BuildCreateClientContext(input),
+                "update_client" => await BuildClientContext("update", input),
+                "delete_client" => await BuildClientContext("delete", input),
 
-                "create_appointment" => await BuildCreateAppointmentDescription(input),
-                "update_appointment" => await BuildAppointmentDescription("update", input),
-                "cancel_appointment" => await BuildAppointmentDescription("cancel", input),
-                "delete_appointment" => await BuildAppointmentDescription("delete", input),
+                "create_appointment" => await BuildCreateAppointmentContext(input),
+                "update_appointment" => await BuildAppointmentContext("update", input),
+                "cancel_appointment" => await BuildAppointmentContext("cancel", input),
+                "delete_appointment" => await BuildAppointmentContext("delete", input),
 
-                "create_meal_plan" => await BuildCreateMealPlanDescription(input),
-                "update_meal_plan" => await BuildMealPlanDescription("update", input),
-                "activate_meal_plan" => await BuildMealPlanDescription("activate", input),
-                "archive_meal_plan" => await BuildMealPlanDescription("archive", input),
-                "duplicate_meal_plan" => await BuildMealPlanDescription("duplicate", input),
-                "delete_meal_plan" => await BuildMealPlanDescription("delete", input),
+                "create_meal_plan" => await BuildCreateMealPlanContext(input),
+                "update_meal_plan" => await BuildMealPlanContext("update", input),
+                "activate_meal_plan" => await BuildMealPlanContext("activate", input),
+                "archive_meal_plan" => await BuildMealPlanContext("archive", input),
+                "duplicate_meal_plan" => await BuildMealPlanContext("duplicate", input),
+                "delete_meal_plan" => await BuildMealPlanContext("delete", input),
 
-                "create_goal" => $"create a goal titled \"{GetOptionalString(input, "title") ?? "?"}\" for client #{GetOptionalInt(input, "client_id")?.ToString() ?? "?"}",
-                "update_goal" => await BuildGoalDescription("update", input),
-                "achieve_goal" => await BuildGoalDescription("mark", input, "as achieved"),
-                "abandon_goal" => await BuildGoalDescription("mark", input, "as abandoned"),
-                "delete_goal" => await BuildGoalDescription("delete", input),
+                "create_goal" => BuildCreateGoalContext(input),
+                "update_goal" => await BuildGoalContext("update", input),
+                "achieve_goal" => await BuildGoalContext("achieve", input),
+                "abandon_goal" => await BuildGoalContext("abandon", input),
+                "delete_goal" => await BuildGoalContext("delete", input),
 
-                "create_progress_entry" => await BuildCreateProgressEntryDescription(input),
-                "delete_progress_entry" => await BuildProgressEntryDescription(input),
+                "create_progress_entry" => await BuildCreateProgressEntryContext(input),
+                "delete_progress_entry" => await BuildDeleteProgressEntryContext(input),
 
-                "create_user" => $"create a user account for {GetOptionalString(input, "first_name") ?? "?"} {GetOptionalString(input, "last_name") ?? "?"}",
-                "change_user_role" => await BuildUserDescription("change role of", input, $"to {GetOptionalString(input, "new_role") ?? "?"}"),
-                "deactivate_user" => await BuildUserDescription("deactivate", input),
-                "reactivate_user" => await BuildUserDescription("reactivate", input),
-                "reset_user_password" => await BuildUserDescription("reset password for", input),
+                "create_user" => BuildCreateUserContext(input),
+                "change_user_role" => await BuildUserContext("change_role", input),
+                "deactivate_user" => await BuildUserContext("deactivate", input),
+                "reactivate_user" => await BuildUserContext("reactivate", input),
+                "reset_user_password" => await BuildUserContext("reset_password", input),
 
-                _ => toolName.Replace('_', ' '),
+                _ => (toolName.Replace('_', ' '), null),
             };
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to build enriched confirmation description for {ToolName}, falling back to basic", toolName);
-            return BuildFallbackDescription(toolName, input);
+            return (BuildFallbackDescription(toolName, input), null);
         }
     }
 
@@ -117,169 +117,397 @@ public class AiToolExecutor
         return id is not null ? $"{toolName.Replace('_', ' ')} #{id}" : toolName.Replace('_', ' ');
     }
 
-    private async Task<string> BuildClientDescription(string verb, JsonElement input)
+    // --- Entity Context Builders ---
+
+    private static string FormatFieldLabel(string snakeCaseName)
+    {
+        return string.Join(" ", snakeCaseName.Split('_').Select(w =>
+            w.Length > 0 ? char.ToUpper(w[0]) + w[1..] : w));
+    }
+
+    private static List<FieldChange> BuildFieldChangesFromInput(JsonElement input, params string[] excludeKeys)
+    {
+        var exclude = new HashSet<string>(excludeKeys, StringComparer.OrdinalIgnoreCase);
+        var fields = new List<FieldChange>();
+        if (input.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in input.EnumerateObject())
+            {
+                if (!exclude.Contains(prop.Name))
+                {
+                    var value = prop.Value.ValueKind == JsonValueKind.Null ? null : prop.Value.ToString();
+                    fields.Add(new FieldChange(FormatFieldLabel(prop.Name), null, value));
+                }
+            }
+        }
+        return fields;
+    }
+
+    private static List<FieldChange> BuildUpdateFieldChanges(
+        JsonElement input, Dictionary<string, string?> currentValues, params string[] excludeKeys)
+    {
+        var exclude = new HashSet<string>(excludeKeys, StringComparer.OrdinalIgnoreCase);
+        var fields = new List<FieldChange>();
+        if (input.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in input.EnumerateObject())
+            {
+                if (!exclude.Contains(prop.Name))
+                {
+                    var proposed = prop.Value.ValueKind == JsonValueKind.Null ? null : prop.Value.ToString();
+                    currentValues.TryGetValue(prop.Name, out var current);
+                    fields.Add(new FieldChange(FormatFieldLabel(prop.Name), current, proposed));
+                }
+            }
+        }
+        return fields;
+    }
+
+    private static (string Description, EntityContext Entity) BuildCreateClientContext(JsonElement input)
+    {
+        var firstName = GetOptionalString(input, "first_name") ?? "?";
+        var lastName = GetOptionalString(input, "last_name") ?? "?";
+        var displayName = $"{firstName} {lastName}";
+        var desc = $"create a client named {displayName} (consent: {(GetOptionalBool(input, "consent_given") == true ? "confirmed" : "not confirmed")})";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("Client", "create", null, displayName, fields));
+    }
+
+    private async Task<(string Description, EntityContext? Entity)> BuildClientContext(string verb, JsonElement input)
     {
         var id = GetOptionalInt(input, "id");
-        var name = await ResolveClientNameAsync(id);
+        var client = await ResolveClientAsync(id);
+        var name = client is not null ? $"{client.FirstName} {client.LastName}" : null;
         var desc = name is not null
             ? $"{verb} client \"{name}\" (#{id})"
             : $"{verb} client #{id?.ToString() ?? "?"}";
-        return AppendChangedFields(desc, verb, input, "id");
+
+        if (verb == "update" && client is not null)
+        {
+            var currentValues = new Dictionary<string, string?>
+            {
+                ["first_name"] = client.FirstName,
+                ["last_name"] = client.LastName,
+                ["email"] = client.Email,
+                ["phone"] = client.Phone,
+                ["date_of_birth"] = client.DateOfBirth?.ToString("yyyy-MM-dd"),
+                ["notes"] = client.Notes,
+            };
+            var fields = BuildUpdateFieldChanges(input, currentValues, "id");
+            desc = AppendChangedFields(desc, verb, input, "id");
+            return (desc, new EntityContext("Client", verb, id, name ?? $"#{id}", fields));
+        }
+
+        if (verb == "delete" && client is not null)
+        {
+            var fields = new List<FieldChange>
+            {
+                new("Name", $"{client.FirstName} {client.LastName}", null),
+                new("Email", client.Email, null),
+            };
+            return (desc, new EntityContext("Client", verb, id, name!, fields));
+        }
+
+        return (desc, new EntityContext("Client", verb, id, name ?? $"#{id}", null));
     }
 
-    private async Task<string> BuildCreateAppointmentDescription(JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildCreateAppointmentContext(JsonElement input)
     {
         var clientId = GetOptionalInt(input, "client_id");
         var clientName = await ResolveClientNameAsync(clientId);
-        return clientName is not null
+        var desc = clientName is not null
             ? $"create an appointment for \"{clientName}\" (client #{clientId})"
             : $"create an appointment for client #{clientId?.ToString() ?? "?"}";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("Appointment", "create", null, clientName is not null ? $"Appointment for {clientName}" : "New Appointment", fields));
     }
 
-    private async Task<string> BuildAppointmentDescription(string verb, JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildAppointmentContext(string verb, JsonElement input)
     {
         var id = GetOptionalInt(input, "id");
-        var label = await ResolveAppointmentLabelAsync(id);
+        var appt = await ResolveAppointmentAsync(id);
+        string? label = null;
+        string? displayName = null;
+        if (appt is not null)
+        {
+            var clientName = $"{appt.ClientFirstName} {appt.ClientLastName}";
+            var date = appt.StartTime.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+            label = $"for \"{clientName}\" on {date}";
+            displayName = $"{appt.Type} with {clientName} on {date}";
+        }
+
         var desc = label is not null
             ? $"{verb} appointment {label} (#{id})"
             : $"{verb} appointment #{id?.ToString() ?? "?"}";
-        return AppendChangedFields(desc, verb, input, "id");
+
+        if (verb == "update" && appt is not null)
+        {
+            var currentValues = new Dictionary<string, string?>
+            {
+                ["type"] = appt.Type.ToString(),
+                ["status"] = appt.Status.ToString(),
+                ["start_time"] = appt.StartTime.ToString("yyyy-MM-dd HH:mm"),
+                ["duration_minutes"] = appt.DurationMinutes.ToString(),
+                ["location"] = appt.Location.ToString(),
+                ["virtual_meeting_url"] = appt.VirtualMeetingUrl,
+                ["location_notes"] = appt.LocationNotes,
+                ["notes"] = appt.Notes,
+            };
+            var fields = BuildUpdateFieldChanges(input, currentValues, "id");
+            desc = AppendChangedFields(desc, verb, input, "id");
+            return (desc, new EntityContext("Appointment", verb, id, displayName!, fields));
+        }
+
+        if ((verb == "delete" || verb == "cancel") && appt is not null)
+        {
+            var fields = new List<FieldChange>
+            {
+                new("Client", $"{appt.ClientFirstName} {appt.ClientLastName}", null),
+                new("Date", appt.StartTime.ToString("MMM d, yyyy h:mm tt", CultureInfo.InvariantCulture), null),
+                new("Type", appt.Type.ToString(), null),
+                new("Status", appt.Status.ToString(), null),
+            };
+            return (desc, new EntityContext("Appointment", verb, id, displayName!, fields));
+        }
+
+        return (desc, new EntityContext("Appointment", verb, id, displayName ?? $"#{id}", null));
     }
 
-    private async Task<string> BuildCreateMealPlanDescription(JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildCreateMealPlanContext(JsonElement input)
     {
         var clientId = GetOptionalInt(input, "client_id");
         var title = GetOptionalString(input, "title") ?? "?";
         var clientName = await ResolveClientNameAsync(clientId);
-        return clientName is not null
+        var desc = clientName is not null
             ? $"create a meal plan \"{title}\" for \"{clientName}\" (client #{clientId})"
             : $"create a meal plan titled \"{title}\" for client #{clientId?.ToString() ?? "?"}";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("Meal Plan", "create", null, title, fields));
     }
 
-    private async Task<string> BuildMealPlanDescription(string verb, JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildMealPlanContext(string verb, JsonElement input)
     {
         var id = GetOptionalInt(input, "id");
-        var title = await ResolveMealPlanTitleAsync(id);
+        var plan = await ResolveMealPlanAsync(id);
+        var title = plan?.Title;
         var desc = title is not null
             ? $"{verb} meal plan \"{title}\" (#{id})"
             : $"{verb} meal plan #{id?.ToString() ?? "?"}";
-        return AppendChangedFields(desc, verb, input, "id");
+
+        if (verb == "update" && plan is not null)
+        {
+            var currentValues = new Dictionary<string, string?>
+            {
+                ["title"] = plan.Title,
+                ["start_date"] = plan.StartDate?.ToString("yyyy-MM-dd"),
+                ["end_date"] = plan.EndDate?.ToString("yyyy-MM-dd"),
+                ["calorie_target"] = plan.CalorieTarget?.ToString(CultureInfo.InvariantCulture),
+                ["protein_target_g"] = plan.ProteinTargetG?.ToString(CultureInfo.InvariantCulture),
+                ["carbs_target_g"] = plan.CarbsTargetG?.ToString(CultureInfo.InvariantCulture),
+                ["fat_target_g"] = plan.FatTargetG?.ToString(CultureInfo.InvariantCulture),
+            };
+            var fields = BuildUpdateFieldChanges(input, currentValues, "id");
+            desc = AppendChangedFields(desc, verb, input, "id");
+            return (desc, new EntityContext("Meal Plan", verb, id, title!, fields));
+        }
+
+        if (verb == "delete" && plan is not null)
+        {
+            var fields = new List<FieldChange>
+            {
+                new("Title", plan.Title, null),
+                new("Status", plan.Status.ToString(), null),
+                new("Client", $"{plan.ClientFirstName} {plan.ClientLastName}", null),
+            };
+            return (desc, new EntityContext("Meal Plan", verb, id, title!, fields));
+        }
+
+        return (desc, new EntityContext("Meal Plan", verb, id, title ?? $"#{id}", null));
     }
 
-    private async Task<string> BuildGoalDescription(string verb, JsonElement input, string? suffix = null)
+    private static (string Description, EntityContext Entity) BuildCreateGoalContext(JsonElement input)
+    {
+        var title = GetOptionalString(input, "title") ?? "?";
+        var clientId = GetOptionalInt(input, "client_id");
+        var desc = $"create a goal titled \"{title}\" for client #{clientId?.ToString() ?? "?"}";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("Goal", "create", null, title, fields));
+    }
+
+    private async Task<(string Description, EntityContext? Entity)> BuildGoalContext(string verb, JsonElement input)
     {
         var id = GetOptionalInt(input, "id");
-        var title = await ResolveGoalTitleAsync(id);
+        var goal = await ResolveGoalAsync(id);
+        var title = goal?.Title;
         var entityLabel = title is not null
             ? $"goal \"{title}\" (#{id})"
             : $"goal #{id?.ToString() ?? "?"}";
-        var desc = suffix is not null
-            ? $"{verb} {entityLabel} {suffix}"
-            : $"{verb} {entityLabel}";
-        return AppendChangedFields(desc, verb, input, "id");
+
+        var desc = verb switch
+        {
+            "achieve" => $"mark {entityLabel} as achieved",
+            "abandon" => $"mark {entityLabel} as abandoned",
+            _ => $"{verb} {entityLabel}"
+        };
+
+        if (verb == "update" && goal is not null)
+        {
+            var currentValues = new Dictionary<string, string?>
+            {
+                ["title"] = goal.Title,
+                ["description"] = goal.Description,
+                ["target_value"] = goal.TargetValue?.ToString(CultureInfo.InvariantCulture),
+                ["target_unit"] = goal.TargetUnit,
+                ["target_date"] = goal.TargetDate?.ToString("yyyy-MM-dd"),
+            };
+            var fields = BuildUpdateFieldChanges(input, currentValues, "id");
+            desc = AppendChangedFields(desc, verb, input, "id");
+            return (desc, new EntityContext("Goal", verb, id, title!, fields));
+        }
+
+        if (verb == "delete" && goal is not null)
+        {
+            var fields = new List<FieldChange>
+            {
+                new("Title", goal.Title, null),
+                new("Type", goal.GoalType.ToString(), null),
+                new("Status", goal.Status.ToString(), null),
+            };
+            return (desc, new EntityContext("Goal", verb, id, title!, fields));
+        }
+
+        return (desc, new EntityContext("Goal", verb, id, title ?? $"#{id}", null));
     }
 
-    private async Task<string> BuildCreateProgressEntryDescription(JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildCreateProgressEntryContext(JsonElement input)
     {
         var clientId = GetOptionalInt(input, "client_id");
         var clientName = await ResolveClientNameAsync(clientId);
-        return clientName is not null
+        var desc = clientName is not null
             ? $"log a progress entry for \"{clientName}\" (client #{clientId})"
             : $"log a progress entry for client #{clientId?.ToString() ?? "?"}";
+        var fields = BuildFieldChangesFromInput(input, "client_id");
+        return (desc, new EntityContext("Progress Entry", "create", null, clientName is not null ? $"Entry for {clientName}" : "New Entry", fields));
     }
 
-    private async Task<string> BuildProgressEntryDescription(JsonElement input)
+    private async Task<(string Description, EntityContext? Entity)> BuildDeleteProgressEntryContext(JsonElement input)
     {
         var id = GetOptionalInt(input, "id");
-        var label = await ResolveProgressEntryLabelAsync(id);
-        return label is not null
-            ? $"delete progress entry {label} (#{id})"
-            : $"delete progress entry #{id?.ToString() ?? "?"}";
+        var entry = await ResolveProgressEntryAsync(id);
+        string? label = null;
+        string? displayName = null;
+        if (entry is not null)
+        {
+            var clientName = $"{entry.ClientFirstName} {entry.ClientLastName}";
+            var date = entry.EntryDate.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+            label = $"for \"{clientName}\" on {date}";
+            displayName = $"Entry for {clientName} on {date}";
+            var fields = new List<FieldChange>
+            {
+                new("Client", clientName, null),
+                new("Date", date, null),
+            };
+            var desc = $"delete progress entry {label} (#{id})";
+            return (desc, new EntityContext("Progress Entry", "delete", id, displayName, fields));
+        }
+
+        return ($"delete progress entry #{id?.ToString() ?? "?"}", new EntityContext("Progress Entry", "delete", id, $"#{id}", null));
     }
 
-    private async Task<string> BuildUserDescription(string verb, JsonElement input, string? suffix = null)
+    private static (string Description, EntityContext Entity) BuildCreateUserContext(JsonElement input)
+    {
+        var firstName = GetOptionalString(input, "first_name") ?? "?";
+        var lastName = GetOptionalString(input, "last_name") ?? "?";
+        var displayName = $"{firstName} {lastName}";
+        var desc = $"create a user account for {displayName}";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("User", "create", null, displayName, fields));
+    }
+
+    private async Task<(string Description, EntityContext? Entity)> BuildUserContext(string operation, JsonElement input)
     {
         var userId = GetOptionalString(input, "user_id");
-        var displayName = await ResolveUserDisplayNameAsync(userId);
+        var user = await ResolveUserAsync(userId);
+        var displayName = user?.DisplayName;
         var entityLabel = displayName is not null
             ? $"user \"{displayName}\""
             : $"user {userId ?? "?"}";
-        return suffix is not null
+
+        var (verb, suffix) = operation switch
+        {
+            "change_role" => ("change role of", $"to {GetOptionalString(input, "new_role") ?? "?"}"),
+            "deactivate" => ("deactivate", (string?)null),
+            "reactivate" => ("reactivate", (string?)null),
+            "reset_password" => ("reset password for", (string?)null),
+            _ => (operation, (string?)null),
+        };
+
+        var desc = suffix is not null
             ? $"{verb} {entityLabel} {suffix}"
             : $"{verb} {entityLabel}";
+
+        if (user is not null)
+        {
+            var fields = new List<FieldChange>
+            {
+                new("Name", user.DisplayName, null),
+                new("Email", user.Email, null),
+                new("Role", user.Role, operation == "change_role" ? GetOptionalString(input, "new_role") : null),
+                new("Active", user.IsActive.ToString(), null),
+            };
+            return (desc, new EntityContext("User", operation, null, displayName!, fields));
+        }
+
+        return (desc, new EntityContext("User", operation, null, displayName ?? userId ?? "?", null));
     }
 
-    // --- Entity Name Resolvers ---
+    // --- Entity Resolvers ---
+
+    private async Task<ClientDto?> ResolveClientAsync(int? id)
+    {
+        if (id is null) return null;
+        try { return await _clientService.GetByIdAsync(id.Value); }
+        catch { return null; }
+    }
 
     private async Task<string?> ResolveClientNameAsync(int? id)
     {
-        if (id is null) return null;
-        try
-        {
-            var client = await _clientService.GetByIdAsync(id.Value);
-            return client is not null ? $"{client.FirstName} {client.LastName}" : null;
-        }
-        catch { return null; }
+        var client = await ResolveClientAsync(id);
+        return client is not null ? $"{client.FirstName} {client.LastName}" : null;
     }
 
-    private async Task<string?> ResolveAppointmentLabelAsync(int? id)
+    private async Task<AppointmentDto?> ResolveAppointmentAsync(int? id)
     {
         if (id is null) return null;
-        try
-        {
-            var appt = await _appointmentService.GetByIdAsync(id.Value);
-            if (appt is null) return null;
-            var clientName = $"{appt.ClientFirstName} {appt.ClientLastName}";
-            var date = appt.StartTime.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
-            return $"for \"{clientName}\" on {date}";
-        }
+        try { return await _appointmentService.GetByIdAsync(id.Value); }
         catch { return null; }
     }
 
-    private async Task<string?> ResolveMealPlanTitleAsync(int? id)
+    private async Task<MealPlanDetailDto?> ResolveMealPlanAsync(int? id)
     {
         if (id is null) return null;
-        try
-        {
-            var plan = await _mealPlanService.GetByIdAsync(id.Value);
-            return plan?.Title;
-        }
+        try { return await _mealPlanService.GetByIdAsync(id.Value); }
         catch { return null; }
     }
 
-    private async Task<string?> ResolveGoalTitleAsync(int? id)
+    private async Task<ProgressGoalDetailDto?> ResolveGoalAsync(int? id)
     {
         if (id is null) return null;
-        try
-        {
-            var goal = await _progressService.GetGoalByIdAsync(id.Value);
-            return goal?.Title;
-        }
+        try { return await _progressService.GetGoalByIdAsync(id.Value); }
         catch { return null; }
     }
 
-    private async Task<string?> ResolveProgressEntryLabelAsync(int? id)
+    private async Task<ProgressEntryDetailDto?> ResolveProgressEntryAsync(int? id)
     {
         if (id is null) return null;
-        try
-        {
-            var entry = await _progressService.GetEntryByIdAsync(id.Value);
-            if (entry is null) return null;
-            var clientName = $"{entry.ClientFirstName} {entry.ClientLastName}";
-            var date = entry.EntryDate.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
-            return $"for \"{clientName}\" on {date}";
-        }
+        try { return await _progressService.GetEntryByIdAsync(id.Value); }
         catch { return null; }
     }
 
-    private async Task<string?> ResolveUserDisplayNameAsync(string? userId)
+    private async Task<UserDetailDto?> ResolveUserAsync(string? userId)
     {
         if (userId is null) return null;
-        try
-        {
-            var user = await _userManagementService.GetUserByIdAsync(userId);
-            return user?.DisplayName;
-        }
+        try { return await _userManagementService.GetUserByIdAsync(userId); }
         catch { return null; }
     }
 
