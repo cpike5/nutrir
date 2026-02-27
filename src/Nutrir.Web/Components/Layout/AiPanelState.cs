@@ -7,26 +7,34 @@ namespace Nutrir.Web.Components.Layout;
 public class AiPanelState
 {
     public bool IsOpen { get; private set; }
+    public bool IsWide { get; private set; }
 
-    public event Action? OnToggle;
+    public event Action? OnChange;
 
     public void Toggle()
     {
         IsOpen = !IsOpen;
-        OnToggle?.Invoke();
+        OnChange?.Invoke();
     }
 
     public void Close()
     {
         if (!IsOpen) return;
         IsOpen = false;
-        OnToggle?.Invoke();
+        OnChange?.Invoke();
     }
 
     public void SetOpen(bool isOpen)
     {
         if (IsOpen == isOpen) return;
         IsOpen = isOpen;
-        OnToggle?.Invoke();
+        OnChange?.Invoke();
+    }
+
+    public void SetWide(bool isWide)
+    {
+        if (IsWide == isWide) return;
+        IsWide = isWide;
+        OnChange?.Invoke();
     }
 }

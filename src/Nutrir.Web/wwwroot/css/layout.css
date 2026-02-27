@@ -157,6 +157,15 @@
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
+  transition: margin-right var(--duration-normal) var(--ease-default);
+}
+
+.cc-main--ai-open {
+  margin-right: 400px;
+}
+
+.cc-main--ai-wide {
+  margin-right: 700px;
 }
 
 
@@ -1018,6 +1027,13 @@
 
   .dash-actions {
     flex-wrap: wrap;
+  }
+
+  .cc-main--ai-open,
+  .cc-main--ai-wide {
+    margin-right: 0;
+    pointer-events: none;
+    user-select: none;
   }
 }
 

@@ -1,8 +1,10 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject AiPanelState PanelState
 
 <div class="cc-layout">
     <IconRailSidebar />
-    <div class="cc-main">
+    <div class="cc-main @(PanelState.IsOpen ? "cc-main--ai-open" : "") @(PanelState.IsOpen && PanelState.IsWide ? "cc-main--ai-wide" : "")">
         <TopBar />
         <div class="cc-body">
             @Body
@@ -18,3 +20,20 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">&#x1f5d9;</span>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        PanelState.OnChange += OnPanelChanged;
+    }
+
+    private void OnPanelChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        PanelState.OnChange -= OnPanelChanged;
+    }
+}
