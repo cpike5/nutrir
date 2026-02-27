@@ -46,6 +46,8 @@ public static class DependencyInjection
         services.AddScoped<IAiUsageTracker, AiUsageTracker>();
         services.AddScoped<IAiConversationStore, AiConversationStore>();
         services.AddScoped<IAiAgentService, AiAgentService>();
+        services.AddSingleton<IAiMarkdownRenderer, AiMarkdownRenderer>();
+        services.AddSingleton<IAiSuggestionService, AiSuggestionService>();
 
         return services;
     }

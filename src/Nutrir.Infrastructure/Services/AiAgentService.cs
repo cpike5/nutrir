@@ -434,10 +434,34 @@ public class AiAgentService : IAiAgentService
         }
     }
 
-    public void SetPageContext(string? entityType, string? entityId)
+    public string? CurrentEntityType => _pageEntityType;
+
+    public void SetPageContext(string uri)
     {
+        var (entityType, entityId) = ParsePageContext(uri);
         _pageEntityType = entityType;
         _pageEntityId = entityId;
+    }
+
+    private static (string? entityType, string? entityId) ParsePageContext(string uri)
+    {
+        var path = new Uri(uri, UriKind.RelativeOrAbsolute).IsAbsoluteUri
+            ? new Uri(uri).AbsolutePath
+            : uri;
+
+        var match = System.Text.RegularExpressions.Regex.Match(path, @"^/clients/(\d+)");
+        if (match.Success) return ("client", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/appointments/(\d+)");
+        if (match.Success) return ("appointment", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/meal-plans/(\d+)");
+        if (match.Success) return ("meal_plan", match.Groups[1].Value);
+
+        match = System.Text.RegularExpressions.Regex.Match(path, @"^/admin/users/([\w-]+)");
+        if (match.Success) return ("user", match.Groups[1].Value);
+
+        return (null, null);
     }
 
     /// <summary>

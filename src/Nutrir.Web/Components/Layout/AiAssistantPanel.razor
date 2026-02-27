@@ -2,6 +2,8 @@
 @implements IAsyncDisposable
 @implements IDisposable
 @inject IAiAgentService AiAgent
+@inject IAiMarkdownRenderer Markdown
+@inject IAiSuggestionService Suggestions
 @inject AiPanelState PanelState
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
@@ -66,7 +68,7 @@
                 </div>
                 <p class="cc-ai-welcome-text">Ask me anything about your practice data, or tell me to make changes.</p>
                 <div class="cc-ai-starters">
-                    @foreach (var starter in _starters)
+                    @foreach (var starter in Suggestions.GetStarters())
                     {
                         <button class="cc-ai-starter" @onclick="() => SendStarter(starter)">@starter</button>
                     }
@@ -85,7 +87,7 @@
                         }
                         else
                         {
-                            @((MarkupString)RenderMarkdown(msg.Text))
+                            @((MarkupString)Markdown.RenderToHtml(msg.Text))
                             @foreach (var confirmation in msg.Confirmations)
                             {
                                 var isElevated = confirmation.Request.Tier == ConfirmationTier.Elevated;
@@ -192,77 +194,12 @@
     private Timer? _debounceTimer;
     private bool _shouldPreventDefault;
 
-    private static readonly string[] _starters =
-    [
-        "What appointments are today?",
-        "Give me a practice overview",
-        "Create a new client",
-        "Schedule an appointment",
-        "Search for a client by name",
-        "List draft meal plans needing review",
-        "Create a goal for a client",
-        "Log a progress entry",
-    ];
-
-    private static readonly string[] _generalSuggestions =
-    [
-        "What appointments are today?",
-        "Give me a practice overview",
-        "Create a new client",
-        "Schedule an appointment",
-        "Search for a client by name",
-        "List draft meal plans needing review",
-        "Create a goal for a client",
-        "Log a progress entry",
-        "Update a client",
-        "List all appointments",
-        "Cancel an appointment",
-        "Create a meal plan",
-        "Duplicate a meal plan",
-        "Show dashboard overview",
-        "List all goals",
-        "Log a progress entry for a client",
-        "Show all clients",
-        "Reschedule an appointment",
-        "Archive a meal plan",
-        "Activate a meal plan",
-        "Show upcoming appointments",
-        "List overdue goals",
-        "Search appointments by date",
-        "Create an appointment for a client",
-        "Show recent progress entries",
-    ];
-
-    private static readonly Dictionary<string, string[]> _contextSuggestions = new()
-    {
-        ["client"] =
-        [
-            "Show this client's appointments",
-            "Create a meal plan for this client",
-            "Show this client's goals",
-            "Create a goal for this client",
-            "Log a progress entry for this client",
-            "Schedule an appointment for this client",
-        ],
-        ["appointment"] =
-        [
-            "Reschedule this appointment",
-            "Cancel this appointment",
-        ],
-        ["meal_plan"] =
-        [
-            "Duplicate this meal plan",
-            "Activate this meal plan",
-            "Archive this meal plan",
-        ],
-    };
-
     protected override void OnInitialized()
     {
         PanelState.OnToggle += OnPanelToggle;
         Navigation.LocationChanged += OnLocationChanged;
         _isOpen = PanelState.IsOpen;
-        UpdatePageContext(Navigation.Uri);
+        AiAgent.SetPageContext(Navigation.Uri);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -399,23 +336,7 @@
             return;
         }
 
-        var corpus = new List<string>();
-
-        // Add context-aware suggestions first (higher priority)
-        var (entityType, _) = ParsePageContext(Navigation.Uri);
-        if (entityType is not null && _contextSuggestions.TryGetValue(entityType, out var contextItems))
-        {
-            corpus.AddRange(contextItems);
-        }
-
-        corpus.AddRange(_generalSuggestions);
-
-        _filteredSuggestions = corpus
-            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(5)
-            .ToList();
-
+        _filteredSuggestions = Suggestions.GetSuggestions(query, AiAgent.CurrentEntityType);
         _showSuggestions = _filteredSuggestions.Count > 0;
         _selectedSuggestionIndex = -1;
     }
@@ -544,7 +465,7 @@
                 }
                 else if (evt.ToolName is not null)
                 {
-                    assistantMsg.ToolStatus = $"Looking up {FormatToolName(evt.ToolName)}...";
+                    assistantMsg.ToolStatus = $"Looking up {Markdown.FormatToolName(evt.ToolName)}...";
                     _justCompletedTool = true;
                 }
                 else if (evt.IsComplete)
@@ -601,258 +522,9 @@
         StateHasChanged();
     }
 
-    private static string FormatToolName(string toolName) => toolName switch
-    {
-        "list_clients" => "clients",
-        "get_client" => "client details",
-        "create_client" => "creating client",
-        "update_client" => "updating client",
-        "delete_client" => "deleting client",
-        "list_appointments" => "appointments",
-        "get_appointment" => "appointment details",
-        "create_appointment" => "creating appointment",
-        "update_appointment" => "updating appointment",
-        "cancel_appointment" => "cancelling appointment",
-        "delete_appointment" => "deleting appointment",
-        "list_meal_plans" => "meal plans",
-        "get_meal_plan" => "meal plan details",
-        "create_meal_plan" => "creating meal plan",
-        "update_meal_plan" => "updating meal plan",
-        "activate_meal_plan" => "activating meal plan",
-        "archive_meal_plan" => "archiving meal plan",
-        "duplicate_meal_plan" => "duplicating meal plan",
-        "delete_meal_plan" => "deleting meal plan",
-        "list_goals" => "goals",
-        "get_goal" => "goal details",
-        "create_goal" => "creating goal",
-        "update_goal" => "updating goal",
-        "achieve_goal" => "achieving goal",
-        "abandon_goal" => "abandoning goal",
-        "delete_goal" => "deleting goal",
-        "list_progress" => "progress entries",
-        "get_progress_entry" => "progress details",
-        "create_progress_entry" => "creating progress entry",
-        "delete_progress_entry" => "deleting progress entry",
-        "list_users" => "users",
-        "get_user" => "user details",
-        "create_user" => "creating user",
-        "change_user_role" => "changing user role",
-        "deactivate_user" => "deactivating user",
-        "reactivate_user" => "reactivating user",
-        "reset_user_password" => "resetting password",
-        "search" => "search results",
-        "get_dashboard" => "dashboard data",
-        _ => toolName.Replace('_', ' ')
-    };
-
-    /// <summary>
-    /// Minimal markdown rendering: bold, italic, code, headers, line breaks, lists, tables.
-    /// </summary>
-    private static string RenderMarkdown(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-
-        var escaped = System.Net.WebUtility.HtmlEncode(text);
-
-        // Entity link chips: [[type:id:display]]
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"\[\[(\w+):(\d+|[\w-]+):(.+?)\]\]",
-            match =>
-            {
-                var entityType = match.Groups[1].Value;
-                var id = match.Groups[2].Value;
-                var display = match.Groups[3].Value;
-                var href = entityType switch
-                {
-                    "client" => $"/clients/{id}",
-                    "appointment" => $"/appointments/{id}",
-                    "meal_plan" => $"/meal-plans/{id}",
-                    "user" => $"/admin/users/{id}",
-                    _ => (string?)null
-                };
-                return href is not null
-                    ? $"<a href=\"{href}\" class=\"cc-ai-entity-chip\">{display}</a>"
-                    : display;
-            });
-
-        // Code blocks (```)
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"```(\w*)\r?\n([\s\S]*?)```",
-            "<pre><code>$2</code></pre>");
-
-        // Inline code
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"`([^`]+)`",
-            "<code>$1</code>");
-
-        // Bold
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"\*\*(.+?)\*\*",
-            "<strong>$1</strong>");
-
-        // Italic
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"\*(.+?)\*",
-            "<em>$1</em>");
-
-        // Headers — render with distinct hierarchy classes
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^### (.+)$",
-            "<div class=\"cc-ai-h3\">$1</div>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^## (.+)$",
-            "<div class=\"cc-ai-h2\">$1</div>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^# (.+)$",
-            "<div class=\"cc-ai-h1\">$1</div>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Blockquotes
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^&gt; (.+)$",
-            "<div class=\"cc-ai-blockquote\">$1</div>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Horizontal rules
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^---+$",
-            "<hr/>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Tables: convert markdown tables to HTML
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(\|.+\|\r?\n\|[-| :]+\|\r?\n(?:\|.+\|\r?\n?)+)",
-            match => ConvertTable(match.Value),
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Unordered list items — use data attribute marker for grouping
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^[-*] (.+)$",
-            "<li data-ul>$1</li>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Ordered list items — use data attribute marker for grouping
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"^\d+\. (.+)$",
-            "<li data-ol>$1</li>",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Wrap consecutive <li data-ul> in <ul> and <li data-ol> in <ol>
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(<li data-ul>[\s\S]*?</li>)(?=\s*(?!<li data-ul>))",
-            match => "<ul>" + match.Value + "</ul>");
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(<li data-ol>[\s\S]*?</li>)(?=\s*(?!<li data-ol>))",
-            match => "<ol>" + match.Value + "</ol>");
-
-        // Clean up the data markers
-        escaped = escaped.Replace(" data-ul", "").Replace(" data-ol", "");
-
-        // Line breaks (double newline = paragraph break)
-        escaped = escaped.Replace("\r\n", "\n");
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"\n\n",
-            "<br/><br/>");
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"\n",
-            "<br/>");
-
-        // Clean up excessive <br/> around block elements
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(<br/>)+\s*(<(?:div|table|ul|ol|hr|pre)[ >])",
-            "$2");
-        escaped = System.Text.RegularExpressions.Regex.Replace(escaped,
-            @"(</(?:div|table|ul|ol|hr|pre)>)\s*(<br/>)+",
-            "$1");
-
-        return escaped;
-    }
-
-    private static readonly HashSet<string> StatusSuccess = new(StringComparer.OrdinalIgnoreCase)
-        { "Confirmed", "Active", "Completed" };
-    private static readonly HashSet<string> StatusWarning = new(StringComparer.OrdinalIgnoreCase)
-        { "Scheduled", "Pending", "Draft" };
-    private static readonly HashSet<string> StatusError = new(StringComparer.OrdinalIgnoreCase)
-        { "Cancelled", "No-show", "Expired" };
-
-    private static string ApplyStatusBadge(string cell)
-    {
-        var trimmed = cell.Trim();
-        if (StatusSuccess.Contains(trimmed))
-            return $"<span class=\"cc-ai-status-success\">{cell}</span>";
-        if (StatusWarning.Contains(trimmed))
-            return $"<span class=\"cc-ai-status-warning\">{cell}</span>";
-        if (StatusError.Contains(trimmed))
-            return $"<span class=\"cc-ai-status-error\">{cell}</span>";
-        return cell;
-    }
-
-    private static string ConvertTable(string markdown)
-    {
-        var lines = markdown.Trim().Split('\n')
-            .Select(l => l.Trim().Trim('|'))
-            .ToArray();
-
-        if (lines.Length < 2) return markdown;
-
-        var sb = new System.Text.StringBuilder();
-        sb.Append("<div class=\"cc-ai-table-wrap\"><table class=\"cc-ai-table\">");
-
-        // Header
-        var headers = lines[0].Split('|').Select(h => h.Trim()).ToArray();
-        sb.Append("<thead><tr>");
-        foreach (var h in headers)
-            sb.Append($"<th>{h}</th>");
-        sb.Append("</tr></thead>");
-
-        // Body (skip separator line at index 1)
-        sb.Append("<tbody>");
-        for (int i = 2; i < lines.Length; i++)
-        {
-            var cells = lines[i].Split('|').Select(c => c.Trim()).ToArray();
-            sb.Append("<tr>");
-            foreach (var c in cells)
-                sb.Append($"<td>{ApplyStatusBadge(c)}</td>");
-            sb.Append("</tr>");
-        }
-        sb.Append("</tbody></table></div>");
-
-        return sb.ToString();
-    }
-
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        UpdatePageContext(e.Location);
-    }
-
-    private void UpdatePageContext(string uri)
-    {
-        var (entityType, entityId) = ParsePageContext(uri);
-        AiAgent.SetPageContext(entityType, entityId);
-    }
-
-    private static (string? entityType, string? entityId) ParsePageContext(string uri)
-    {
-        // Extract the path portion from the URI
-        var path = new Uri(uri, UriKind.RelativeOrAbsolute).IsAbsoluteUri
-            ? new Uri(uri).AbsolutePath
-            : uri;
-
-        var match = System.Text.RegularExpressions.Regex.Match(path, @"^/clients/(\d+)");
-        if (match.Success) return ("client", match.Groups[1].Value);
-
-        match = System.Text.RegularExpressions.Regex.Match(path, @"^/appointments/(\d+)");
-        if (match.Success) return ("appointment", match.Groups[1].Value);
-
-        match = System.Text.RegularExpressions.Regex.Match(path, @"^/meal-plans/(\d+)");
-        if (match.Success) return ("meal_plan", match.Groups[1].Value);
-
-        match = System.Text.RegularExpressions.Regex.Match(path, @"^/admin/users/([\w-]+)");
-        if (match.Success) return ("user", match.Groups[1].Value);
-
-        return (null, null);
+        AiAgent.SetPageContext(e.Location);
     }
 
     private class ConfirmationRecord
