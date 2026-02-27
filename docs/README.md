@@ -27,10 +27,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
 | [Maintenance Mode](infrastructure/maintenance-mode.md) | Admin-toggleable maintenance mode with 503 page, API endpoints, middleware |
 | [CLI Tool](infrastructure/cli-tool.md) | Nutrir CLI reference — all commands, options, output format, and examples |
-| [AI Assistant Spec](infrastructure/ai-assistant-spec.md) | Phase B design spec for the AI assistant panel — architecture, tools, permissions, UI |
-| [AI Assistant Phase 1](infrastructure/ai-assistant-phase1.md) | Phase 1 read-only AI assistant — architecture, tools, streaming, configuration |
-| [AI Assistant Phase 2a](infrastructure/ai-assistant-phase2a.md) | Phase 2a write tools + confirmation dialogs — 21 write tools, pause-resume stream flow, audit source tagging |
-| [AI Assistant Phase 2c](infrastructure/ai-assistant-phase2c.md) | Phase 2c production hardening — conversation persistence, rate limiting, usage tracking, admin dashboard |
+| [AI Assistant](infrastructure/ai-assistant-spec.md) | AI assistant panel — architecture, 38 tools, confirmation flow, streaming, markdown rendering, persistence, rate limiting, usage tracking |
 | [Seed Data Generator](infrastructure/seed-data-generator.md) | Dynamic development seed data — Bogus-powered profile-driven generator, configuration, food database, extending |
 | [Real-Time Notifications](infrastructure/real-time-notifications.md) | In-process event bus architecture, notification payload, dispatch points, consumer pages, integration pattern |
 

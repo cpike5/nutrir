@@ -145,4 +145,4 @@ This disclosure should be added to the consent form's data handling section (see
 - [Compliance Requirements](requirements.md) — v1/v2 requirements
 - [Privacy Research](privacy-research.md) — PIPEDA, PHIPA, HIA analysis
 - [Consent Form](consent-form.md) — Consent form specification
-- [AI Assistant Phase 2c](../infrastructure/ai-assistant-phase2c.md) — Conversation persistence design
+- [AI Assistant Spec](../infrastructure/ai-assistant-spec.md) — AI assistant architecture and conversation persistence design
