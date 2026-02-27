@@ -196,9 +196,10 @@
 
     protected override void OnInitialized()
     {
-        PanelState.OnToggle += OnPanelToggle;
+        PanelState.OnChange += OnPanelToggle;
         Navigation.LocationChanged += OnLocationChanged;
         _isOpen = PanelState.IsOpen;
+        _isWide = PanelState.IsWide;
         AiAgent.SetPageContext(Navigation.Uri);
     }
 
@@ -211,6 +212,7 @@
             try
             {
                 _isWide = await JS.InvokeAsync<bool>("aiPanel.getStoredWideState");
+                PanelState.SetWide(_isWide);
 
                 var storedOpen = await JS.InvokeAsync<bool>("aiPanel.getStoredState");
                 if (storedOpen)
@@ -273,6 +275,7 @@
     private void OnPanelToggle()
     {
         _isOpen = PanelState.IsOpen;
+        _isWide = PanelState.IsWide;
         InvokeAsync(async () =>
         {
             StateHasChanged();
@@ -298,6 +301,7 @@
     private async Task ToggleWide()
     {
         _isWide = !_isWide;
+        PanelState.SetWide(_isWide);
         if (_jsInitialized)
         {
             try { await JS.InvokeVoidAsync("aiPanel.saveWideState", _isWide); }
@@ -549,7 +553,7 @@
 
     public void Dispose()
     {
-        PanelState.OnToggle -= OnPanelToggle;
+        PanelState.OnChange -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
         _debounceTimer?.Dispose();
         _streamCts?.Cancel();
@@ -558,7 +562,7 @@
 
     public ValueTask DisposeAsync()
     {
-        PanelState.OnToggle -= OnPanelToggle;
+        PanelState.OnChange -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
         _debounceTimer?.Dispose();
         _streamCts?.Cancel();

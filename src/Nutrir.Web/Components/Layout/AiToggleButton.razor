@@ -14,11 +14,11 @@
 @code {
     protected override void OnInitialized()
     {
-        PanelState.OnToggle += StateHasChanged;
+        PanelState.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
-        PanelState.OnToggle -= StateHasChanged;
+        PanelState.OnChange -= StateHasChanged;
     }
 }
