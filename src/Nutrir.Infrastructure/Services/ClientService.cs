@@ -118,7 +118,17 @@ public class ClientService : IClientService
             .ToDictionaryAsync(u => u.Id, u =>
                 !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : $"{u.FirstName} {u.LastName}".Trim());
 
-        return entities.Select(e => MapToDto(e, nutritionists.GetValueOrDefault(e.PrimaryNutritionistId))).ToList();
+        var clientIds = entities.Select(c => c.Id).ToList();
+        var lastAppointments = await _dbContext.Appointments
+            .Where(a => clientIds.Contains(a.ClientId) && !a.IsDeleted)
+            .GroupBy(a => a.ClientId)
+            .Select(g => new { ClientId = g.Key, LastDate = g.Max(a => a.StartTime) })
+            .ToDictionaryAsync(x => x.ClientId, x => x.LastDate);
+
+        return entities.Select(e => MapToDto(
+            e,
+            nutritionists.GetValueOrDefault(e.PrimaryNutritionistId),
+            lastAppointments.GetValueOrDefault(e.Id))).ToList();
     }
 
     public async Task<bool> UpdateAsync(int id, ClientDto dto, string updatedByUserId)
@@ -213,7 +223,7 @@ public class ClientService : IClientService
         return null;
     }
 
-    private static ClientDto MapToDto(Client entity, string? nutritionistName = null)
+    private static ClientDto MapToDto(Client entity, string? nutritionistName = null, DateTime? lastAppointmentDate = null)
     {
         return new ClientDto(
             entity.Id,
@@ -231,6 +241,7 @@ public class ClientService : IClientService
             entity.IsDeleted,
             entity.CreatedAt,
             entity.UpdatedAt,
-            entity.DeletedAt);
+            entity.DeletedAt,
+            lastAppointmentDate);
     }
 }

@@ -130,6 +130,10 @@
                             @onclick="@(() => OnSortColumn("Consent"))" @onkeydown="@(e => OnSortKeyDown(e, "Consent"))">
                             Consent <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Consent")</span>
                         </th>
+                        <th scope="col" class="col-last-appt sortable" aria-sort="@GetAriaSort("LastAppointment")" tabindex="0"
+                            @onclick="@(() => OnSortColumn("LastAppointment"))" @onkeydown="@(e => OnSortKeyDown(e, "LastAppointment"))">
+                            Last Appt <span class="sort-indicator" aria-hidden="true">@GetSortIcon("LastAppointment")</span>
+                        </th>
                         <th scope="col" class="col-date sortable" aria-sort="@GetAriaSort("Created")" tabindex="0"
                             @onclick="@(() => OnSortColumn("Created"))" @onkeydown="@(e => OnSortKeyDown(e, "Created"))">
                             Created <span class="sort-indicator" aria-hidden="true">@GetSortIcon("Created")</span>
@@ -162,6 +166,7 @@
                                     <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> Pending</Badge>
                                 }
                             </td>
+                            <td class="col-last-appt cell-date">@(client.LastAppointmentDate?.ToString("MMM d, yyyy") ?? "—")</td>
                             <td class="col-date cell-date">@client.CreatedAt.ToString("MMM d, yyyy")</td>
                             <td>
                                 <div class="row-actions">
@@ -219,6 +224,8 @@
                     ("Nutritionist", false) => result.OrderByDescending(c => c.PrimaryNutritionistName ?? string.Empty),
                     ("Consent", true) => result.OrderBy(c => c.ConsentGiven),
                     ("Consent", false) => result.OrderByDescending(c => c.ConsentGiven),
+                    ("LastAppointment", true) => result.OrderBy(c => c.LastAppointmentDate ?? DateTime.MinValue),
+                    ("LastAppointment", false) => result.OrderByDescending(c => c.LastAppointmentDate ?? DateTime.MinValue),
                     ("Created", true) => result.OrderBy(c => c.CreatedAt),
                     ("Created", false) => result.OrderByDescending(c => c.CreatedAt),
                     _ => result

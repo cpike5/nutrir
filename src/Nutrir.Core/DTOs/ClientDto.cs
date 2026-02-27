@@ -16,4 +16,5 @@ public record ClientDto(
     bool IsDeleted,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
-    DateTime? DeletedAt);
+    DateTime? DeletedAt,
+    DateTime? LastAppointmentDate = null);

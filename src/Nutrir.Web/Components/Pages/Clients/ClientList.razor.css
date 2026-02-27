@@ -455,7 +455,8 @@
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 860px) {
     .col-phone,
-    .col-nutritionist {
+    .col-nutritionist,
+    .col-last-appt {
         display: none;
     }
 
