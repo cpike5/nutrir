@@ -2,11 +2,22 @@ namespace Nutrir.Core.Interfaces;
 
 public enum ConfirmationTier { Standard, Elevated }
 
+public record FieldChange(string FieldLabel, string? CurrentValue, string? ProposedValue);
+
+public record EntityContext(
+    string EntityType,
+    string OperationType,
+    int? EntityId,
+    string? DisplayName,
+    List<FieldChange>? Fields
+);
+
 public record ToolConfirmationRequest(
     string ToolCallId,
     string ToolName,
     string Description,
-    ConfirmationTier Tier
+    ConfirmationTier Tier,
+    EntityContext? Entity = null
 );
 
 public record AgentStreamEvent
