@@ -39,12 +39,10 @@
                 <div class="form-group">
                     <label for="Input.TimeZoneId" class="form-label">Timezone</label>
                     <InputSelect @bind-Value="Input.TimeZoneId" id="Input.TimeZoneId" class="form-input">
-                        <option value="America/St_Johns">Newfoundland (UTC−3:30)</option>
-                        <option value="America/Halifax">Atlantic (UTC−4)</option>
-                        <option value="America/Toronto">Eastern (UTC−5)</option>
-                        <option value="America/Winnipeg">Central (UTC−6)</option>
-                        <option value="America/Edmonton">Mountain (UTC−7)</option>
-                        <option value="America/Vancouver">Pacific (UTC−8)</option>
+                        @foreach (var tz in TimeZoneOptions)
+                        {
+                            <option value="@tz.Id" selected="@(tz.Id == Input.TimeZoneId)">@tz.Label</option>
+                        }
                     </InputSelect>
                     <span class="form-hint">Used for displaying dates and times throughout the app.</span>
                 </div>
@@ -88,7 +86,7 @@
 
         if (Input.TimeZoneId != user.TimeZoneId)
         {
-            user.TimeZoneId = Input.TimeZoneId;
+            user.TimeZoneId = Input.TimeZoneId ?? "America/Toronto";
             var updateResult = await UserManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
@@ -99,6 +97,16 @@
         await SignInManager.RefreshSignInAsync(user);
         RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
     }
+
+    private static readonly (string Id, string Label)[] TimeZoneOptions =
+    [
+        ("America/St_Johns", "Newfoundland (UTC\u22123:30)"),
+        ("America/Halifax", "Atlantic (UTC\u22124)"),
+        ("America/Toronto", "Eastern (UTC\u22125)"),
+        ("America/Winnipeg", "Central (UTC\u22126)"),
+        ("America/Edmonton", "Mountain (UTC\u22127)"),
+        ("America/Vancouver", "Pacific (UTC\u22128)"),
+    ];
 
     private sealed class InputModel
     {
