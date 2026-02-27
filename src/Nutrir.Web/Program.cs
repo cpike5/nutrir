@@ -57,6 +57,7 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddScoped<Nutrir.Web.Components.Layout.AiPanelState>();
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddSingleton<NotificationBroadcaster>();
     builder.Services.AddScoped<RealTimeNotificationService>();
     builder.Services.AddSignalR();
     builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();

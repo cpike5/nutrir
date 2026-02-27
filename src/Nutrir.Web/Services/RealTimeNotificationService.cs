@@ -1,86 +1,48 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 using Nutrir.Core.DTOs;
 
 namespace Nutrir.Web.Services;
 
 public class RealTimeNotificationService : IAsyncDisposable
 {
-    private readonly NavigationManager _navigationManager;
+    private readonly NotificationBroadcaster _broadcaster;
     private readonly ILogger<RealTimeNotificationService> _logger;
-    private readonly string? _authCookie;
-    private HubConnection? _connection;
+    private bool _subscribed;
 
     public event Action<EntityChangeNotification>? OnEntityChanged;
 
     public RealTimeNotificationService(
-        NavigationManager navigationManager,
-        IHttpContextAccessor httpContextAccessor,
+        NotificationBroadcaster broadcaster,
         ILogger<RealTimeNotificationService> logger)
     {
-        _navigationManager = navigationManager;
+        _broadcaster = broadcaster;
         _logger = logger;
-
-        // Capture auth cookie during construction (HttpContext is only available during the initial HTTP request)
-        _authCookie = httpContextAccessor.HttpContext?.Request.Cookies[".AspNetCore.Identity.Application"];
     }
 
-    public async Task StartAsync()
+    public Task StartAsync()
     {
-        if (_connection is not null)
-            return;
+        if (_subscribed)
+            return Task.CompletedTask;
 
-        if (string.IsNullOrEmpty(_authCookie))
-        {
-            _logger.LogDebug("No auth cookie available — real-time notifications disabled for this circuit");
-            return;
-        }
+        _broadcaster.OnBroadcast += HandleBroadcast;
+        _subscribed = true;
+        _logger.LogDebug("Subscribed to in-process notification broadcaster");
 
-        try
-        {
-            var hubUrl = _navigationManager.ToAbsoluteUri("/hubs/nutrir");
-
-            _connection = new HubConnectionBuilder()
-                .WithUrl(hubUrl, opts =>
-                {
-                    opts.Headers.Add("Cookie", $".AspNetCore.Identity.Application={_authCookie}");
-                })
-                .WithAutomaticReconnect()
-                .Build();
-
-            _connection.On<EntityChangeNotification>("EntityChanged", notification =>
-            {
-                OnEntityChanged?.Invoke(notification);
-            });
-
-            _connection.Reconnecting += ex =>
-            {
-                _logger.LogWarning(ex, "SignalR reconnecting");
-                return Task.CompletedTask;
-            };
-
-            _connection.Reconnected += connectionId =>
-            {
-                _logger.LogInformation("SignalR reconnected with connection {ConnectionId}", connectionId);
-                return Task.CompletedTask;
-            };
-
-            await _connection.StartAsync();
-            _logger.LogDebug("SignalR connection started");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to start SignalR connection — real-time notifications unavailable");
-            _connection = null;
-        }
+        return Task.CompletedTask;
     }
 
-    public async ValueTask DisposeAsync()
+    private void HandleBroadcast(EntityChangeNotification notification)
     {
-        if (_connection is not null)
+        OnEntityChanged?.Invoke(notification);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        if (_subscribed)
         {
-            await _connection.DisposeAsync();
-            _connection = null;
+            _broadcaster.OnBroadcast -= HandleBroadcast;
+            _subscribed = false;
         }
+
+        return ValueTask.CompletedTask;
     }
 }
