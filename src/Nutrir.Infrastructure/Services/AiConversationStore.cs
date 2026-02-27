@@ -95,7 +95,7 @@ public class AiConversationStore : IAiConversationStore
             db.AiConversationMessages.Add(new AiConversationMessage
             {
                 ConversationId = conversation.Id,
-                Role = msg.Role.ToString().ToLowerInvariant(),
+                Role = msg.Role == Role.User ? "user" : "assistant",
                 ContentJson = SerializeContent(msg),
                 DisplayText = displayText,
             });
@@ -197,7 +197,9 @@ public class AiConversationStore : IAiConversationStore
     {
         try
         {
-            var role = msg.Role == "user" ? Role.User : Role.Assistant;
+            // Trim quotes to handle legacy data where ApiEnum.ToString() included JSON quotes
+            var storedRole = msg.Role.Trim('"');
+            var role = storedRole == "user" ? Role.User : Role.Assistant;
 
             // Try deserializing as a simple string first
             if (msg.ContentJson.StartsWith('"'))

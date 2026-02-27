@@ -77,12 +77,15 @@ public class AuditLogService : IAuditLogService
         var query = db.AuditLogEntries.AsQueryable();
 
         if (request.From.HasValue)
-            query = query.Where(e => e.Timestamp >= request.From.Value);
+        {
+            var fromUtc = DateTime.SpecifyKind(request.From.Value.Date, DateTimeKind.Utc);
+            query = query.Where(e => e.Timestamp >= fromUtc);
+        }
 
         if (request.To.HasValue)
         {
-            var endOfDay = request.To.Value.Date.AddDays(1);
-            query = query.Where(e => e.Timestamp < endOfDay);
+            var endOfDayUtc = DateTime.SpecifyKind(request.To.Value.Date.AddDays(1), DateTimeKind.Utc);
+            query = query.Where(e => e.Timestamp < endOfDayUtc);
         }
 
         if (!string.IsNullOrWhiteSpace(request.Action))
