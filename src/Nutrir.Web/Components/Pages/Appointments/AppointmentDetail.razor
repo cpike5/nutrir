@@ -110,6 +110,13 @@
                             Cancel
                         </Button>
                     }
+                    else if (_appointment.Status == AppointmentStatus.NoShow)
+                    {
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => { _errorMessage = null; _showRevertConfirm = true; })" Disabled="@_isProcessing">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 0 1 9.3-4"/><path d="M13.5 8a5.5 5.5 0 0 1-9.3 4"/><path d="M11 1.5 12 4l-2.5 1"/><path d="M5 15l-1-2.5L6.5 11"/></svg>
+                            Revert to Confirmed
+                        </Button>
+                    }
                 </div>
             </div>
         </div>
@@ -143,6 +150,34 @@
                                 @(_isProcessing ? "Cancelling..." : "Confirm Cancellation")
                             </Button>
                             <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showCancelForm = false)">Go Back</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Revert No-Show Confirmation ─────────────────── *@
+        @if (_showRevertConfirm)
+        {
+            <div class="table-card cancel-card section-animate">
+                <div class="cancel-confirm">
+                    <div class="cancel-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 10a7.5 7.5 0 0 1 12.8-5.3"/><path d="M17.5 10a7.5 7.5 0 0 1-12.8 5.3"/><path d="M14.5 2.5 15.5 5l-2.5 1"/><path d="M5.5 17.5 4.5 15l2.5-1"/></svg>
+                    </div>
+                    <div class="cancel-content">
+                        <p class="cancel-title">Revert to Confirmed</p>
+                        <p class="cancel-desc">
+                            Are you sure you want to revert the No-Show status for <strong>@_appointment.ClientFirstName @_appointment.ClientLastName</strong>'s appointment back to Confirmed?
+                        </p>
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <p class="cancel-error">@_errorMessage</p>
+                        }
+                        <div class="cancel-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="RevertNoShow" Disabled="@_isProcessing">
+                                @(_isProcessing ? "Reverting..." : "Confirm Revert")
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showRevertConfirm = false)">Go Back</Button>
                         </div>
                     </div>
                 </div>
@@ -265,6 +300,7 @@
     private bool _isLoading = true;
     private bool _isProcessing;
     private bool _showCancelForm;
+    private bool _showRevertConfirm;
     private bool _refreshedByRealTime;
     private string? _cancellationReason;
     private string? _errorMessage;
@@ -346,6 +382,28 @@
         await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.NoShow, userId);
         _appointment = await AppointmentService.GetByIdAsync(Id);
         _isProcessing = false;
+    }
+
+    private async Task RevertNoShow()
+    {
+        _isProcessing = true;
+        _errorMessage = null;
+
+        try
+        {
+            var userId = await GetUserId();
+            await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.Confirmed, userId);
+            _appointment = await AppointmentService.GetByIdAsync(Id);
+            _showRevertConfirm = false;
+        }
+        catch
+        {
+            _errorMessage = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
 
     private async Task CancelAppointment()
