@@ -12,15 +12,18 @@ public class MealPlanService : IMealPlanService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<MealPlanService> _logger;
 
     public MealPlanService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
+        INotificationDispatcher notificationDispatcher,
         ILogger<MealPlanService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
 
@@ -105,6 +108,8 @@ public class MealPlanService : IMealPlanService
             entity.Id.ToString(),
             $"Created meal plan for client {entity.ClientId}");
 
+        await TryDispatchAsync("MealPlan", entity.Id, EntityChangeType.Created, userId);
+
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
 
@@ -139,6 +144,8 @@ public class MealPlanService : IMealPlanService
             "MealPlan",
             id.ToString(),
             "Updated meal plan metadata");
+
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
 
         return true;
     }
@@ -219,6 +226,8 @@ public class MealPlanService : IMealPlanService
             dto.MealPlanId.ToString(),
             "Saved content for meal plan");
 
+        await TryDispatchAsync("MealPlan", dto.MealPlanId, EntityChangeType.Updated, userId);
+
         return true;
     }
 
@@ -243,6 +252,8 @@ public class MealPlanService : IMealPlanService
             "MealPlan",
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
+
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
 
         return true;
     }
@@ -328,6 +339,8 @@ public class MealPlanService : IMealPlanService
             copy.Id.ToString(),
             $"Duplicated meal plan from source {id}");
 
+        await TryDispatchAsync("MealPlan", copy.Id, EntityChangeType.Created, userId);
+
         return true;
     }
 
@@ -351,6 +364,8 @@ public class MealPlanService : IMealPlanService
             id.ToString(),
             "Soft-deleted meal plan");
 
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Deleted, userId);
+
         return true;
     }
 
@@ -372,6 +387,20 @@ public class MealPlanService : IMealPlanService
     {
         return await _dbContext.MealPlans
             .CountAsync(mp => mp.Status == MealPlanStatus.Active);
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 
     private async Task<string?> GetUserNameAsync(string userId)

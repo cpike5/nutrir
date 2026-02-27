@@ -10,6 +10,8 @@ using Nutrir.Web.Components.Account;
 using Nutrir.Web.Middleware;
 using Elastic.Apm.SerilogEnricher;
 using Nutrir.Web.Endpoints;
+using Nutrir.Web.Hubs;
+using Nutrir.Web.Services;
 using QuestPDF.Infrastructure;
 using Serilog;
 
@@ -54,6 +56,10 @@ try
 
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddScoped<Nutrir.Web.Components.Layout.AiPanelState>();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<RealTimeNotificationService>();
+    builder.Services.AddSignalR();
+    builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
     builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
@@ -136,6 +142,9 @@ try
 
     // Consent form API endpoints.
     app.MapConsentFormEndpoints();
+
+    // SignalR hub for real-time notifications.
+    app.MapHub<NutrirHub>("/hubs/nutrir");
 
     // Maintenance mode admin API endpoints.
     app.MapGet("/api/admin/maintenance/status", (IMaintenanceService svc) =>

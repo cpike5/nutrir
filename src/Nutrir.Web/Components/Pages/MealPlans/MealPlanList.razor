@@ -1,12 +1,15 @@
 @page "/meal-plans"
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IMealPlanService MealPlanService
 @inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>Meal Plans — Nutrir</PageTitle>
 
@@ -70,6 +73,13 @@
         }
         else
         {
+            @if (_refreshedByRealTime)
+            {
+                <div class="realtime-banner" role="status" aria-live="polite">
+                    <span class="realtime-dot"></span>
+                    Updated in real time
+                </div>
+            }
             <table class="mp-table">
                 <thead>
                     <tr>
@@ -125,14 +135,19 @@
     private List<MealPlanSummaryDto>? _mealPlans;
     private string? _statusFilter;
     private bool _isLoading = true;
+    private bool _refreshedByRealTime;
+    private System.Threading.Timer? _notificationDebounceTimer;
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         await LoadMealPlansAsync();
     }
 
     private async Task LoadMealPlansAsync()
     {
+        _refreshedByRealTime = false;
         _isLoading = true;
 
         MealPlanStatus? status = null;
@@ -153,6 +168,30 @@
     {
         var url = ClientId.HasValue ? $"/meal-plans/new?clientId={ClientId}" : "/meal-plans/new";
         NavigationManager.NavigateTo(url);
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (notification.EntityType != "MealPlan")
+            return;
+
+        _notificationDebounceTimer?.Dispose();
+        _notificationDebounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadMealPlansAsync();
+                _refreshedByRealTime = true;
+                StateHasChanged();
+            });
+        }, null, 1500, Timeout.Infinite);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
+        _notificationDebounceTimer?.Dispose();
+        return ValueTask.CompletedTask;
     }
 
     private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch

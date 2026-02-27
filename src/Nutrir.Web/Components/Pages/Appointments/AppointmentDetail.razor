@@ -1,17 +1,20 @@
 @page "/appointments/{Id:int}"
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>@(_appointment is not null ? $"Appointment — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment") — Nutrir</PageTitle>
 
@@ -42,6 +45,13 @@
     }
     else
     {
+        @if (_refreshedByRealTime)
+        {
+            <div class="realtime-banner" role="status" aria-live="polite">
+                <span class="realtime-dot"></span>
+                Updated in real time
+            </div>
+        }
         @* ── Hero Header ─────────────────────────────────── *@
         <div class="table-card section-animate" style="animation-delay: 0ms;">
             <div class="hero">
@@ -255,11 +265,14 @@
     private bool _isLoading = true;
     private bool _isProcessing;
     private bool _showCancelForm;
+    private bool _refreshedByRealTime;
     private string? _cancellationReason;
     private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         await TimeZoneService.InitializeAsync();
         _appointment = await AppointmentService.GetByIdAsync(Id);
         _isLoading = false;
@@ -270,6 +283,25 @@
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "AppointmentViewed", "Appointment", Id.ToString(), "Viewed Appointment record");
         }
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (notification.EntityType != "Appointment" || notification.EntityId != Id)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            _appointment = await AppointmentService.GetByIdAsync(Id);
+            _refreshedByRealTime = true;
+            StateHasChanged();
+        });
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
+        return ValueTask.CompletedTask;
     }
 
     private bool IsActionable() =>
