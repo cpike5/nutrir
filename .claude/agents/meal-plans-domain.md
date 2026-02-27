@@ -47,6 +47,7 @@ You own everything related to **meal planning**: creating meal plans, organizing
 - **Clients**: Every meal plan belongs to a client
 - **Progress**: Meal plan adherence may be tracked through progress entries
 - **Compliance**: Meal plan operations must generate audit log entries
+- **Real-time notifications**: MealPlanService dispatches notifications on create/update metadata/save content/status change/duplicate/delete. Notifications are plan-level only (no day/slot/item granularity). See `docs/infrastructure/real-time-notifications.md`.
 
 ## Your Responsibilities
 
@@ -69,3 +70,4 @@ When asked for input on work, always consider:
 - Are status transitions valid for the meal plan lifecycle?
 - Is the plan properly associated with a client and creator?
 - Are audit log entries created for meal plan operations?
+- Are real-time notification dispatches included for meal plan operations?

@@ -32,6 +32,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [AI Assistant Phase 2a](infrastructure/ai-assistant-phase2a.md) | Phase 2a write tools + confirmation dialogs — 21 write tools, pause-resume stream flow, audit source tagging |
 | [AI Assistant Phase 2c](infrastructure/ai-assistant-phase2c.md) | Phase 2c production hardening — conversation persistence, rate limiting, usage tracking, admin dashboard |
 | [Seed Data Generator](infrastructure/seed-data-generator.md) | Dynamic development seed data — Bogus-powered profile-driven generator, configuration, food database, extending |
+| [Real-Time Notifications](infrastructure/real-time-notifications.md) | In-process event bus architecture, notification payload, dispatch points, consumer pages, integration pattern |
 
 ## Design System Documents
 

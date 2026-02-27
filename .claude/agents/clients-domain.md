@@ -39,6 +39,7 @@ You own everything related to **client management**: profiles, registration, int
 - **Meal Plans**: Clients have meal plans (`MealPlan.ClientId`)
 - **Progress**: Clients have goals, entries, and measurements (`ProgressGoal.ClientId`, `ProgressEntry.ClientId`)
 - **Compliance**: Consent capture and audit logging requirements apply to all client operations
+- **Real-time notifications**: ClientService dispatches notifications on create/update/delete. ClientDetail also refreshes on MealPlan and Appointment changes. See `docs/infrastructure/real-time-notifications.md`.
 
 ## Your Responsibilities
 
@@ -61,3 +62,4 @@ When asked for input on work, always consider:
 - Could this leak PHI to logs or external services?
 - Is the client lifecycle handled correctly (creation → active → soft-deleted)?
 - Are audit log entries created for client data access/modification?
+- Are real-time notification dispatches included for client CRUD operations?

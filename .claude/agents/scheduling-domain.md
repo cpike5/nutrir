@@ -46,6 +46,7 @@ You own everything related to **appointment scheduling**: booking, rescheduling,
 - **Clients**: Every appointment belongs to a client
 - **Progress**: Appointments may result in progress entries being recorded
 - **Compliance**: All appointment CRUD operations must generate audit log entries
+- **Real-time notifications**: AppointmentService dispatches notifications on create/update/status change/delete. See `docs/infrastructure/real-time-notifications.md`.
 
 ## Your Responsibilities
 
@@ -68,3 +69,4 @@ When asked for input on work, always consider:
 - Are times stored in UTC and displayed in local time?
 - Does cancellation preserve the record with reason and timestamp?
 - Are audit log entries created for appointment operations?
+- Are real-time notification dispatches included for appointment operations?
