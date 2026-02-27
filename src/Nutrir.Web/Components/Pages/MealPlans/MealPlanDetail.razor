@@ -1,5 +1,6 @@
 @page "/meal-plans/{Id:int}"
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
@@ -7,11 +8,13 @@
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @using Nutrir.Web.Components.UI
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IMealPlanService MealPlanService
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
 
@@ -35,6 +38,13 @@
     }
     else
     {
+        @if (_refreshedByRealTime)
+        {
+            <div class="realtime-banner" role="status" aria-live="polite">
+                <span class="realtime-dot"></span>
+                Updated in real time
+            </div>
+        }
         <!-- Hero Card -->
         <div class="table-card section-animate">
             <div class="hero">
@@ -267,11 +277,14 @@
     private bool _isLoading = true;
     private bool _isProcessing;
     private bool _showDeleteConfirm;
+    private bool _refreshedByRealTime;
     private string? _errorMessage;
     private string? _successMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         _plan = await MealPlanService.GetByIdAsync(Id);
         _isLoading = false;
 
@@ -281,6 +294,25 @@
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "MealPlanViewed", "MealPlan", Id.ToString(), "Viewed MealPlan record");
         }
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (notification.EntityType != "MealPlan" || notification.EntityId != Id)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            _plan = await MealPlanService.GetByIdAsync(Id);
+            _refreshedByRealTime = true;
+            StateHasChanged();
+        });
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
+        return ValueTask.CompletedTask;
     }
 
     private async Task<string> GetUserId()

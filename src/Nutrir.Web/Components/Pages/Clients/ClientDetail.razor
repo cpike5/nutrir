@@ -1,5 +1,6 @@
 @page "/clients/{Id:int}"
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -7,6 +8,7 @@
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject IAppointmentService AppointmentService
@@ -17,6 +19,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject ITimeZoneService TimeZoneService
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
 
@@ -41,6 +44,13 @@
     }
     else
     {
+        @if (_refreshedByRealTime)
+        {
+            <div class="realtime-banner" role="status" aria-live="polite">
+                <span class="realtime-dot"></span>
+                Updated in real time
+            </div>
+        }
         @* ── Hero Header ─────────────────────────────────── *@
         <div class="table-card section-animate" style="animation-delay: 0ms;">
             <div class="hero">
@@ -389,11 +399,14 @@
     private bool _showDeleteConfirm;
     private bool _isDeleting;
     private bool _isMarkingSigned;
+    private bool _refreshedByRealTime;
     private string? _errorMessage;
     private string? _scanUploadMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         await TimeZoneService.InitializeAsync();
         _client = await ClientService.GetByIdAsync(Id);
         _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
@@ -408,6 +421,29 @@
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "ClientViewed", "Client", Id.ToString(), "Viewed Client record");
         }
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (notification.EntityType != "Client" || notification.EntityId != Id)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            _client = await ClientService.GetByIdAsync(Id);
+            _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
+            _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
+            _recentProgress = await ProgressService.GetRecentByClientAsync(Id, 3);
+            _latestConsentForm = await ConsentFormService.GetLatestFormAsync(Id);
+            _refreshedByRealTime = true;
+            StateHasChanged();
+        });
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
+        return ValueTask.CompletedTask;
     }
 
     private static string GetInitials(ClientDto client)

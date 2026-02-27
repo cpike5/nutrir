@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
+using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -12,17 +13,20 @@ public class ClientService : IClientService
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
     private readonly IConsentService _consentService;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ClientService> _logger;
 
     public ClientService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
         IConsentService consentService,
+        INotificationDispatcher notificationDispatcher,
         ILogger<ClientService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
         _consentService = consentService;
+        _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
 
@@ -68,6 +72,8 @@ public class ClientService : IClientService
             "Client",
             entity.Id.ToString(),
             "Created client record");
+
+        await TryDispatchAsync("Client", entity.Id, EntityChangeType.Created, entity.PrimaryNutritionistId);
 
         // Re-read entity to get updated consent fields
         await _dbContext.Entry(entity).ReloadAsync();
@@ -147,6 +153,8 @@ public class ClientService : IClientService
             id.ToString(),
             "Updated client record");
 
+        await TryDispatchAsync("Client", id, EntityChangeType.Updated, entity.PrimaryNutritionistId);
+
         return true;
     }
 
@@ -176,7 +184,23 @@ public class ClientService : IClientService
             id.ToString(),
             "Soft-deleted client record");
 
+        await TryDispatchAsync("Client", id, EntityChangeType.Deleted, entity.PrimaryNutritionistId);
+
         return true;
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 
     private async Task<string?> GetNutritionistNameAsync(string userId)

@@ -12,15 +12,18 @@ public class AppointmentService : IAppointmentService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
+        INotificationDispatcher notificationDispatcher,
         ILogger<AppointmentService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
 
@@ -93,6 +96,8 @@ public class AppointmentService : IAppointmentService
             entity.Id.ToString(),
             $"Created {entity.Type} appointment for client {entity.ClientId}");
 
+        await TryDispatchAsync("Appointment", entity.Id, EntityChangeType.Created, userId);
+
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var nutritionistName = await GetNutritionistNameAsync(entity.NutritionistId);
 
@@ -126,6 +131,8 @@ public class AppointmentService : IAppointmentService
             dto.Id.ToString(),
             $"Updated appointment {dto.Id}");
 
+        await TryDispatchAsync("Appointment", dto.Id, EntityChangeType.Updated, userId);
+
         return true;
     }
 
@@ -158,6 +165,8 @@ public class AppointmentService : IAppointmentService
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
 
+        await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId);
+
         return true;
     }
 
@@ -181,6 +190,8 @@ public class AppointmentService : IAppointmentService
             "Appointment",
             id.ToString(),
             $"Soft-deleted appointment {id}");
+
+        await TryDispatchAsync("Appointment", id, EntityChangeType.Deleted, userId);
 
         return true;
     }
@@ -248,6 +259,20 @@ public class AppointmentService : IAppointmentService
             var nutritionistName = nutritionists.GetValueOrDefault(e.NutritionistId);
             return MapToDto(e, client?.FirstName ?? "", client?.LastName ?? "", nutritionistName);
         }).ToList();
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 
     private async Task<string?> GetNutritionistNameAsync(string userId)

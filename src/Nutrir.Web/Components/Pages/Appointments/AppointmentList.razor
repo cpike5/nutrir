@@ -1,14 +1,16 @@
 @page "/appointments"
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
 @inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>Appointments — Nutrir</PageTitle>
 
@@ -95,6 +97,13 @@
     }
     else
     {
+        @if (_refreshedByRealTime)
+        {
+            <div class="realtime-banner" role="status" aria-live="polite">
+                <span class="realtime-dot"></span>
+                Updated in real time
+            </div>
+        }
         <div class="table-card">
             <table class="appt-table" role="grid">
                 <thead>
@@ -171,10 +180,14 @@
     private string? _toDate;
     private string? _statusFilter;
     private bool _isLoading = true;
+    private bool _refreshedByRealTime;
     private System.Threading.Timer? _debounceTimer;
+    private System.Threading.Timer? _notificationDebounceTimer;
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         await TimeZoneService.InitializeAsync();
         var now = TimeZoneService.UserNow;
         _fromDate = now.ToString("yyyy-MM-dd");
@@ -184,6 +197,7 @@
 
     private async Task LoadAppointmentsAsync()
     {
+        _refreshedByRealTime = false;
         _isLoading = true;
 
         DateTime? from = null;
@@ -284,8 +298,29 @@
         _ => BadgeVariant.Primary
     };
 
-    public void Dispose()
+    private void OnEntityChanged(EntityChangeNotification notification)
     {
+        if (notification.EntityType != "Appointment")
+            return;
+
+        _notificationDebounceTimer?.Dispose();
+        _notificationDebounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                _refreshedByRealTime = true;
+                await LoadAppointmentsAsync();
+                _refreshedByRealTime = true; // Re-set after LoadAppointmentsAsync clears it
+                StateHasChanged();
+            });
+        }, null, 1500, Timeout.Infinite);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
         _debounceTimer?.Dispose();
+        _notificationDebounceTimer?.Dispose();
+        return ValueTask.CompletedTask;
     }
 }

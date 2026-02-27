@@ -387,6 +387,35 @@
     padding: 0 var(--space-2);
 }
 
+/* ── Real-Time Banner ────────────────────────────────── */
+.realtime-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+    background: rgba(var(--rgb-primary), 0.08);
+    border: 1px solid rgba(var(--rgb-primary), 0.20);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.realtime-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    flex-shrink: 0;
+    animation: realtimePulse 1.8s ease-in-out 3;
+}
+
+@keyframes realtimePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.75); }
+}
+
 /* ── Responsive: Tablet ──────────────────────────────── */
 @media (max-width: 768px) {
     .hero-actions {

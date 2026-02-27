@@ -1,12 +1,14 @@
 @page "/clients"
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
 
 <PageTitle>Clients — Nutrir</PageTitle>
 
@@ -104,6 +106,13 @@
     }
     else
     {
+        @if (_refreshedByRealTime)
+        {
+            <div class="realtime-banner" role="status" aria-live="polite">
+                <span class="realtime-dot"></span>
+                Updated in real time
+            </div>
+        }
         <div class="table-card">
             <table class="clients-table" role="grid">
                 <thead>
@@ -176,7 +185,9 @@
     private List<ClientDto>? _clients;
     private string? _searchTerm;
     private bool _isLoading = true;
+    private bool _refreshedByRealTime;
     private System.Threading.Timer? _debounceTimer;
+    private System.Threading.Timer? _notificationDebounceTimer;
 
     private string? _sortColumn;
     private bool _sortAscending = true;
@@ -220,14 +231,34 @@
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
         await LoadClientsAsync();
     }
 
     private async Task LoadClientsAsync()
     {
+        _refreshedByRealTime = false;
         _isLoading = true;
         _clients = await ClientService.GetListAsync(_searchTerm);
         _isLoading = false;
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (notification.EntityType != "Client")
+            return;
+
+        _notificationDebounceTimer?.Dispose();
+        _notificationDebounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadClientsAsync();
+                _refreshedByRealTime = true;
+                StateHasChanged();
+            });
+        }, null, 1500, Timeout.Infinite);
     }
 
     private void OnSearchInput(ChangeEventArgs e)
@@ -304,8 +335,11 @@
         NavigationManager.NavigateTo("/clients/new");
     }
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
+        NotificationService.OnEntityChanged -= OnEntityChanged;
         _debounceTimer?.Dispose();
+        _notificationDebounceTimer?.Dispose();
+        return ValueTask.CompletedTask;
     }
 }
