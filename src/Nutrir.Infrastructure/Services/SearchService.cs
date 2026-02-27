@@ -13,21 +13,21 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             return new SearchResultDto([], 0);
 
-        var term = query.Trim().ToLower();
+        var terms = query.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var groups = new List<SearchResultGroup>();
 
         // Search Clients
-        var clientGroup = await SearchClientsAsync(term, userId, isAdmin, maxPerGroup);
+        var clientGroup = await SearchClientsAsync(terms, userId, isAdmin, maxPerGroup);
         if (clientGroup.TotalInGroup > 0)
             groups.Add(clientGroup);
 
         // Search Appointments (sequential — EF Core DbContext is not thread-safe)
-        var appointmentGroup = await SearchAppointmentsAsync(term, userId, isAdmin, maxPerGroup);
+        var appointmentGroup = await SearchAppointmentsAsync(terms, userId, isAdmin, maxPerGroup);
         if (appointmentGroup.TotalInGroup > 0)
             groups.Add(appointmentGroup);
 
         // Search Meal Plans
-        var mealPlanGroup = await SearchMealPlansAsync(term, userId, isAdmin, maxPerGroup);
+        var mealPlanGroup = await SearchMealPlansAsync(terms, userId, isAdmin, maxPerGroup);
         if (mealPlanGroup.TotalInGroup > 0)
             groups.Add(mealPlanGroup);
 
@@ -35,22 +35,27 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         return new SearchResultDto(groups, totalCount);
     }
 
-    private async Task<SearchResultGroup> SearchClientsAsync(string term, string userId, bool isAdmin, int max)
+    private async Task<SearchResultGroup> SearchClientsAsync(string[] terms, string userId, bool isAdmin, int max)
     {
         var baseQuery = dbContext.Clients.AsQueryable();
         if (!isAdmin)
             baseQuery = baseQuery.Where(c => c.PrimaryNutritionistId == userId);
 
-        var query = baseQuery.Where(c =>
+        var query = baseQuery.AsQueryable();
+        foreach (var term in terms)
+        {
+            query = query.Where(c =>
                 c.FirstName.ToLower().Contains(term) ||
                 c.LastName.ToLower().Contains(term) ||
                 (c.Email != null && c.Email.ToLower().Contains(term)) ||
                 (c.Phone != null && c.Phone.ToLower().Contains(term)));
+        }
 
         var totalCount = await query.CountAsync();
 
+        var firstTerm = terms[0];
         var items = await query
-            .OrderBy(c => c.FirstName.ToLower().StartsWith(term) || c.LastName.ToLower().StartsWith(term) ? 0 : 1)
+            .OrderBy(c => c.FirstName.ToLower().StartsWith(firstTerm) || c.LastName.ToLower().StartsWith(firstTerm) ? 0 : 1)
             .ThenByDescending(c => c.UpdatedAt ?? c.CreatedAt)
             .Take(max)
             .Select(c => new SearchResultItem(
@@ -66,7 +71,7 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         return new SearchResultGroup("Clients", items, totalCount);
     }
 
-    private async Task<SearchResultGroup> SearchAppointmentsAsync(string term, string userId, bool isAdmin, int max)
+    private async Task<SearchResultGroup> SearchAppointmentsAsync(string[] terms, string userId, bool isAdmin, int max)
     {
         var baseQuery = from a in dbContext.Appointments
                         join c in dbContext.Clients on a.ClientId equals c.Id
@@ -75,16 +80,21 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         if (!isAdmin)
             baseQuery = baseQuery.Where(x => x.Appointment.NutritionistId == userId);
 
-        var query = baseQuery.Where(x =>
+        var query = baseQuery.AsQueryable();
+        foreach (var term in terms)
+        {
+            query = query.Where(x =>
                           x.Client.FirstName.ToLower().Contains(term) ||
                           x.Client.LastName.ToLower().Contains(term) ||
                           x.Appointment.Type.ToString().ToLower().Contains(term));
+        }
 
         var totalCount = await query.CountAsync();
 
+        var firstTerm = terms[0];
         var items = await query
-            .OrderBy(x => x.Client.FirstName.ToLower().StartsWith(term) ||
-                          x.Client.LastName.ToLower().StartsWith(term) ? 0 : 1)
+            .OrderBy(x => x.Client.FirstName.ToLower().StartsWith(firstTerm) ||
+                          x.Client.LastName.ToLower().StartsWith(firstTerm) ? 0 : 1)
             .ThenByDescending(x => x.Appointment.StartTime)
             .Take(max)
             .Select(x => new SearchResultItem(
@@ -101,7 +111,7 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         return new SearchResultGroup("Appointments", items, totalCount);
     }
 
-    private async Task<SearchResultGroup> SearchMealPlansAsync(string term, string userId, bool isAdmin, int max)
+    private async Task<SearchResultGroup> SearchMealPlansAsync(string[] terms, string userId, bool isAdmin, int max)
     {
         var baseQuery = from mp in dbContext.MealPlans
                         join c in dbContext.Clients on mp.ClientId equals c.Id
@@ -110,15 +120,20 @@ public class SearchService(AppDbContext dbContext) : ISearchService
         if (!isAdmin)
             baseQuery = baseQuery.Where(x => x.MealPlan.CreatedByUserId == userId);
 
-        var query = baseQuery.Where(x =>
+        var query = baseQuery.AsQueryable();
+        foreach (var term in terms)
+        {
+            query = query.Where(x =>
                           x.MealPlan.Title.ToLower().Contains(term) ||
                           x.Client.FirstName.ToLower().Contains(term) ||
                           x.Client.LastName.ToLower().Contains(term));
+        }
 
         var totalCount = await query.CountAsync();
 
+        var firstTerm = terms[0];
         var items = await query
-            .OrderBy(x => x.MealPlan.Title.ToLower().StartsWith(term) ? 0 : 1)
+            .OrderBy(x => x.MealPlan.Title.ToLower().StartsWith(firstTerm) ? 0 : 1)
             .ThenByDescending(x => x.MealPlan.UpdatedAt ?? x.MealPlan.CreatedAt)
             .Take(max)
             .Select(x => new SearchResultItem(

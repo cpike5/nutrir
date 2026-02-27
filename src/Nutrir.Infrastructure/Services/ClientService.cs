@@ -90,11 +90,14 @@ public class ClientService : IClientService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var term = searchTerm.Trim().ToLower();
-            query = query.Where(c =>
-                c.FirstName.ToLower().Contains(term) ||
-                c.LastName.ToLower().Contains(term) ||
-                (c.Email != null && c.Email.ToLower().Contains(term)));
+            var terms = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var term in terms)
+            {
+                query = query.Where(c =>
+                    c.FirstName.ToLower().Contains(term) ||
+                    c.LastName.ToLower().Contains(term) ||
+                    (c.Email != null && c.Email.ToLower().Contains(term)));
+            }
         }
 
         var entities = await query

@@ -40,12 +40,15 @@ public class UserManagementService : IUserManagementService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var term = searchTerm.Trim().ToLower();
-            query = query.Where(u =>
-                u.FirstName.ToLower().Contains(term) ||
-                u.LastName.ToLower().Contains(term) ||
-                u.DisplayName.ToLower().Contains(term) ||
-                (u.Email != null && u.Email.ToLower().Contains(term)));
+            var terms = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var term in terms)
+            {
+                query = query.Where(u =>
+                    u.FirstName.ToLower().Contains(term) ||
+                    u.LastName.ToLower().Contains(term) ||
+                    u.DisplayName.ToLower().Contains(term) ||
+                    (u.Email != null && u.Email.ToLower().Contains(term)));
+            }
         }
 
         var users = await query
