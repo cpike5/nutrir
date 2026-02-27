@@ -404,6 +404,18 @@
                         _shouldPreventDefault = true;
                     }
                     return;
+                case "Enter":
+                    if (_selectedSuggestionIndex >= 0)
+                    {
+                        _inputText = _filteredSuggestions[_selectedSuggestionIndex];
+                    }
+                    HideSuggestions();
+                    _shouldPreventDefault = true;
+                    if (!_isStreaming && !string.IsNullOrWhiteSpace(_inputText))
+                    {
+                        await SendMessage();
+                    }
+                    return;
                 case "Escape":
                     HideSuggestions();
                     return;
