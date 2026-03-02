@@ -1,0 +1,168 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
+
+@inject IAppointmentService AppointmentService
+@inject ITimeZoneService TimeZoneService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<Panel Title="Upcoming Appointments" Count="@_appointments?.Count" >
+    <HeaderExtra>
+        <a class="panel-header-link" href="/appointments/new?clientId=@ClientId">Schedule</a>
+    </HeaderExtra>
+    <ChildContent>
+        @if (_appointments is null)
+        {
+            <p class="widget-loading">Loading appointments...</p>
+        }
+        else if (_appointments.Count == 0)
+        {
+            <div class="empty-state">
+                <p class="empty-state-text">No upcoming appointments</p>
+                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small"
+                        OnClick="@(() => NavigationManager.NavigateTo($"/appointments/new?clientId={ClientId}"))">
+                    Schedule Appointment
+                </Button>
+            </div>
+        }
+        else
+        {
+            <div class="appointment-list">
+                @foreach (var appt in _appointments)
+                {
+                    var localStart = TimeZoneService.ToUserLocal(appt.StartTime);
+                    var daysUntil = (localStart.Date - TimeZoneService.UserNow.Date).Days;
+                    var countdown = daysUntil switch
+                    {
+                        0 => "Today",
+                        1 => "Tomorrow",
+                        _ => $"in {daysUntil} days"
+                    };
+
+                    <div class="appointment-card">
+                        <div class="appointment-main">
+                            <div class="appointment-datetime">
+                                <span class="appointment-date">@localStart.ToString("ddd, MMM d")</span>
+                                <span class="appointment-time-sep">&middot;</span>
+                                <span class="appointment-time">@localStart.ToString("h:mm tt")</span>
+                                <span class="appointment-countdown">@countdown</span>
+                            </div>
+                            <div class="appointment-badges">
+                                <Badge Variant="@GetTypeBadgeVariant(appt.Type)">@FormatAppointmentType(appt.Type)</Badge>
+                                <Badge Variant="@GetStatusBadgeVariant(appt.Status)">@appt.Status</Badge>
+                            </div>
+                            <div class="appointment-details">
+                                <span class="appointment-location">
+                                    @switch (appt.Location)
+                                    {
+                                        case AppointmentLocation.InPerson:
+                                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                            <span>In Person</span>
+                                            break;
+                                        case AppointmentLocation.Virtual:
+                                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                            <span>Virtual</span>
+                                            break;
+                                        case AppointmentLocation.Phone:
+                                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                            <span>Phone</span>
+                                            break;
+                                    }
+                                </span>
+                                <span class="appointment-duration">@appt.DurationMinutes min</span>
+                            </div>
+                        </div>
+                        <div class="appointment-actions">
+                            @if (_cancellingId == appt.Id)
+                            {
+                                <span class="cancel-confirm-text">Cancel this appointment?</span>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                        OnClick="@(() => ConfirmCancelAsync(appt.Id))"
+                                        Disabled="_isCancelling">
+                                    Yes
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                        OnClick="@(() => _cancellingId = null)">
+                                    No
+                                </Button>
+                            }
+                            else
+                            {
+                                <a class="action-link" href="/appointments/@appt.Id/edit">Reschedule</a>
+                                <button class="action-btn action-btn-cancel" @onclick="@(() => _cancellingId = appt.Id)">Cancel</button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+</Panel>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+
+    private List<AppointmentDto>? _appointments;
+    private int? _cancellingId;
+    private bool _isCancelling;
+    private string? _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        _appointments = await AppointmentService.GetUpcomingByClientAsync(ClientId, 3);
+    }
+
+    private async Task ConfirmCancelAsync(int appointmentId)
+    {
+        if (_userId is null) return;
+
+        _isCancelling = true;
+
+        try
+        {
+            await AppointmentService.UpdateStatusAsync(appointmentId, AppointmentStatus.Cancelled, _userId);
+            _appointments = await AppointmentService.GetUpcomingByClientAsync(ClientId, 3);
+        }
+        finally
+        {
+            _cancellingId = null;
+            _isCancelling = false;
+        }
+    }
+
+    private static string FormatAppointmentType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
+
+    private static BadgeVariant GetTypeBadgeVariant(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => BadgeVariant.Accent,
+        AppointmentType.FollowUp => BadgeVariant.Secondary,
+        AppointmentType.CheckIn => BadgeVariant.Primary,
+        _ => BadgeVariant.Primary
+    };
+
+    private static BadgeVariant GetStatusBadgeVariant(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Confirmed => BadgeVariant.Success,
+        AppointmentStatus.Completed => BadgeVariant.Secondary,
+        AppointmentStatus.NoShow => BadgeVariant.Warning,
+        AppointmentStatus.LateCancellation => BadgeVariant.Warning,
+        AppointmentStatus.Cancelled => BadgeVariant.Error,
+        _ => BadgeVariant.Primary
+    };
+}

@@ -1,0 +1,107 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
+
+@inject IMealPlanService MealPlanService
+@inject ITimeZoneService TimeZoneService
+
+<Panel Title="Active Meal Plan">
+    <HeaderExtra>
+        <a href="/meal-plans?clientId=@ClientId" class="section-header-action">View All</a>
+    </HeaderExtra>
+    <ChildContent>
+        @if (_loading)
+        {
+            <div class="meal-plan-loading">Loading...</div>
+        }
+        else if (_activePlan is not null)
+        {
+            <div class="meal-plan-body">
+                <div class="meal-plan-title-row">
+                    <span class="meal-plan-title">@_activePlan.Title</span>
+                    <Badge Variant="@GetBadgeVariant(_activePlan.Status)">@_activePlan.Status</Badge>
+                </div>
+
+                @if (_activePlan.StartDate.HasValue || _activePlan.EndDate.HasValue)
+                {
+                    <div class="meal-plan-dates">
+                        @FormatDate(_activePlan.StartDate) &mdash; @FormatDate(_activePlan.EndDate)
+                    </div>
+                }
+
+                @if (_activePlan.CalorieTarget.HasValue)
+                {
+                    <div class="meal-plan-calories">
+                        <span class="calorie-value">@_activePlan.CalorieTarget.Value.ToString("N0")</span>
+                        <span class="calorie-label">kcal / day</span>
+                    </div>
+                }
+
+                @if (_activePlan.ProteinTargetG.HasValue || _activePlan.CarbsTargetG.HasValue || _activePlan.FatTargetG.HasValue)
+                {
+                    <div class="macro-row">
+                        <div class="macro-item">
+                            <span class="macro-value">@FormatMacro(_activePlan.ProteinTargetG)</span>
+                            <span class="macro-label">Protein</span>
+                        </div>
+                        <div class="macro-item">
+                            <span class="macro-value">@FormatMacro(_activePlan.CarbsTargetG)</span>
+                            <span class="macro-label">Carbs</span>
+                        </div>
+                        <div class="macro-item">
+                            <span class="macro-value">@FormatMacro(_activePlan.FatTargetG)</span>
+                            <span class="macro-label">Fat</span>
+                        </div>
+                    </div>
+                }
+
+                <div class="meal-plan-stats">
+                    <span>@_activePlan.DayCount days</span>
+                    <span class="stats-separator">&middot;</span>
+                    <span>@_activePlan.TotalItems items</span>
+                </div>
+
+                <a href="/meal-plans/@_activePlan.Id" class="view-plan-link">View Plan</a>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <p class="empty-state-text">No active meal plan</p>
+                <a href="/meal-plans/new?clientId=@ClientId">
+                    <Button Variant="ButtonVariant.Outline">Create Meal Plan</Button>
+                </a>
+            </div>
+        }
+    </ChildContent>
+</Panel>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+
+    private MealPlanSummaryDto? _activePlan;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+        var plans = await MealPlanService.GetByClientAsync(ClientId, 3);
+        _activePlan = plans.FirstOrDefault(p => p.Status == MealPlanStatus.Active) ?? plans.FirstOrDefault();
+        _loading = false;
+    }
+
+    private static BadgeVariant GetBadgeVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Secondary
+    };
+
+    private static string FormatDate(DateOnly? date) =>
+        date?.ToString("MMM d, yyyy", System.Globalization.CultureInfo.CurrentCulture) ?? "—";
+
+    private static string FormatMacro(decimal? value) =>
+        value.HasValue ? $"{value.Value:N0}g" : "—";
+}

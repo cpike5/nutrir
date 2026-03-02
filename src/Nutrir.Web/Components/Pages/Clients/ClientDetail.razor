@@ -8,12 +8,10 @@
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.Widgets
 @using Nutrir.Web.Services
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
-@inject IAppointmentService AppointmentService
-@inject IMealPlanService MealPlanService
-@inject IProgressService ProgressService
 @inject IConsentFormService ConsentFormService
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -179,8 +177,24 @@
             </div>
         }
 
+        @* ── Widget Grid: Progress + Meal Plan ─────────── *@
+        <div class="widget-grid section-animate" style="animation-delay: 160ms;">
+            <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
+            <ActiveMealPlanCard ClientId="@Id" @key="@($"mealplan-{_refreshKey}")" />
+        </div>
+
+        @* ── Upcoming Appointments Widget ──────────────── *@
+        <div class="section-animate" style="animation-delay: 240ms;">
+            <UpcomingAppointmentsWidget ClientId="@Id" @key="@($"appointments-{_refreshKey}")" />
+        </div>
+
+        @* ── Visit History Timeline ────────────────────── *@
+        <div class="section-animate" style="animation-delay: 320ms;">
+            <VisitHistoryTimeline ClientId="@Id" @key="@($"timeline-{_refreshKey}")" />
+        </div>
+
         @* ── Consent Form ──────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 160ms;">
+        <div class="table-card section-animate" style="animation-delay: 400ms;">
             <div class="section-header">
                 <span class="section-header-label">Consent Form</span>
             </div>
@@ -248,134 +262,8 @@
             </div>
         </div>
 
-        @* ── Upcoming Appointments ───────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 240ms;">
-            <div class="section-header">
-                <span class="section-header-label">
-                    Upcoming Appointments
-                    @if (_upcomingAppointments.Count > 0)
-                    {
-                        <span class="section-count">(@_upcomingAppointments.Count)</span>
-                    }
-                </span>
-                <a href="/appointments/new?clientId=@Id" class="section-header-action">Schedule</a>
-            </div>
-            @if (_upcomingAppointments.Count == 0)
-            {
-                <div class="section-empty">
-                    <p>No upcoming appointments</p>
-                </div>
-            }
-            else
-            {
-                <div class="section-list">
-                    @foreach (var appt in _upcomingAppointments)
-                    {
-                        <a href="/appointments/@appt.Id" class="list-row">
-                            <div class="list-row-primary">
-                                <span class="list-row-title">@FormatApptType(appt.Type)</span>
-                                <span class="list-row-meta">
-                                    @TimeZoneService.ToUserLocal(appt.StartTime).ToString("MMM d, yyyy") · @appt.DurationMinutes min
-                                    <span> · @appt.Location</span>
-                                </span>
-                            </div>
-                            <Badge Variant="@GetApptStatusVariant(appt.Status)">@appt.Status</Badge>
-                        </a>
-                    }
-                </div>
-            }
-        </div>
-
-        @* ── Meal Plans ──────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 320ms;">
-            <div class="section-header">
-                <span class="section-header-label">
-                    Meal Plans
-                    @if (_clientMealPlans.Count > 0)
-                    {
-                        <span class="section-count">(@_clientMealPlans.Count)</span>
-                    }
-                </span>
-                <a href="/meal-plans/new?clientId=@Id" class="section-header-action">Create</a>
-            </div>
-            @if (_clientMealPlans.Count == 0)
-            {
-                <div class="section-empty">
-                    <p>No meal plans</p>
-                </div>
-            }
-            else
-            {
-                <div class="section-list">
-                    @foreach (var plan in _clientMealPlans)
-                    {
-                        <a href="/meal-plans/@plan.Id" class="list-row">
-                            <div class="list-row-primary">
-                                <span class="list-row-title">@plan.Title</span>
-                                <span class="list-row-meta">
-                                    @if (plan.StartDate.HasValue)
-                                    {
-                                        @plan.StartDate.Value.ToString("MMM d")
-                                        <span> — </span>
-                                        @(plan.EndDate?.ToString("MMM d") ?? "")
-                                    }
-                                </span>
-                            </div>
-                            <Badge Variant="@GetPlanStatusVariant(plan.Status)">@plan.Status</Badge>
-                        </a>
-                    }
-                    <a href="/meal-plans?clientId=@Id" class="list-row list-row-viewall">
-                        View All
-                    </a>
-                </div>
-            }
-        </div>
-
-        @* ── Progress ───────────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 400ms;">
-            <div class="section-header">
-                <span class="section-header-label">
-                    Progress
-                    @if (_recentProgress.Count > 0)
-                    {
-                        <span class="section-count">(@_recentProgress.Count)</span>
-                    }
-                </span>
-                <a href="/clients/@Id/progress/create" class="section-header-action">New Entry</a>
-            </div>
-            @if (_recentProgress.Count == 0)
-            {
-                <div class="section-empty">
-                    <p>No progress entries</p>
-                </div>
-            }
-            else
-            {
-                <div class="section-list">
-                    @foreach (var entry in _recentProgress)
-                    {
-                        <a href="/progress/@entry.Id" class="list-row">
-                            <div class="list-row-primary">
-                                <span class="list-row-title">@entry.EntryDate.ToString("MMM d, yyyy")</span>
-                                <span class="list-row-meta">
-                                    @entry.MeasurementCount measurement@(entry.MeasurementCount != 1 ? "s" : "")
-                                    @if (!string.IsNullOrEmpty(entry.NotePreview))
-                                    {
-                                        <span> · @entry.NotePreview</span>
-                                    }
-                                </span>
-                            </div>
-                        </a>
-                    }
-                    <a href="/clients/@Id/progress" class="list-row list-row-viewall">
-                        View All
-                    </a>
-                </div>
-            }
-        </div>
-
         @* ── Metadata Footer ─────────────────────────────── *@
-        <div class="meta-footer section-animate" style="animation-delay: 480ms;">
+        <div class="meta-footer section-animate" style="animation-delay: 480ms;" @key="_refreshKey">
             <span>Created: @_client.CreatedAt.ToString("MMM d, yyyy")</span>
             @if (_client.UpdatedAt.HasValue)
             {
@@ -391,10 +279,8 @@
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private ClientDto? _client;
-    private List<AppointmentDto> _upcomingAppointments = [];
-    private List<MealPlanSummaryDto> _clientMealPlans = [];
-    private List<ProgressEntrySummaryDto> _recentProgress = [];
     private ConsentFormDto? _latestConsentForm;
+    private int _refreshKey;
     private bool _isLoading = true;
     private bool _showDeleteConfirm;
     private bool _isDeleting;
@@ -409,9 +295,6 @@
         await NotificationService.StartAsync();
         await TimeZoneService.InitializeAsync();
         _client = await ClientService.GetByIdAsync(Id);
-        _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
-        _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
-        _recentProgress = await ProgressService.GetRecentByClientAsync(Id, 3);
         _latestConsentForm = await ConsentFormService.GetLatestFormAsync(Id);
         _isLoading = false;
 
@@ -426,7 +309,7 @@
     private void OnEntityChanged(EntityChangeNotification notification)
     {
         var isThisClient = notification.EntityType == "Client" && notification.EntityId == Id;
-        var isRelatedEntity = notification.EntityType is "MealPlan" or "Appointment";
+        var isRelatedEntity = notification.EntityType is "MealPlan" or "Appointment" or "ProgressEntry";
 
         if (!isThisClient && !isRelatedEntity)
             return;
@@ -434,10 +317,8 @@
         _ = InvokeAsync(async () =>
         {
             _client = await ClientService.GetByIdAsync(Id);
-            _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(Id, 5);
-            _clientMealPlans = await MealPlanService.GetByClientAsync(Id, 3);
-            _recentProgress = await ProgressService.GetRecentByClientAsync(Id, 3);
             _latestConsentForm = await ConsentFormService.GetLatestFormAsync(Id);
+            _refreshKey++;
             _refreshedByRealTime = true;
             StateHasChanged();
         });
@@ -455,30 +336,6 @@
         var last = client.LastName.Length > 0 ? client.LastName[0] : '?';
         return $"{char.ToUpper(first)}{char.ToUpper(last)}";
     }
-
-    private static BadgeVariant GetPlanStatusVariant(MealPlanStatus status) => status switch
-    {
-        MealPlanStatus.Draft => BadgeVariant.Secondary,
-        MealPlanStatus.Active => BadgeVariant.Success,
-        MealPlanStatus.Archived => BadgeVariant.Accent,
-        _ => BadgeVariant.Primary
-    };
-
-    private static BadgeVariant GetApptStatusVariant(AppointmentStatus status) => status switch
-    {
-        AppointmentStatus.Scheduled => BadgeVariant.Primary,
-        AppointmentStatus.Completed => BadgeVariant.Success,
-        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
-        _ => BadgeVariant.Primary
-    };
-
-    private static string FormatApptType(AppointmentType type) => type switch
-    {
-        AppointmentType.InitialConsultation => "Initial Consultation",
-        AppointmentType.FollowUp => "Follow-Up",
-        AppointmentType.CheckIn => "Check-In",
-        _ => type.ToString()
-    };
 
     private void NavigateToEdit()
     {
