@@ -35,7 +35,7 @@ services:
       - "7101:80"
     environment:
       ACCEPT_EULA: "Y"
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-SeqDev123!}
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
 
 volumes:
   pgdata:
