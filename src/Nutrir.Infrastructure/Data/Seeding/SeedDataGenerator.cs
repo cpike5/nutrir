@@ -39,7 +39,8 @@ public class SeedDataGenerator
     /// <summary>
     /// Stage 2: Generate appointments, meal plans, progress. Clients must already be persisted (have real IDs).
     /// </summary>
-    public (List<Appointment> Appointments, List<MealPlan> MealPlans, List<ProgressGoal> Goals, List<ProgressEntry> Entries)
+    public (List<Appointment> Appointments, List<MealPlan> MealPlans, List<ProgressGoal> Goals, List<ProgressEntry> Entries,
+            List<ClientAllergy> Allergies, List<ClientMedication> Medications, List<ClientCondition> Conditions, List<ClientDietaryRestriction> DietaryRestrictions)
         GenerateChildEntities(string[] nutritionistIds)
     {
         if (_generatedClients is null)
@@ -54,7 +55,11 @@ public class SeedDataGenerator
         var progressGenerator = new ProgressGenerator(_faker);
         var progress = progressGenerator.Generate(_generatedClients, _options.ProgressEntriesPerClient, nutritionistIds);
 
-        return (_appointments, _mealPlans, progress.Goals, progress.Entries);
+        var healthProfileGenerator = new HealthProfileGenerator(_faker);
+        var healthProfile = healthProfileGenerator.Generate(_generatedClients);
+
+        return (_appointments, _mealPlans, progress.Goals, progress.Entries,
+            healthProfile.Allergies, healthProfile.Medications, healthProfile.Conditions, healthProfile.DietaryRestrictions);
     }
 
     /// <summary>

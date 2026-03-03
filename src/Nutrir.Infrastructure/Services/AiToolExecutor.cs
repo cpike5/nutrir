@@ -11,6 +11,7 @@ namespace Nutrir.Infrastructure.Services;
 public class AiToolExecutor
 {
     private readonly IClientService _clientService;
+    private readonly IClientHealthProfileService _healthProfileService;
     private readonly IAppointmentService _appointmentService;
     private readonly IMealPlanService _mealPlanService;
     private readonly IProgressService _progressService;
@@ -48,6 +49,20 @@ public class AiToolExecutor
         ["delete_goal"] = ConfirmationTier.Standard,
         ["create_progress_entry"] = ConfirmationTier.Standard,
         ["delete_progress_entry"] = ConfirmationTier.Standard,
+
+        // Standard tier — Health Profile
+        ["add_client_allergy"] = ConfirmationTier.Standard,
+        ["update_client_allergy"] = ConfirmationTier.Standard,
+        ["remove_client_allergy"] = ConfirmationTier.Standard,
+        ["add_client_medication"] = ConfirmationTier.Standard,
+        ["update_client_medication"] = ConfirmationTier.Standard,
+        ["remove_client_medication"] = ConfirmationTier.Standard,
+        ["add_client_condition"] = ConfirmationTier.Standard,
+        ["update_client_condition"] = ConfirmationTier.Standard,
+        ["remove_client_condition"] = ConfirmationTier.Standard,
+        ["add_client_dietary_restriction"] = ConfirmationTier.Standard,
+        ["update_client_dietary_restriction"] = ConfirmationTier.Standard,
+        ["remove_client_dietary_restriction"] = ConfirmationTier.Standard,
 
         // Elevated tier — user/identity management
         ["create_user"] = ConfirmationTier.Elevated,
@@ -94,6 +109,19 @@ public class AiToolExecutor
 
                 "create_progress_entry" => await BuildCreateProgressEntryContext(input),
                 "delete_progress_entry" => await BuildDeleteProgressEntryContext(input),
+
+                "add_client_allergy" => await BuildHealthProfileAddContext("allergy", input),
+                "update_client_allergy" => BuildHealthProfileMutationContext("update", "allergy", input),
+                "remove_client_allergy" => BuildHealthProfileMutationContext("remove", "allergy", input),
+                "add_client_medication" => await BuildHealthProfileAddContext("medication", input),
+                "update_client_medication" => BuildHealthProfileMutationContext("update", "medication", input),
+                "remove_client_medication" => BuildHealthProfileMutationContext("remove", "medication", input),
+                "add_client_condition" => await BuildHealthProfileAddContext("condition", input),
+                "update_client_condition" => BuildHealthProfileMutationContext("update", "condition", input),
+                "remove_client_condition" => BuildHealthProfileMutationContext("remove", "condition", input),
+                "add_client_dietary_restriction" => await BuildHealthProfileAddContext("dietary restriction", input),
+                "update_client_dietary_restriction" => BuildHealthProfileMutationContext("update", "dietary restriction", input),
+                "remove_client_dietary_restriction" => BuildHealthProfileMutationContext("remove", "dietary restriction", input),
 
                 "create_user" => BuildCreateUserContext(input),
                 "change_user_role" => await BuildUserContext("change_role", input),
@@ -414,6 +442,38 @@ public class AiToolExecutor
         return ($"delete progress entry #{id?.ToString() ?? "?"}", new EntityContext("Progress Entry", "delete", id, $"#{id}", null));
     }
 
+    private async Task<(string Description, EntityContext? Entity)> BuildHealthProfileAddContext(string entityType, JsonElement input)
+    {
+        var clientId = GetOptionalInt(input, "client_id");
+        var clientName = await ResolveClientNameAsync(clientId);
+        var name = GetOptionalString(input, "name") ?? GetOptionalString(input, "restriction_type") ?? "?";
+        var desc = clientName is not null
+            ? $"add {entityType} \"{name}\" for \"{clientName}\" (client #{clientId})"
+            : $"add {entityType} \"{name}\" for client #{clientId?.ToString() ?? "?"}";
+        var fields = BuildFieldChangesFromInput(input, "client_id");
+        var label = FormatFieldLabel(entityType);
+        return (desc, new EntityContext(label, "add", null, name, fields));
+    }
+
+    private static (string Description, EntityContext? Entity) BuildHealthProfileMutationContext(string verb, string entityType, JsonElement input)
+    {
+        var id = GetOptionalInt(input, "id");
+        var name = GetOptionalString(input, "name") ?? GetOptionalString(input, "restriction_type");
+        var label = FormatFieldLabel(entityType);
+        var entityLabel = name is not null
+            ? $"{entityType} \"{name}\" (#{id})"
+            : $"{entityType} #{id?.ToString() ?? "?"}";
+        var desc = $"{verb} client {entityLabel}";
+
+        if (verb == "update")
+        {
+            var fields = BuildFieldChangesFromInput(input, "id");
+            return (desc, new EntityContext(label, verb, id, name ?? $"#{id}", fields));
+        }
+
+        return (desc, new EntityContext(label, verb, id, name ?? $"#{id}", null));
+    }
+
     private static (string Description, EntityContext Entity) BuildCreateUserContext(JsonElement input)
     {
         var firstName = GetOptionalString(input, "first_name") ?? "?";
@@ -542,6 +602,7 @@ public class AiToolExecutor
 
     public AiToolExecutor(
         IClientService clientService,
+        IClientHealthProfileService healthProfileService,
         IAppointmentService appointmentService,
         IMealPlanService mealPlanService,
         IProgressService progressService,
@@ -551,6 +612,7 @@ public class AiToolExecutor
         ILogger<AiToolExecutor> logger)
     {
         _clientService = clientService;
+        _healthProfileService = healthProfileService;
         _appointmentService = appointmentService;
         _mealPlanService = mealPlanService;
         _progressService = progressService;
@@ -606,6 +668,20 @@ public class AiToolExecutor
             // Write tools — Progress Entries
             ["create_progress_entry"] = HandleCreateProgressEntry,
             ["delete_progress_entry"] = HandleDeleteProgressEntry,
+
+            // Write tools — Health Profile
+            ["add_client_allergy"] = HandleAddClientAllergy,
+            ["update_client_allergy"] = HandleUpdateClientAllergy,
+            ["remove_client_allergy"] = HandleRemoveClientAllergy,
+            ["add_client_medication"] = HandleAddClientMedication,
+            ["update_client_medication"] = HandleUpdateClientMedication,
+            ["remove_client_medication"] = HandleRemoveClientMedication,
+            ["add_client_condition"] = HandleAddClientCondition,
+            ["update_client_condition"] = HandleUpdateClientCondition,
+            ["remove_client_condition"] = HandleRemoveClientCondition,
+            ["add_client_dietary_restriction"] = HandleAddClientDietaryRestriction,
+            ["update_client_dietary_restriction"] = HandleUpdateClientDietaryRestriction,
+            ["remove_client_dietary_restriction"] = HandleRemoveClientDietaryRestriction,
 
             // Write tools — User Management
             ["create_user"] = HandleCreateUser,
@@ -975,6 +1051,126 @@ public class AiToolExecutor
                 },
                 "id"),
 
+            // --- Write Tools: Health Profile — Allergies ---
+
+            CreateTool("add_client_allergy", "Add an allergy to a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["name"] = new { type = "string", description = "Allergy name (e.g. Peanuts, Shellfish, Penicillin)" },
+                    ["severity"] = new { type = "string", description = "Severity level", @enum = new[] { "Mild", "Moderate", "Severe" } },
+                    ["allergy_type"] = new { type = "string", description = "Type of allergy", @enum = new[] { "Food", "Drug", "Environmental", "Other" } },
+                },
+                "client_id", "name", "severity", "allergy_type"),
+
+            CreateTool("update_client_allergy", "Update an existing client allergy.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The allergy ID" },
+                    ["name"] = new { type = "string", description = "Allergy name" },
+                    ["severity"] = new { type = "string", description = "Severity level", @enum = new[] { "Mild", "Moderate", "Severe" } },
+                    ["allergy_type"] = new { type = "string", description = "Type of allergy", @enum = new[] { "Food", "Drug", "Environmental", "Other" } },
+                },
+                "id", "name", "severity", "allergy_type"),
+
+            CreateTool("remove_client_allergy", "Remove an allergy from a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The allergy ID to remove" },
+                },
+                "id"),
+
+            // --- Write Tools: Health Profile — Medications ---
+
+            CreateTool("add_client_medication", "Add a medication to a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["name"] = new { type = "string", description = "Medication name" },
+                    ["dosage"] = new { type = "string", description = "Dosage (e.g. 500 mg)" },
+                    ["frequency"] = new { type = "string", description = "Frequency (e.g. Twice daily)" },
+                    ["prescribed_for"] = new { type = "string", description = "What the medication is prescribed for" },
+                },
+                "client_id", "name"),
+
+            CreateTool("update_client_medication", "Update an existing client medication.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The medication ID" },
+                    ["name"] = new { type = "string", description = "Medication name" },
+                    ["dosage"] = new { type = "string", description = "Dosage" },
+                    ["frequency"] = new { type = "string", description = "Frequency" },
+                    ["prescribed_for"] = new { type = "string", description = "What the medication is prescribed for" },
+                },
+                "id", "name"),
+
+            CreateTool("remove_client_medication", "Remove a medication from a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The medication ID to remove" },
+                },
+                "id"),
+
+            // --- Write Tools: Health Profile — Conditions ---
+
+            CreateTool("add_client_condition", "Add a medical condition to a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["name"] = new { type = "string", description = "Condition name" },
+                    ["status"] = new { type = "string", description = "Condition status", @enum = new[] { "Active", "Managed", "Resolved" } },
+                    ["code"] = new { type = "string", description = "ICD code (e.g. E11, I10)" },
+                    ["diagnosis_date"] = new { type = "string", description = "Diagnosis date (yyyy-MM-dd)" },
+                    ["notes"] = new { type = "string", description = "Additional notes about the condition" },
+                },
+                "client_id", "name", "status"),
+
+            CreateTool("update_client_condition", "Update an existing client condition.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The condition ID" },
+                    ["name"] = new { type = "string", description = "Condition name" },
+                    ["status"] = new { type = "string", description = "Condition status", @enum = new[] { "Active", "Managed", "Resolved" } },
+                    ["code"] = new { type = "string", description = "ICD code" },
+                    ["diagnosis_date"] = new { type = "string", description = "Diagnosis date (yyyy-MM-dd)" },
+                    ["notes"] = new { type = "string", description = "Additional notes about the condition" },
+                },
+                "id", "name", "status"),
+
+            CreateTool("remove_client_condition", "Remove a condition from a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The condition ID to remove" },
+                },
+                "id"),
+
+            // --- Write Tools: Health Profile — Dietary Restrictions ---
+
+            CreateTool("add_client_dietary_restriction", "Add a dietary restriction to a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID" },
+                    ["restriction_type"] = new { type = "string", description = "Type of dietary restriction", @enum = new[] { "Vegetarian", "Vegan", "GlutenFree", "DairyFree", "Kosher", "Halal", "LowSodium", "Ketogenic", "NutFree", "Other" } },
+                    ["notes"] = new { type = "string", description = "Additional notes about the restriction" },
+                },
+                "client_id", "restriction_type"),
+
+            CreateTool("update_client_dietary_restriction", "Update an existing client dietary restriction.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The dietary restriction ID" },
+                    ["restriction_type"] = new { type = "string", description = "Type of dietary restriction", @enum = new[] { "Vegetarian", "Vegan", "GlutenFree", "DairyFree", "Kosher", "Halal", "LowSodium", "Ketogenic", "NutFree", "Other" } },
+                    ["notes"] = new { type = "string", description = "Additional notes about the restriction" },
+                },
+                "id", "restriction_type"),
+
+            CreateTool("remove_client_dietary_restriction", "Remove a dietary restriction from a client's health profile.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The dietary restriction ID to remove" },
+                },
+                "id"),
+
             // --- Write Tools: User Management ---
 
             CreateTool("create_user", "Create a new user account (nutritionist or admin).",
@@ -1052,9 +1248,11 @@ public class AiToolExecutor
     {
         var id = GetRequiredInt(input, "id");
         var client = await _clientService.GetByIdAsync(id);
-        return client is null
-            ? JsonSerializer.Serialize(new { error = $"Client with ID {id} not found" })
-            : JsonSerializer.Serialize(client, SerializerOptions);
+        if (client is null)
+            return JsonSerializer.Serialize(new { error = $"Client with ID {id} not found" });
+
+        var healthProfile = await _healthProfileService.GetHealthProfileSummaryAsync(id);
+        return JsonSerializer.Serialize(new { client, health_profile = healthProfile }, SerializerOptions);
     }
 
     private async Task<string> HandleListAppointments(JsonElement input)
@@ -1484,6 +1682,154 @@ public class AiToolExecutor
         return success
             ? JsonSerializer.Serialize(new { success = true, message = $"Progress entry #{id} deleted" })
             : JsonSerializer.Serialize(new { error = $"Progress entry #{id} not found or delete failed" });
+    }
+
+    // =====================================================
+    // Write Tool Handlers — Health Profile
+    // =====================================================
+
+    private async Task<string> HandleAddClientAllergy(JsonElement input)
+    {
+        var dto = new CreateClientAllergyDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Name: GetRequiredString(input, "name"),
+            Severity: GetRequiredEnum<AllergySeverity>(input, "severity"),
+            AllergyType: GetRequiredEnum<AllergyType>(input, "allergy_type"));
+
+        var result = await _healthProfileService.CreateAllergyAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, allergy = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateClientAllergy(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new UpdateClientAllergyDto(
+            Name: GetRequiredString(input, "name"),
+            Severity: GetRequiredEnum<AllergySeverity>(input, "severity"),
+            AllergyType: GetRequiredEnum<AllergyType>(input, "allergy_type"));
+
+        var success = await _healthProfileService.UpdateAllergyAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Allergy #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Allergy #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleRemoveClientAllergy(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _healthProfileService.DeleteAllergyAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Allergy #{id} removed" })
+            : JsonSerializer.Serialize(new { error = $"Allergy #{id} not found or removal failed" });
+    }
+
+    private async Task<string> HandleAddClientMedication(JsonElement input)
+    {
+        var dto = new CreateClientMedicationDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Name: GetRequiredString(input, "name"),
+            Dosage: GetOptionalString(input, "dosage"),
+            Frequency: GetOptionalString(input, "frequency"),
+            PrescribedFor: GetOptionalString(input, "prescribed_for"));
+
+        var result = await _healthProfileService.CreateMedicationAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, medication = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateClientMedication(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new UpdateClientMedicationDto(
+            Name: GetRequiredString(input, "name"),
+            Dosage: GetOptionalString(input, "dosage"),
+            Frequency: GetOptionalString(input, "frequency"),
+            PrescribedFor: GetOptionalString(input, "prescribed_for"));
+
+        var success = await _healthProfileService.UpdateMedicationAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Medication #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Medication #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleRemoveClientMedication(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _healthProfileService.DeleteMedicationAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Medication #{id} removed" })
+            : JsonSerializer.Serialize(new { error = $"Medication #{id} not found or removal failed" });
+    }
+
+    private async Task<string> HandleAddClientCondition(JsonElement input)
+    {
+        var dto = new CreateClientConditionDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            Name: GetRequiredString(input, "name"),
+            Code: GetOptionalString(input, "code"),
+            DiagnosisDate: GetOptionalDateOnly(input, "diagnosis_date"),
+            Status: GetRequiredEnum<ConditionStatus>(input, "status"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var result = await _healthProfileService.CreateConditionAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, condition = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateClientCondition(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new UpdateClientConditionDto(
+            Name: GetRequiredString(input, "name"),
+            Code: GetOptionalString(input, "code"),
+            DiagnosisDate: GetOptionalDateOnly(input, "diagnosis_date"),
+            Status: GetRequiredEnum<ConditionStatus>(input, "status"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var success = await _healthProfileService.UpdateConditionAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Condition #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Condition #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleRemoveClientCondition(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _healthProfileService.DeleteConditionAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Condition #{id} removed" })
+            : JsonSerializer.Serialize(new { error = $"Condition #{id} not found or removal failed" });
+    }
+
+    private async Task<string> HandleAddClientDietaryRestriction(JsonElement input)
+    {
+        var dto = new CreateClientDietaryRestrictionDto(
+            ClientId: GetRequiredInt(input, "client_id"),
+            RestrictionType: GetRequiredEnum<DietaryRestrictionType>(input, "restriction_type"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var result = await _healthProfileService.CreateDietaryRestrictionAsync(dto, _currentUserId ?? "system");
+        return JsonSerializer.Serialize(new { success = true, dietary_restriction = result }, SerializerOptions);
+    }
+
+    private async Task<string> HandleUpdateClientDietaryRestriction(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var dto = new UpdateClientDietaryRestrictionDto(
+            RestrictionType: GetRequiredEnum<DietaryRestrictionType>(input, "restriction_type"),
+            Notes: GetOptionalString(input, "notes"));
+
+        var success = await _healthProfileService.UpdateDietaryRestrictionAsync(id, dto, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Dietary restriction #{id} updated" })
+            : JsonSerializer.Serialize(new { error = $"Dietary restriction #{id} not found or update failed" });
+    }
+
+    private async Task<string> HandleRemoveClientDietaryRestriction(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var success = await _healthProfileService.DeleteDietaryRestrictionAsync(id, _currentUserId ?? "system");
+        return success
+            ? JsonSerializer.Serialize(new { success = true, message = $"Dietary restriction #{id} removed" })
+            : JsonSerializer.Serialize(new { error = $"Dietary restriction #{id} not found or removal failed" });
     }
 
     // =====================================================

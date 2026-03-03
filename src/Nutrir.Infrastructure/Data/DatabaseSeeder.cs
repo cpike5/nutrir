@@ -215,14 +215,18 @@ public class DatabaseSeeder
         _logger.LogInformation("Seeded {Count} clients", clients.Count);
 
         // Stage 2: Generate child entities (now clients have real IDs) and persist
-        var (appointments, mealPlans, goals, entries) = generator.GenerateChildEntities(ids);
+        var (appointments, mealPlans, goals, entries, allergies, medications, conditions, dietaryRestrictions) = generator.GenerateChildEntities(ids);
         _dbContext.Appointments.AddRange(appointments);
         _dbContext.MealPlans.AddRange(mealPlans);
         _dbContext.ProgressGoals.AddRange(goals);
         _dbContext.ProgressEntries.AddRange(entries);
+        _dbContext.ClientAllergies.AddRange(allergies);
+        _dbContext.ClientMedications.AddRange(medications);
+        _dbContext.ClientConditions.AddRange(conditions);
+        _dbContext.ClientDietaryRestrictions.AddRange(dietaryRestrictions);
         await _dbContext.SaveChangesAsync();
-        _logger.LogInformation("Seeded {AppointmentCount} appointments, {MealPlanCount} meal plans, {GoalCount} goals, {EntryCount} progress entries",
-            appointments.Count, mealPlans.Count, goals.Count, entries.Count);
+        _logger.LogInformation("Seeded {AppointmentCount} appointments, {MealPlanCount} meal plans, {GoalCount} goals, {EntryCount} progress entries, {AllergyCount} allergies, {MedicationCount} medications, {ConditionCount} conditions, {RestrictionCount} dietary restrictions",
+            appointments.Count, mealPlans.Count, goals.Count, entries.Count, allergies.Count, medications.Count, conditions.Count, dietaryRestrictions.Count);
 
         // Stage 3: Generate audit logs (now all entities have real IDs) and persist
         var auditLogs = generator.GenerateAuditLogs(ids);
