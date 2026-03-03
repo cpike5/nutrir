@@ -49,7 +49,9 @@ public class AppointmentService : IAppointmentService
         int? clientId = null,
         AppointmentStatus? status = null)
     {
-        var query = _dbContext.Appointments.AsQueryable();
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var query = db.Appointments.AsQueryable();
 
         if (fromDate.HasValue)
             query = query.Where(a => a.StartTime >= fromDate.Value);
@@ -67,7 +69,7 @@ public class AppointmentService : IAppointmentService
             .OrderBy(a => a.StartTime)
             .ToListAsync();
 
-        return await MapToDtoListAsync(entities);
+        return await MapToDtoListAsync(entities, db);
     }
 
     public async Task<PagedResult<AppointmentDto>> GetPagedAsync(AppointmentListQuery query)
@@ -286,30 +288,34 @@ public class AppointmentService : IAppointmentService
 
     public async Task<List<AppointmentDto>> GetTodaysAppointmentsAsync(string nutritionistId)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
 
-        var entities = await _dbContext.Appointments
+        var entities = await db.Appointments
             .Where(a => a.NutritionistId == nutritionistId
                         && a.StartTime >= today
                         && a.StartTime < tomorrow)
             .OrderBy(a => a.StartTime)
             .ToListAsync();
 
-        return await MapToDtoListAsync(entities);
+        return await MapToDtoListAsync(entities, db);
     }
 
     public async Task<List<AppointmentDto>> GetUpcomingByClientAsync(int clientId, int count = 5)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
         var now = DateTime.UtcNow;
 
-        var entities = await _dbContext.Appointments
+        var entities = await db.Appointments
             .Where(a => a.ClientId == clientId && a.StartTime >= now)
             .OrderBy(a => a.StartTime)
             .Take(count)
             .ToListAsync();
 
-        return await MapToDtoListAsync(entities);
+        return await MapToDtoListAsync(entities, db);
     }
 
     public async Task<int> GetWeekCountAsync(string nutritionistId)
@@ -324,18 +330,20 @@ public class AppointmentService : IAppointmentService
                              && a.StartTime < endOfWeek);
     }
 
-    private async Task<List<AppointmentDto>> MapToDtoListAsync(List<Appointment> entities)
+    private async Task<List<AppointmentDto>> MapToDtoListAsync(List<Appointment> entities, AppDbContext? db = null)
     {
         if (entities.Count == 0) return [];
 
+        db ??= _dbContext;
+
         var clientIds = entities.Select(a => a.ClientId).Distinct().ToList();
-        var clients = await _dbContext.Clients
+        var clients = await db.Clients
             .IgnoreQueryFilters()
             .Where(c => clientIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, c => new { c.FirstName, c.LastName });
 
         var nutritionistIds = entities.Select(a => a.NutritionistId).Distinct().ToList();
-        var nutritionists = await _dbContext.Users
+        var nutritionists = await db.Users
             .Where(u => nutritionistIds.Contains(u.Id))
             .OfType<ApplicationUser>()
             .ToDictionaryAsync(u => u.Id, u =>

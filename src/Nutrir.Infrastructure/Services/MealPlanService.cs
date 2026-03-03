@@ -473,7 +473,9 @@ public class MealPlanService : IMealPlanService
 
     public async Task<List<MealPlanSummaryDto>> GetByClientAsync(int clientId, int count = 5)
     {
-        var entities = await _dbContext.MealPlans
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entities = await db.MealPlans
             .Include(mp => mp.Days)
                 .ThenInclude(d => d.MealSlots)
                     .ThenInclude(s => s.Items)
@@ -482,7 +484,7 @@ public class MealPlanService : IMealPlanService
             .Take(count)
             .ToListAsync();
 
-        return await MapToSummaryListAsync(entities);
+        return await MapToSummaryListAsync(entities, db);
     }
 
     public async Task<int> GetActiveCountAsync()
@@ -515,18 +517,20 @@ public class MealPlanService : IMealPlanService
         return null;
     }
 
-    private async Task<List<MealPlanSummaryDto>> MapToSummaryListAsync(List<MealPlan> entities)
+    private async Task<List<MealPlanSummaryDto>> MapToSummaryListAsync(List<MealPlan> entities, AppDbContext? db = null)
     {
         if (entities.Count == 0) return [];
 
+        db ??= _dbContext;
+
         var clientIds = entities.Select(mp => mp.ClientId).Distinct().ToList();
-        var clients = await _dbContext.Clients
+        var clients = await db.Clients
             .IgnoreQueryFilters()
             .Where(c => clientIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, c => new { c.FirstName, c.LastName });
 
         var userIds = entities.Select(mp => mp.CreatedByUserId).Distinct().ToList();
-        var users = await _dbContext.Users
+        var users = await db.Users
             .Where(u => userIds.Contains(u.Id))
             .OfType<ApplicationUser>()
             .ToDictionaryAsync(u => u.Id, u =>

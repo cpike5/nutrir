@@ -11,15 +11,18 @@ namespace Nutrir.Infrastructure.Services;
 public class ProgressService : IProgressService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<ProgressService> _logger;
 
     public ProgressService(
         AppDbContext dbContext,
+        IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         ILogger<ProgressService> logger)
     {
         _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _logger = logger;
     }
@@ -44,7 +47,9 @@ public class ProgressService : IProgressService
 
     public async Task<List<ProgressEntrySummaryDto>> GetEntriesByClientAsync(int clientId)
     {
-        var entities = await _dbContext.ProgressEntries
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entities = await db.ProgressEntries
             .Include(e => e.Measurements)
             .Where(e => e.ClientId == clientId)
             .OrderByDescending(e => e.EntryDate)
@@ -174,7 +179,9 @@ public class ProgressService : IProgressService
 
     public async Task<List<ProgressGoalSummaryDto>> GetGoalsByClientAsync(int clientId)
     {
-        var entities = await _dbContext.ProgressGoals
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entities = await db.ProgressGoals
             .Where(g => g.ClientId == clientId)
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
@@ -295,7 +302,9 @@ public class ProgressService : IProgressService
 
     public async Task<ProgressChartDataDto?> GetChartDataAsync(int clientId, MetricType metricType)
     {
-        var entries = await _dbContext.ProgressEntries
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entries = await db.ProgressEntries
             .Include(e => e.Measurements)
             .Where(e => e.ClientId == clientId)
             .OrderBy(e => e.EntryDate)
@@ -322,7 +331,9 @@ public class ProgressService : IProgressService
 
     public async Task<List<ProgressEntrySummaryDto>> GetRecentByClientAsync(int clientId, int count = 3)
     {
-        var entities = await _dbContext.ProgressEntries
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entities = await db.ProgressEntries
             .Include(e => e.Measurements)
             .Where(e => e.ClientId == clientId)
             .OrderByDescending(e => e.EntryDate)
