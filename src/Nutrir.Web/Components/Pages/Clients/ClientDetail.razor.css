@@ -419,6 +419,22 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-4);
+    align-items: stretch;
+}
+
+.widget-grid > * {
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-grid ::deep .cc-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-grid ::deep .cc-panel-body {
+    flex: 1;
 }
 
 /* ── Responsive: Tablet ──────────────────────────────── */

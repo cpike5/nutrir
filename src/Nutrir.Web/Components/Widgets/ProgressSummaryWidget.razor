@@ -12,59 +12,61 @@
             <a href="/clients/@ClientId/progress" class="panel-link">View All</a>
         </HeaderExtra>
         <ChildContent>
-            @if (_loading)
-            {
-                <p>Loading...</p>
-            }
-            else if (!_hasData)
-            {
-                <div class="empty-state">
-                    <p class="empty-state-title">No progress data recorded yet</p>
-                    <a href="/clients/@ClientId/progress">Record first entry</a>
-                </div>
-            }
-            else
-            {
-                @if (_chartData?.Points.Count > 0)
+            <div class="progress-body">
+                @if (_loading)
                 {
-                    <div class="metrics-row">
-                        <MetricCard Label="@_chartData.Label"
-                                    Value="@FormatValue(_latestValue, _chartData.Unit)"
-                                    DeltaText="@_deltaText"
-                                    Delta="@_delta" />
+                    <p>Loading...</p>
+                }
+                else if (!_hasData)
+                {
+                    <div class="empty-state">
+                        <p class="empty-state-title">No progress data recorded yet</p>
+                        <a href="/clients/@ClientId/progress">Record first entry</a>
                     </div>
                 }
+                else
+                {
+                    @if (_chartData?.Points.Count > 0)
+                    {
+                        <div class="metrics-row">
+                            <MetricCard Label="@_chartData.Label"
+                                        Value="@FormatValue(_latestValue, _chartData.Unit)"
+                                        DeltaText="@_deltaText"
+                                        Delta="@_delta" />
+                        </div>
+                    }
 
-                @if (_activeGoals.Count > 0)
-                {
-                    <div class="goals-section">
-                        <h4 class="goals-heading">Active Goals</h4>
-                        <ul class="goals-list">
-                            @foreach (var goal in _activeGoals)
-                            {
-                                <li class="goal-item">
-                                    <div class="goal-header">
-                                        <Badge Variant="BadgeVariant.Primary">@goal.GoalType.ToString()</Badge>
-                                        <span class="goal-title">@goal.Title</span>
-                                    </div>
-                                    @if (goal.TargetValue.HasValue)
-                                    {
-                                        <span class="goal-target">
-                                            Target: @goal.TargetValue.Value.ToString("N1") @goal.TargetUnit
-                                        </span>
-                                    }
-                                    @if (goal.TargetDate.HasValue)
-                                    {
-                                        <span class="goal-date">
-                                            By @goal.TargetDate.Value.ToString("MMM d, yyyy")
-                                        </span>
-                                    }
-                                </li>
-                            }
-                        </ul>
-                    </div>
+                    @if (_activeGoals.Count > 0)
+                    {
+                        <div class="goals-section">
+                            <h4 class="goals-heading">Active Goals</h4>
+                            <ul class="goals-list">
+                                @foreach (var goal in _activeGoals)
+                                {
+                                    <li class="goal-item">
+                                        <div class="goal-header">
+                                            <Badge Variant="BadgeVariant.Primary">@goal.GoalType.ToString()</Badge>
+                                            <span class="goal-title">@goal.Title</span>
+                                        </div>
+                                        @if (goal.TargetValue.HasValue)
+                                        {
+                                            <span class="goal-target">
+                                                Target: @goal.TargetValue.Value.ToString("N1") @goal.TargetUnit
+                                            </span>
+                                        }
+                                        @if (goal.TargetDate.HasValue)
+                                        {
+                                            <span class="goal-date">
+                                                By @goal.TargetDate.Value.ToString("MMM d, yyyy")
+                                            </span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
                 }
-            }
+            </div>
         </ChildContent>
     </Panel>
 </div>

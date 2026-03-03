@@ -1,3 +1,8 @@
+/* ── Body Padding ────────────────────────────────────── */
+.progress-body {
+    padding: var(--space-4);
+}
+
 .metrics-row {
     display: flex;
     flex-wrap: wrap;
