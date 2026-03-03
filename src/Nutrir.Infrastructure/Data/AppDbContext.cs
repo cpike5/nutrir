@@ -40,6 +40,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
 
+    public DbSet<ClientAllergy> ClientAllergies => Set<ClientAllergy>();
+
+    public DbSet<ClientMedication> ClientMedications => Set<ClientMedication>();
+
+    public DbSet<ClientCondition> ClientConditions => Set<ClientCondition>();
+
+    public DbSet<ClientDietaryRestriction> ClientDietaryRestrictions => Set<ClientDietaryRestriction>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -313,6 +321,79 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasIndex(l => l.RequestedAt);
             entity.Property(l => l.RequestedAt).HasDefaultValueSql("now() at time zone 'utc'");
             entity.Property(l => l.Model).HasMaxLength(100);
+        });
+
+        builder.Entity<ClientAllergy>(entity =>
+        {
+            entity.HasQueryFilter(a => !a.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(a => a.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(a => a.ClientId);
+
+            entity.Property(a => a.Severity).HasConversion<string>();
+            entity.Property(a => a.AllergyType).HasConversion<string>();
+            entity.Property(a => a.Name).HasMaxLength(100);
+            entity.Property(a => a.IsDeleted).HasDefaultValue(false);
+            entity.Property(a => a.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<ClientMedication>(entity =>
+        {
+            entity.HasQueryFilter(m => !m.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(m => m.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(m => m.ClientId);
+
+            entity.Property(m => m.Name).HasMaxLength(100);
+            entity.Property(m => m.Dosage).HasMaxLength(100);
+            entity.Property(m => m.Frequency).HasMaxLength(100);
+            entity.Property(m => m.PrescribedFor).HasMaxLength(200);
+            entity.Property(m => m.IsDeleted).HasDefaultValue(false);
+            entity.Property(m => m.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<ClientCondition>(entity =>
+        {
+            entity.HasQueryFilter(c => !c.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(c => c.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(c => c.ClientId);
+
+            entity.Property(c => c.Status).HasConversion<string>();
+            entity.Property(c => c.Name).HasMaxLength(100);
+            entity.Property(c => c.Code).HasMaxLength(20);
+            entity.Property(c => c.Notes).HasColumnType("text");
+            entity.Property(c => c.IsDeleted).HasDefaultValue(false);
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<ClientDietaryRestriction>(entity =>
+        {
+            entity.HasQueryFilter(dr => !dr.IsDeleted);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(dr => dr.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(dr => dr.ClientId);
+
+            entity.Property(dr => dr.RestrictionType).HasConversion<string>();
+            entity.Property(dr => dr.Notes).HasColumnType("text");
+            entity.Property(dr => dr.IsDeleted).HasDefaultValue(false);
+            entity.Property(dr => dr.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 

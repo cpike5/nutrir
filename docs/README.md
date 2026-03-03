@@ -40,6 +40,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Data Tables](design-system/data-tables.md) | Table styling conventions — card wrapper, identity cells, badges, row hover, responsive breakpoints |
 | [Global Search](design-system/global-search.md) | UX spec for global search — dropdown anatomy, all states, keyboard nav, ARIA, CSS classes, Blazor notes |
 
+## Clients Documents
+
+| Document | Description |
+|----------|-------------|
+| [Health Profile](clients/health-profile.md) | Client health profile data model — allergies, medications, conditions, dietary restrictions (ERD, enums, design decisions) |
+
 ## Compliance Documents
 
 | Document | Description |
