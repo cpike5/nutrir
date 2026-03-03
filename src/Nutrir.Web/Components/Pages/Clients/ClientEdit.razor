@@ -6,15 +6,18 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @using Nutrir.Core.Models
 @using Nutrir.Web.Components.UI
+@using Nutrir.Web.Components.Widgets
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IClientService ClientService
 @inject IConsentService ConsentService
 @inject IConsentFormService ConsentFormService
 @inject IConsentFormTemplate ConsentFormTemplate
 @inject IUserManagementService UserManagementService
+@inject IClientHealthProfileService HealthProfileService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Client — Nutrir</PageTitle>
@@ -124,6 +127,12 @@
                                   @bind="_model.Notes"
                                   placeholder="Additional notes about the client..."></textarea>
                     </FormGroup>
+
+                    @* ── Health Profile ───────────────────────────── *@
+                    <AllergyFormGroup @ref="_allergyFormGroup" Entries="@_allergyEntries" />
+                    <MedicationFormGroup @ref="_medicationFormGroup" Entries="@_medicationEntries" />
+                    <ConditionFormGroup @ref="_conditionFormGroup" Entries="@_conditionEntries" />
+                    <DietaryRestrictionFormGroup @ref="_dietaryRestrictionFormGroup" Entries="@_dietaryRestrictionEntries" />
 
                     <div class="consent-row">
                         <div class="consent-status">
@@ -236,6 +245,17 @@
     private IReadOnlyList<Autocomplete.AutocompleteOption> _nutritionistOptions = [];
     private string? _nutritionistDisplayText;
 
+    // Health profile
+    private ClientHealthProfileSummaryDto? _healthProfile;
+    private AllergyFormGroup _allergyFormGroup = default!;
+    private MedicationFormGroup _medicationFormGroup = default!;
+    private ConditionFormGroup _conditionFormGroup = default!;
+    private DietaryRestrictionFormGroup _dietaryRestrictionFormGroup = default!;
+    private List<AllergyFormGroup.AllergyEntry> _allergyEntries = new();
+    private List<MedicationFormGroup.MedicationEntry> _medicationEntries = new();
+    private List<ConditionFormGroup.ConditionEntry> _conditionEntries = new();
+    private List<DietaryRestrictionFormGroup.DietaryRestrictionEntry> _dietaryRestrictionEntries = new();
+
     protected override async Task OnInitializedAsync()
     {
         _client = await ClientService.GetByIdAsync(Id);
@@ -275,6 +295,34 @@
                     practitionerName,
                     DateTime.UtcNow);
             }
+
+            // Load health profile
+            _healthProfile = await HealthProfileService.GetHealthProfileSummaryAsync(Id);
+            _allergyEntries = _healthProfile.Allergies.Select(a => new AllergyFormGroup.AllergyEntry
+            {
+                Name = a.Name,
+                Severity = a.Severity,
+                AllergyType = a.AllergyType
+            }).ToList();
+            _medicationEntries = _healthProfile.Medications.Select(m => new MedicationFormGroup.MedicationEntry
+            {
+                Name = m.Name,
+                Dosage = m.Dosage,
+                Frequency = m.Frequency,
+                PrescribedFor = m.PrescribedFor
+            }).ToList();
+            _conditionEntries = _healthProfile.Conditions.Select(c => new ConditionFormGroup.ConditionEntry
+            {
+                Name = c.Name,
+                Code = c.Code,
+                DiagnosisDate = c.DiagnosisDate?.ToString("yyyy-MM-dd"),
+                Status = c.Status
+            }).ToList();
+            _dietaryRestrictionEntries = _healthProfile.DietaryRestrictions.Select(d => new DietaryRestrictionFormGroup.DietaryRestrictionEntry
+            {
+                RestrictionType = d.RestrictionType,
+                Notes = d.Notes
+            }).ToList();
         }
 
         _isLoading = false;
@@ -394,6 +442,8 @@
             var success = await ClientService.UpdateAsync(Id, dto, userId);
             if (success)
             {
+                // Save health profile changes (delete all existing, re-create from form)
+                await SaveHealthProfileChangesAsync(userId);
                 NavigationManager.NavigateTo($"/clients/{Id}");
             }
             else
@@ -408,6 +458,43 @@
         finally
         {
             _isSubmitting = false;
+        }
+    }
+
+    private async Task SaveHealthProfileChangesAsync(string userId)
+    {
+        if (_healthProfile is null) return;
+
+        // Delete all existing entries
+        foreach (var a in _healthProfile.Allergies)
+            await HealthProfileService.DeleteAllergyAsync(a.Id, userId);
+        foreach (var m in _healthProfile.Medications)
+            await HealthProfileService.DeleteMedicationAsync(m.Id, userId);
+        foreach (var c in _healthProfile.Conditions)
+            await HealthProfileService.DeleteConditionAsync(c.Id, userId);
+        foreach (var d in _healthProfile.DietaryRestrictions)
+            await HealthProfileService.DeleteDietaryRestrictionAsync(d.Id, userId);
+
+        // Re-create from form entries
+        foreach (var (name, severity, allergyType) in _allergyFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateAllergyAsync(
+                new CreateClientAllergyDto(Id, name, severity, allergyType), userId);
+        }
+        foreach (var (name, dosage, frequency, prescribedFor) in _medicationFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateMedicationAsync(
+                new CreateClientMedicationDto(Id, name, dosage, frequency, prescribedFor), userId);
+        }
+        foreach (var (name, code, diagnosisDate, status) in _conditionFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateConditionAsync(
+                new CreateClientConditionDto(Id, name, code, diagnosisDate, status, null), userId);
+        }
+        foreach (var (restrictionType, notes) in _dietaryRestrictionFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateDietaryRestrictionAsync(
+                new CreateClientDietaryRestrictionDto(Id, restrictionType, notes), userId);
         }
     }
 

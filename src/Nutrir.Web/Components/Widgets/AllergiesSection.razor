@@ -1,0 +1,353 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IClientHealthProfileService HealthProfileService
+
+<div class="table-card health-section">
+    <div class="section-header" @onclick="ToggleCollapsed" role="button" tabindex="0">
+        <div class="section-header-left">
+            <span class="section-header-label">Allergies</span>
+            <span class="section-count">(@_allergies.Count)</span>
+        </div>
+        <button class="section-toggle" aria-label="@(_collapsed ? "Expand" : "Collapse")">
+            <svg class="toggle-icon @(_collapsed ? "collapsed" : "")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m4 6 4 4 4-4"/>
+            </svg>
+        </button>
+    </div>
+    @if (!_collapsed)
+    {
+        <div class="section-list">
+            @if (_allergies.Count == 0 && !_showAddForm)
+            {
+                <div class="section-empty">No allergies recorded</div>
+            }
+            else
+            {
+                @foreach (var allergy in _allergies)
+                {
+                    @if (_editingId == allergy.Id)
+                    {
+                        <div class="inline-form">
+                            <div class="inline-form-grid">
+                                <FormGroup Label="Name" Id="edit-allergy-name">
+                                    <FormInput Id="edit-allergy-name"
+                                               Value="@_editName"
+                                               ValueChanged="@(v => _editName = v)"
+                                               Placeholder="Allergy name" />
+                                </FormGroup>
+                                <FormGroup Label="Severity" Id="edit-allergy-severity">
+                                    <FormSelect Id="edit-allergy-severity"
+                                                Value="@_editSeverity.ToString()"
+                                                ValueChanged="@(v => _editSeverity = Enum.Parse<AllergySeverity>(v))">
+                                        @foreach (var s in Enum.GetValues<AllergySeverity>())
+                                        {
+                                            <option value="@s">@s</option>
+                                        }
+                                    </FormSelect>
+                                </FormGroup>
+                                <FormGroup Label="Type" Id="edit-allergy-type">
+                                    <FormSelect Id="edit-allergy-type"
+                                                Value="@_editAllergyType.ToString()"
+                                                ValueChanged="@(v => _editAllergyType = Enum.Parse<AllergyType>(v))">
+                                        @foreach (var t in Enum.GetValues<AllergyType>())
+                                        {
+                                            <option value="@t">@t</option>
+                                        }
+                                    </FormSelect>
+                                </FormGroup>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_formError))
+                            {
+                                <p class="form-error">@_formError</p>
+                            }
+                            <div class="inline-form-actions">
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="SaveEdit" Disabled="@_isSaving">
+                                    @(_isSaving ? "Saving..." : "Save")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelEdit">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else if (_deletingId == allergy.Id)
+                    {
+                        <div class="delete-confirm-row">
+                            <span class="delete-confirm-text">Delete <strong>@allergy.Name</strong>?</span>
+                            <div class="delete-confirm-actions">
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="ConfirmDelete" Disabled="@_isSaving">
+                                    @(_isSaving ? "Deleting..." : "Delete")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelDelete">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@allergy.Name</span>
+                                <span class="list-row-meta">@allergy.AllergyType</span>
+                            </div>
+                            <div class="list-row-actions">
+                                <Badge Variant="@GetSeverityVariant(allergy.Severity)">
+                                    <span class="badge-dot"></span> @allergy.Severity
+                                </Badge>
+                                <button class="row-action" title="Edit" @onclick="@(() => StartEdit(allergy))">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                                </button>
+                                <button class="row-action row-action-danger" title="Delete" @onclick="@(() => StartDelete(allergy.Id))">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+            @if (_showAddForm)
+            {
+                <div class="inline-form">
+                    <div class="inline-form-grid">
+                        <FormGroup Label="Name" Id="add-allergy-name">
+                            <FormInput Id="add-allergy-name"
+                                       Value="@_addName"
+                                       ValueChanged="@(v => _addName = v)"
+                                       Placeholder="Allergy name" />
+                        </FormGroup>
+                        <FormGroup Label="Severity" Id="add-allergy-severity">
+                            <FormSelect Id="add-allergy-severity"
+                                        Value="@_addSeverity.ToString()"
+                                        ValueChanged="@(v => _addSeverity = Enum.Parse<AllergySeverity>(v))">
+                                @foreach (var s in Enum.GetValues<AllergySeverity>())
+                                {
+                                    <option value="@s">@s</option>
+                                }
+                            </FormSelect>
+                        </FormGroup>
+                        <FormGroup Label="Type" Id="add-allergy-type">
+                            <FormSelect Id="add-allergy-type"
+                                        Value="@_addAllergyType.ToString()"
+                                        ValueChanged="@(v => _addAllergyType = Enum.Parse<AllergyType>(v))">
+                                @foreach (var t in Enum.GetValues<AllergyType>())
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </FormSelect>
+                        </FormGroup>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_formError))
+                    {
+                        <p class="form-error">@_formError</p>
+                    }
+                    <div class="inline-form-actions">
+                        <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="SaveAdd" Disabled="@_isSaving">
+                            @(_isSaving ? "Adding..." : "Add Allergy")
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelAdd">Cancel</Button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="add-row">
+                    <button class="add-button" @onclick="ShowAddForm">+ Add Allergy</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+    [Parameter] public List<ClientAllergyDto>? InitialData { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<ClientAllergyDto> _allergies = new();
+    private bool _collapsed;
+    private bool _showAddForm;
+    private bool _isSaving;
+    private string? _formError;
+
+    // Add form state
+    private string _addName = string.Empty;
+    private AllergySeverity _addSeverity = AllergySeverity.Mild;
+    private AllergyType _addAllergyType = AllergyType.Food;
+
+    // Edit form state
+    private int? _editingId;
+    private string _editName = string.Empty;
+    private AllergySeverity _editSeverity;
+    private AllergyType _editAllergyType;
+
+    // Delete state
+    private int? _deletingId;
+
+    protected override void OnParametersSet()
+    {
+        if (InitialData is not null)
+        {
+            _allergies = InitialData;
+        }
+    }
+
+    private void ToggleCollapsed() => _collapsed = !_collapsed;
+
+    private static BadgeVariant GetSeverityVariant(AllergySeverity severity) => severity switch
+    {
+        AllergySeverity.Mild => BadgeVariant.Success,
+        AllergySeverity.Moderate => BadgeVariant.Warning,
+        AllergySeverity.Severe => BadgeVariant.Error,
+        _ => BadgeVariant.Secondary
+    };
+
+    private async Task<string> GetUserIdAsync()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    // --- Add ---
+    private void ShowAddForm()
+    {
+        _showAddForm = true;
+        _editingId = null;
+        _deletingId = null;
+        _formError = null;
+        _addName = string.Empty;
+        _addSeverity = AllergySeverity.Mild;
+        _addAllergyType = AllergyType.Food;
+    }
+
+    private void CancelAdd()
+    {
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private async Task SaveAdd()
+    {
+        if (string.IsNullOrWhiteSpace(_addName))
+        {
+            _formError = "Name is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _formError = null;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var dto = new CreateClientAllergyDto(ClientId, _addName.Trim(), _addSeverity, _addAllergyType);
+            var created = await HealthProfileService.CreateAllergyAsync(dto, userId);
+            _allergies.Add(created);
+            _showAddForm = false;
+            _addName = string.Empty;
+        }
+        catch
+        {
+            _formError = "Failed to add allergy. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // --- Edit ---
+    private void StartEdit(ClientAllergyDto allergy)
+    {
+        _editingId = allergy.Id;
+        _editName = allergy.Name;
+        _editSeverity = allergy.Severity;
+        _editAllergyType = allergy.AllergyType;
+        _deletingId = null;
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _formError = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editName))
+        {
+            _formError = "Name is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _formError = null;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var dto = new UpdateClientAllergyDto(_editName.Trim(), _editSeverity, _editAllergyType);
+            var success = await HealthProfileService.UpdateAllergyAsync(_editingId!.Value, dto, userId);
+            if (success)
+            {
+                var updated = await HealthProfileService.GetAllergyByIdAsync(_editingId.Value);
+                if (updated is not null)
+                {
+                    var idx = _allergies.FindIndex(a => a.Id == _editingId.Value);
+                    if (idx >= 0) _allergies[idx] = updated;
+                }
+                _editingId = null;
+            }
+            else
+            {
+                _formError = "Failed to update allergy.";
+            }
+        }
+        catch
+        {
+            _formError = "Failed to update allergy. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // --- Delete ---
+    private void StartDelete(int id)
+    {
+        _deletingId = id;
+        _editingId = null;
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private void CancelDelete()
+    {
+        _deletingId = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        _isSaving = true;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var success = await HealthProfileService.DeleteAllergyAsync(_deletingId!.Value, userId);
+            if (success)
+            {
+                _allergies.RemoveAll(a => a.Id == _deletingId.Value);
+                _deletingId = null;
+            }
+        }
+        catch
+        {
+            _formError = "Failed to delete allergy.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

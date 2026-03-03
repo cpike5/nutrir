@@ -1,0 +1,81 @@
+@using Nutrir.Core.Enums
+
+<div class="health-form-section">
+    <div class="health-form-label">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/>
+            <path d="M12 8v13"/>
+        </svg>
+        <span>Dietary Restrictions</span>
+    </div>
+
+    @foreach (var entry in Entries)
+    {
+        var index = Entries.IndexOf(entry);
+        <div class="health-form-entry">
+            <div class="form-grid">
+                <FormGroup Label="Restriction Type" Id="@($"dr-type-{index}")">
+                    <FormSelect Id="@($"dr-type-{index}")"
+                                Value="@entry.RestrictionType.ToString()"
+                                ValueChanged="@(v => entry.RestrictionType = Enum.Parse<DietaryRestrictionType>(v))">
+                        @foreach (var t in Enum.GetValues<DietaryRestrictionType>())
+                        {
+                            <option value="@t">@FormatRestrictionType(t)</option>
+                        }
+                    </FormSelect>
+                </FormGroup>
+                <FormGroup Label="Notes" Id="@($"dr-notes-{index}")">
+                    <FormInput Id="@($"dr-notes-{index}")"
+                               Value="@entry.Notes"
+                               ValueChanged="@(v => entry.Notes = v)"
+                               Placeholder="Additional details" />
+                </FormGroup>
+            </div>
+            <button class="health-form-remove" type="button" @onclick="@(() => Remove(index))" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+            </button>
+        </div>
+    }
+
+    <button class="health-form-add" type="button" @onclick="Add">+ Add Restriction</button>
+</div>
+
+@code {
+    [Parameter] public List<DietaryRestrictionEntry> Entries { get; set; } = new();
+
+    private void Add()
+    {
+        Entries.Add(new DietaryRestrictionEntry());
+    }
+
+    private void Remove(int index)
+    {
+        if (index >= 0 && index < Entries.Count)
+            Entries.RemoveAt(index);
+    }
+
+    public List<(DietaryRestrictionType RestrictionType, string? Notes)> GetValidEntries()
+    {
+        return Entries
+            .Select(e => (e.RestrictionType, NullIfEmpty(e.Notes)))
+            .ToList();
+    }
+
+    private static string FormatRestrictionType(DietaryRestrictionType type) => type switch
+    {
+        DietaryRestrictionType.GlutenFree => "Gluten-Free",
+        DietaryRestrictionType.DairyFree => "Dairy-Free",
+        DietaryRestrictionType.LowSodium => "Low Sodium",
+        DietaryRestrictionType.NutFree => "Nut-Free",
+        _ => type.ToString()
+    };
+
+    private static string? NullIfEmpty(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    public class DietaryRestrictionEntry
+    {
+        public DietaryRestrictionType RestrictionType { get; set; } = DietaryRestrictionType.Vegetarian;
+        public string? Notes { get; set; }
+    }
+}
