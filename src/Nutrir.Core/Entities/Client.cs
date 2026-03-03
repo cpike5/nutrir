@@ -35,4 +35,12 @@ public class Client
     public string? DeletedBy { get; set; }
 
     public List<ConsentEvent> ConsentEvents { get; set; } = [];
+
+    public List<ClientAllergy> Allergies { get; set; } = [];
+
+    public List<ClientMedication> Medications { get; set; } = [];
+
+    public List<ClientCondition> Conditions { get; set; } = [];
+
+    public List<ClientDietaryRestriction> DietaryRestrictions { get; set; } = [];
 }
