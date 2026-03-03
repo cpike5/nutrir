@@ -10,7 +10,11 @@ public record ClientProfile(
     GoalType[] RelevantGoalTypes,
     MetricType[] RelevantMetrics,
     string[] GoalTitleTemplates,
-    string[] FoodPoolTags)
+    string[] FoodPoolTags,
+    (string Name, AllergySeverity Severity, AllergyType Type)[] AllergyPool,
+    (string Name, string? Dosage, string? Frequency, string? PrescribedFor)[] MedicationPool,
+    (string Name, string? Code, ConditionStatus Status, string? Notes)[] ConditionPool,
+    DietaryRestrictionType[] RestrictionPool)
 {
     public static IReadOnlyList<ClientProfile> All { get; } = new[]
     {
@@ -38,7 +42,23 @@ public record ClientProfile(
                 "Reduce waist circumference by 2 inches",
                 "Reach target weight of 160 lbs"
             ],
-            FoodPoolTags: ["general", "high-protein", "low-calorie"]),
+            FoodPoolTags: ["general", "high-protein", "low-calorie"],
+            AllergyPool:
+            [
+                ("Peanuts", AllergySeverity.Severe, AllergyType.Food),
+                ("Shellfish", AllergySeverity.Moderate, AllergyType.Food),
+            ],
+            MedicationPool:
+            [
+                ("Orlistat", "120 mg", "Three times daily with meals", "Weight management"),
+                ("Metformin", "500 mg", "Twice daily", "Insulin resistance"),
+            ],
+            ConditionPool:
+            [
+                ("Obesity", "E66.0", ConditionStatus.Active, "BMI > 30"),
+                ("Hypertension", "I10", ConditionStatus.Managed, "Controlled with lifestyle modifications"),
+            ],
+            RestrictionPool: []),
 
         new ClientProfile(
             Tag: "diabetes",
@@ -64,7 +84,25 @@ public record ClientProfile(
                 "Reduce A1C by 0.5% over 3 months",
                 "Achieve consistent carb intake of 45g per meal"
             ],
-            FoodPoolTags: ["general", "low-gi", "diabetic-friendly"]),
+            FoodPoolTags: ["general", "low-gi", "diabetic-friendly"],
+            AllergyPool:
+            [
+                ("Peanuts", AllergySeverity.Moderate, AllergyType.Food),
+                ("Penicillin", AllergySeverity.Severe, AllergyType.Drug),
+            ],
+            MedicationPool:
+            [
+                ("Metformin", "1000 mg", "Twice daily", "Type 2 diabetes"),
+                ("Insulin Glargine", "20 units", "Once daily at bedtime", "Type 2 diabetes"),
+                ("Gliclazide", "80 mg", "Once daily", "Type 2 diabetes"),
+            ],
+            ConditionPool:
+            [
+                ("Type 2 Diabetes", "E11", ConditionStatus.Active, "Diagnosed 3 years ago"),
+                ("Hypertension", "I10", ConditionStatus.Managed, null),
+                ("Dyslipidemia", "E78.5", ConditionStatus.Active, "Elevated LDL cholesterol"),
+            ],
+            RestrictionPool: [DietaryRestrictionType.LowSodium]),
 
         new ClientProfile(
             Tag: "sports-nutrition",
@@ -90,7 +128,22 @@ public record ClientProfile(
                 "Optimize race-day fuelling protocol",
                 "Reduce body fat to 12% while maintaining strength"
             ],
-            FoodPoolTags: ["general", "high-protein", "high-carb", "energy-dense"]),
+            FoodPoolTags: ["general", "high-protein", "high-carb", "energy-dense"],
+            AllergyPool:
+            [
+                ("Dairy", AllergySeverity.Moderate, AllergyType.Food),
+                ("Soy", AllergySeverity.Mild, AllergyType.Food),
+            ],
+            MedicationPool:
+            [
+                ("Creatine Monohydrate", "5 g", "Once daily", "Athletic performance"),
+                ("Vitamin D", "2000 IU", "Once daily", "Bone health and recovery"),
+            ],
+            ConditionPool:
+            [
+                ("Exercise-induced asthma", "J45.990", ConditionStatus.Managed, "Uses inhaler before exercise"),
+            ],
+            RestrictionPool: [DietaryRestrictionType.DairyFree]),
 
         new ClientProfile(
             Tag: "prenatal",
@@ -116,7 +169,24 @@ public record ClientProfile(
                 "Meet daily folate and iron targets through diet",
                 "Establish consistent meal pattern of 5-6 small meals"
             ],
-            FoodPoolTags: ["general", "iron-rich", "folate-rich", "prenatal"]),
+            FoodPoolTags: ["general", "iron-rich", "folate-rich", "prenatal"],
+            AllergyPool:
+            [
+                ("Shellfish", AllergySeverity.Mild, AllergyType.Food),
+                ("Dust mites", AllergySeverity.Mild, AllergyType.Environmental),
+            ],
+            MedicationPool:
+            [
+                ("Prenatal Multivitamin", null, "Once daily", "Prenatal nutrition"),
+                ("Iron Supplement", "300 mg ferrous gluconate", "Once daily", "Iron supplementation"),
+                ("Folic Acid", "1 mg", "Once daily", "Neural tube defect prevention"),
+            ],
+            ConditionPool:
+            [
+                ("Gestational diabetes", "O24.4", ConditionStatus.Active, "Monitoring blood glucose"),
+                ("Iron-deficiency anemia", "D50.9", ConditionStatus.Active, "Supplementing with oral iron"),
+            ],
+            RestrictionPool: []),
 
         new ClientProfile(
             Tag: "ibs-fodmap",
@@ -142,7 +212,23 @@ public record ClientProfile(
                 "Identify top 3 trigger foods through reintroduction",
                 "Reduce symptom frequency to fewer than 2 episodes per week"
             ],
-            FoodPoolTags: ["general", "low-fodmap"]),
+            FoodPoolTags: ["general", "low-fodmap"],
+            AllergyPool:
+            [
+                ("Wheat", AllergySeverity.Moderate, AllergyType.Food),
+                ("Lactose", AllergySeverity.Moderate, AllergyType.Food),
+            ],
+            MedicationPool:
+            [
+                ("Probiotics", null, "Once daily", "Gut health"),
+                ("Peppermint Oil Capsules", "200 mg", "Three times daily before meals", "IBS symptom relief"),
+            ],
+            ConditionPool:
+            [
+                ("Irritable bowel syndrome", "K58", ConditionStatus.Active, "FODMAP management protocol"),
+                ("Lactose intolerance", "E73.9", ConditionStatus.Active, null),
+            ],
+            RestrictionPool: [DietaryRestrictionType.GlutenFree, DietaryRestrictionType.DairyFree]),
 
         new ClientProfile(
             Tag: "cardiac-rehab",
@@ -168,7 +254,26 @@ public record ClientProfile(
                 "Maintain sodium intake under 2000 mg daily",
                 "Achieve target LDL cholesterol through dietary changes"
             ],
-            FoodPoolTags: ["general", "low-sodium", "mediterranean"]),
+            FoodPoolTags: ["general", "low-sodium", "mediterranean"],
+            AllergyPool:
+            [
+                ("Aspirin", AllergySeverity.Moderate, AllergyType.Drug),
+                ("Shellfish", AllergySeverity.Mild, AllergyType.Food),
+            ],
+            MedicationPool:
+            [
+                ("Atorvastatin", "40 mg", "Once daily at bedtime", "Dyslipidemia"),
+                ("Metoprolol", "50 mg", "Twice daily", "Heart rate and blood pressure control"),
+                ("Ramipril", "5 mg", "Once daily", "Blood pressure and cardiac remodelling"),
+                ("ASA", "81 mg", "Once daily", "Antiplatelet therapy"),
+            ],
+            ConditionPool:
+            [
+                ("Coronary artery disease", "I25.1", ConditionStatus.Managed, "Post-stent placement"),
+                ("Hypertension", "I10", ConditionStatus.Managed, null),
+                ("Dyslipidemia", "E78.5", ConditionStatus.Active, "Target LDL < 2.0 mmol/L"),
+            ],
+            RestrictionPool: [DietaryRestrictionType.LowSodium]),
 
         new ClientProfile(
             Tag: "general-wellness",
@@ -194,7 +299,19 @@ public record ClientProfile(
                 "Establish a consistent 3-meal-per-day routine",
                 "Reduce ultra-processed food intake by 50%"
             ],
-            FoodPoolTags: ["general", "balanced"]),
+            FoodPoolTags: ["general", "balanced"],
+            AllergyPool:
+            [
+                ("Seasonal pollen", AllergySeverity.Mild, AllergyType.Environmental),
+                ("Dust mites", AllergySeverity.Mild, AllergyType.Environmental),
+            ],
+            MedicationPool:
+            [
+                ("Multivitamin", null, "Once daily", "General nutrition"),
+                ("Vitamin D", "1000 IU", "Once daily", "Bone health"),
+            ],
+            ConditionPool: [],
+            RestrictionPool: []),
 
         new ClientProfile(
             Tag: "post-surgical",
@@ -220,6 +337,23 @@ public record ClientProfile(
                 "Consume 130+ grams of protein daily during recovery",
                 "Transition to full solid diet within 4 weeks post-surgery"
             ],
-            FoodPoolTags: ["general", "high-protein", "anti-inflammatory"]),
+            FoodPoolTags: ["general", "high-protein", "anti-inflammatory"],
+            AllergyPool:
+            [
+                ("Sulfa drugs", AllergySeverity.Severe, AllergyType.Drug),
+                ("Codeine", AllergySeverity.Moderate, AllergyType.Drug),
+            ],
+            MedicationPool:
+            [
+                ("Acetaminophen", "500 mg", "Every 6 hours as needed", "Post-surgical pain management"),
+                ("Iron Supplement", "300 mg ferrous gluconate", "Once daily", "Post-surgical anemia"),
+                ("Collagen Peptides", "10 g", "Once daily", "Wound healing support"),
+            ],
+            ConditionPool:
+            [
+                ("Post-surgical recovery", null, ConditionStatus.Active, "Recovering from abdominal surgery"),
+                ("Iron-deficiency anemia", "D50.9", ConditionStatus.Active, "Secondary to surgical blood loss"),
+            ],
+            RestrictionPool: []),
     };
 }
