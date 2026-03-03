@@ -1,0 +1,165 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
+
+@inject IAppointmentService AppointmentService
+@inject IMealPlanService MealPlanService
+@inject IProgressService ProgressService
+@inject ITimeZoneService TimeZoneService
+
+<Panel Title="Visit History" Count="@_entries?.Count">
+    @if (_loading)
+    {
+        <div class="timeline-loading">Loading visit history...</div>
+    }
+    else if (_entries is null || _entries.Count == 0)
+    {
+        <div class="timeline-empty">No visit history yet.</div>
+    }
+    else
+    {
+        <div class="timeline">
+            @foreach (var entry in _entries.Take(_displayCount))
+            {
+                <ActivityItem DotClass="@GetDotClass(entry.Type)" TimeAgo="@GetTimeAgo(entry.Date)">
+                    <div class="timeline-entry">
+                        <div class="timeline-title-row">
+                            <span class="timeline-icon">@((MarkupString)entry.Icon)</span>
+                            <a href="@entry.Link" class="timeline-title">@entry.Title</a>
+                        </div>
+                        <div class="timeline-description">@entry.Description</div>
+                    </div>
+                </ActivityItem>
+            }
+        </div>
+
+        @if (_displayCount < _entries.Count)
+        {
+            <div class="timeline-load-more">
+                <button class="btn-load-more" @onclick="LoadMore">
+                    Load more (@(_entries.Count - _displayCount) remaining)
+                </button>
+            </div>
+        }
+    }
+</Panel>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+
+    private record TimelineEntry(DateTime Date, string Type, string Icon, string Title, string Description, string? Link);
+
+    private List<TimelineEntry>? _entries;
+    private bool _loading = true;
+    private int _pageSize = 10;
+    private int _displayCount = 10;
+
+    private static readonly string IconCalendar = @"<svg width=""16"" height=""16"" viewBox=""0 0 16 16"" fill=""none"" stroke=""currentColor"" stroke-width=""1.5"" stroke-linecap=""round"" stroke-linejoin=""round""><rect x=""2"" y=""3"" width=""12"" height=""11"" rx=""1.5""/><path d=""M2 6.5h12M5.5 1.5v3M10.5 1.5v3""/></svg>";
+    private static readonly string IconUtensils = @"<svg width=""16"" height=""16"" viewBox=""0 0 16 16"" fill=""none"" stroke=""currentColor"" stroke-width=""1.5"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M5 1v5.5a2.5 2.5 0 0 1-5 0V1M2.5 1v14M11 1c0 3.5 3 3.5 3 6 0 1.5-1 2.5-2.5 2.5S9 8.5 9 7c0-2.5 3-2.5 3-6M12.5 9.5v5.5""/></svg>";
+    private static readonly string IconChart = @"<svg width=""16"" height=""16"" viewBox=""0 0 16 16"" fill=""none"" stroke=""currentColor"" stroke-width=""1.5"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M2 13l4-5 3 3 5-7""/></svg>";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+
+        var appointments = await AppointmentService.GetListAsync(clientId: ClientId);
+        var mealPlans = await MealPlanService.GetByClientAsync(ClientId, 100);
+        var progressEntries = await ProgressService.GetEntriesByClientAsync(ClientId);
+
+        var entries = new List<TimelineEntry>();
+
+        foreach (var appt in appointments)
+        {
+            var localTime = TimeZoneService.ToUserLocal(appt.StartTime);
+            entries.Add(new TimelineEntry(
+                localTime,
+                "appointment",
+                IconCalendar,
+                FormatApptType(appt.Type),
+                $"{appt.Status} \u00b7 {localTime.ToString("MMM d, yyyy")} \u00b7 {appt.DurationMinutes} min",
+                $"/appointments/{appt.Id}"
+            ));
+        }
+
+        foreach (var plan in mealPlans)
+        {
+            var localTime = TimeZoneService.ToUserLocal(plan.CreatedAt);
+            var dateRange = FormatDateRange(plan.StartDate, plan.EndDate);
+            entries.Add(new TimelineEntry(
+                localTime,
+                "mealplan",
+                IconUtensils,
+                plan.Title,
+                $"{plan.Status} \u00b7 {dateRange}",
+                $"/meal-plans/{plan.Id}"
+            ));
+        }
+
+        foreach (var entry in progressEntries)
+        {
+            var localTime = TimeZoneService.ToUserLocal(entry.CreatedAt);
+            var description = $"{entry.MeasurementCount} measurement{(entry.MeasurementCount != 1 ? "s" : "")}";
+            if (!string.IsNullOrWhiteSpace(entry.NotePreview))
+            {
+                description += $" \u00b7 {entry.NotePreview}";
+            }
+            entries.Add(new TimelineEntry(
+                localTime,
+                "progress",
+                IconChart,
+                entry.EntryDate.ToString("MMMM d, yyyy"),
+                description,
+                $"/progress/{entry.Id}"
+            ));
+        }
+
+        _entries = entries.OrderByDescending(e => e.Date).ToList();
+        _loading = false;
+    }
+
+    private void LoadMore()
+    {
+        _displayCount += _pageSize;
+    }
+
+    private static string FormatApptType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
+
+    private static string FormatDateRange(DateOnly? start, DateOnly? end)
+    {
+        if (start.HasValue && end.HasValue)
+            return $"{start.Value.ToString("MMM d")} \u2014 {end.Value.ToString("MMM d")}";
+        if (start.HasValue)
+            return $"From {start.Value.ToString("MMM d")}";
+        if (end.HasValue)
+            return $"Until {end.Value.ToString("MMM d")}";
+        return "No dates set";
+    }
+
+    private static string GetDotClass(string type) => type switch
+    {
+        "appointment" => "dot-appt",
+        "mealplan" => "dot-plan",
+        "progress" => "dot-client",
+        _ => "dot-client"
+    };
+
+    private string GetTimeAgo(DateTime date)
+    {
+        var now = TimeZoneService.UserNow;
+        var diff = now - date;
+
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} hours ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} days ago";
+        if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)} weeks ago";
+        return date.ToString("MMM d, yyyy");
+    }
+}

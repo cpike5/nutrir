@@ -1,0 +1,122 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
+
+@inject IProgressService ProgressService
+@inject ITimeZoneService TimeZoneService
+
+<div class="section-animate">
+    <Panel Title="Progress Summary">
+        <HeaderExtra>
+            <a href="/clients/@ClientId/progress" class="panel-link">View All</a>
+        </HeaderExtra>
+        <ChildContent>
+            @if (_loading)
+            {
+                <p>Loading...</p>
+            }
+            else if (!_hasData)
+            {
+                <div class="empty-state">
+                    <p class="empty-state-title">No progress data recorded yet</p>
+                    <a href="/clients/@ClientId/progress">Record first entry</a>
+                </div>
+            }
+            else
+            {
+                @if (_chartData?.Points.Count > 0)
+                {
+                    <div class="metrics-row">
+                        <MetricCard Label="@_chartData.Label"
+                                    Value="@FormatValue(_latestValue, _chartData.Unit)"
+                                    DeltaText="@_deltaText"
+                                    Delta="@_delta" />
+                    </div>
+                }
+
+                @if (_activeGoals.Count > 0)
+                {
+                    <div class="goals-section">
+                        <h4 class="goals-heading">Active Goals</h4>
+                        <ul class="goals-list">
+                            @foreach (var goal in _activeGoals)
+                            {
+                                <li class="goal-item">
+                                    <div class="goal-header">
+                                        <Badge Variant="BadgeVariant.Primary">@goal.GoalType.ToString()</Badge>
+                                        <span class="goal-title">@goal.Title</span>
+                                    </div>
+                                    @if (goal.TargetValue.HasValue)
+                                    {
+                                        <span class="goal-target">
+                                            Target: @goal.TargetValue.Value.ToString("N1") @goal.TargetUnit
+                                        </span>
+                                    }
+                                    @if (goal.TargetDate.HasValue)
+                                    {
+                                        <span class="goal-date">
+                                            By @goal.TargetDate.Value.ToString("MMM d, yyyy")
+                                        </span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        </ChildContent>
+    </Panel>
+</div>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+
+    private bool _loading = true;
+    private bool _hasData;
+    private List<ProgressGoalSummaryDto> _activeGoals = new();
+    private ProgressChartDataDto? _chartData;
+    private decimal _latestValue;
+    private string? _deltaText;
+    private MetricDelta _delta = MetricDelta.Flat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+
+        var entriesTask = ProgressService.GetRecentByClientAsync(ClientId, 3);
+        var goalsTask = ProgressService.GetGoalsByClientAsync(ClientId);
+        var chartTask = ProgressService.GetChartDataAsync(ClientId, MetricType.Weight);
+
+        await Task.WhenAll(entriesTask, goalsTask, chartTask);
+
+        var entries = entriesTask.Result;
+        var goals = goalsTask.Result;
+        _chartData = chartTask.Result;
+
+        _activeGoals = goals.Where(g => g.Status == GoalStatus.Active).ToList();
+
+        if (_chartData?.Points.Count > 0)
+        {
+            var points = _chartData.Points.OrderBy(p => p.Date).ToList();
+            _latestValue = points[^1].Value;
+
+            if (points.Count >= 2)
+            {
+                var previous = points[^2].Value;
+                var diff = _latestValue - previous;
+                _deltaText = diff >= 0 ? $"+{diff:N1}" : $"{diff:N1}";
+                _delta = diff > 0 ? MetricDelta.Up : diff < 0 ? MetricDelta.Down : MetricDelta.Flat;
+            }
+        }
+
+        _hasData = entries.Count > 0 || _activeGoals.Count > 0;
+        _loading = false;
+    }
+
+    private static string FormatValue(decimal value, string? unit)
+    {
+        var formatted = value.ToString("N1");
+        return string.IsNullOrEmpty(unit) ? formatted : $"{formatted} {unit}";
+    }
+}

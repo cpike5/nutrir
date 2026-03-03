@@ -414,6 +414,13 @@
     50% { opacity: 0.4; transform: scale(0.75); }
 }
 
+/* ── Widget Grid ─────────────────────────────────────── */
+.widget-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
 /* ── Responsive: Tablet ──────────────────────────────── */
 @media (max-width: 768px) {
     .hero {
@@ -422,6 +429,10 @@
 
     .hero-actions {
         padding-left: calc(64px + var(--space-4));
+    }
+
+    .widget-grid {
+        grid-template-columns: 1fr;
     }
 }
 
