@@ -10,6 +10,7 @@
 @using Nutrir.Core.Interfaces
 @using Nutrir.Core.Models
 @using Nutrir.Infrastructure.Configuration
+@using Nutrir.Web.Components.Widgets
 @using Microsoft.Extensions.Options
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
@@ -18,6 +19,7 @@
 @inject IConsentFormTemplate ConsentFormTemplate
 @inject IOptions<ConsentFormOptions> ConsentFormOptionsAccessor
 @inject IUserManagementService UserManagementService
+@inject IClientHealthProfileService HealthProfileService
 @inject NavigationManager NavigationManager
 
 <PageTitle>New Client — Nutrir</PageTitle>
@@ -105,6 +107,12 @@
                               @bind="_model.Notes"
                               placeholder="Additional notes about the client..."></textarea>
                 </FormGroup>
+
+                @* ── Health Profile ───────────────────────────── *@
+                <AllergyFormGroup @ref="_allergyFormGroup" Entries="@_allergyEntries" />
+                <MedicationFormGroup @ref="_medicationFormGroup" Entries="@_medicationEntries" />
+                <ConditionFormGroup @ref="_conditionFormGroup" Entries="@_conditionEntries" />
+                <DietaryRestrictionFormGroup @ref="_dietaryRestrictionFormGroup" Entries="@_dietaryRestrictionEntries" />
 
                 @* ── Consent Section ──────────────────────────── *@
                 <div class="consent-section">
@@ -204,6 +212,16 @@
     private IReadOnlyList<Autocomplete.AutocompleteOption> _nutritionistOptions = [];
     private string? _nutritionistDisplayText;
     private ConsentFormContent? _consentContent;
+
+    // Health profile form groups
+    private AllergyFormGroup _allergyFormGroup = default!;
+    private MedicationFormGroup _medicationFormGroup = default!;
+    private ConditionFormGroup _conditionFormGroup = default!;
+    private DietaryRestrictionFormGroup _dietaryRestrictionFormGroup = default!;
+    private List<AllergyFormGroup.AllergyEntry> _allergyEntries = new();
+    private List<MedicationFormGroup.MedicationEntry> _medicationEntries = new();
+    private List<ConditionFormGroup.ConditionEntry> _conditionEntries = new();
+    private List<DietaryRestrictionFormGroup.DietaryRestrictionEntry> _dietaryRestrictionEntries = new();
 
     private bool _hasClientName =>
         !string.IsNullOrWhiteSpace(_model.FirstName) && !string.IsNullOrWhiteSpace(_model.LastName);
@@ -325,6 +343,9 @@
 
             var created = await ClientService.CreateAsync(dto, userId);
 
+            // Save health profile entries
+            await SaveHealthProfileAsync(created.Id, userId);
+
             // Record consent form based on method
             if (isDigital)
             {
@@ -340,6 +361,30 @@
         finally
         {
             _isSubmitting = false;
+        }
+    }
+
+    private async Task SaveHealthProfileAsync(int clientId, string userId)
+    {
+        foreach (var (name, severity, allergyType) in _allergyFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateAllergyAsync(
+                new CreateClientAllergyDto(clientId, name, severity, allergyType), userId);
+        }
+        foreach (var (name, dosage, frequency, prescribedFor) in _medicationFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateMedicationAsync(
+                new CreateClientMedicationDto(clientId, name, dosage, frequency, prescribedFor), userId);
+        }
+        foreach (var (name, code, diagnosisDate, status) in _conditionFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateConditionAsync(
+                new CreateClientConditionDto(clientId, name, code, diagnosisDate, status, null), userId);
+        }
+        foreach (var (restrictionType, notes) in _dietaryRestrictionFormGroup.GetValidEntries())
+        {
+            await HealthProfileService.CreateDietaryRestrictionAsync(
+                new CreateClientDietaryRestrictionDto(clientId, restrictionType, notes), userId);
         }
     }
 

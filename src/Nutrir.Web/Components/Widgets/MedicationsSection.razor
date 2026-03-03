@@ -1,0 +1,358 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IClientHealthProfileService HealthProfileService
+
+<div class="table-card health-section">
+    <div class="section-header" @onclick="ToggleCollapsed" role="button" tabindex="0">
+        <div class="section-header-left">
+            <span class="section-header-label">Medications</span>
+            <span class="section-count">(@_medications.Count)</span>
+        </div>
+        <button class="section-toggle" aria-label="@(_collapsed ? "Expand" : "Collapse")">
+            <svg class="toggle-icon @(_collapsed ? "collapsed" : "")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m4 6 4 4 4-4"/>
+            </svg>
+        </button>
+    </div>
+    @if (!_collapsed)
+    {
+        <div class="section-list">
+            @if (_medications.Count == 0 && !_showAddForm)
+            {
+                <div class="section-empty">No medications recorded</div>
+            }
+            else
+            {
+                @foreach (var med in _medications)
+                {
+                    @if (_editingId == med.Id)
+                    {
+                        <div class="inline-form">
+                            <div class="inline-form-grid">
+                                <FormGroup Label="Name" Id="edit-med-name">
+                                    <FormInput Id="edit-med-name"
+                                               Value="@_editName"
+                                               ValueChanged="@(v => _editName = v)"
+                                               Placeholder="Medication name" />
+                                </FormGroup>
+                                <FormGroup Label="Dosage" Id="edit-med-dosage">
+                                    <FormInput Id="edit-med-dosage"
+                                               Value="@_editDosage"
+                                               ValueChanged="@(v => _editDosage = v)"
+                                               Placeholder="e.g. 500mg" />
+                                </FormGroup>
+                                <FormGroup Label="Frequency" Id="edit-med-freq">
+                                    <FormInput Id="edit-med-freq"
+                                               Value="@_editFrequency"
+                                               ValueChanged="@(v => _editFrequency = v)"
+                                               Placeholder="e.g. Twice daily" />
+                                </FormGroup>
+                                <FormGroup Label="Prescribed For" Id="edit-med-for">
+                                    <FormInput Id="edit-med-for"
+                                               Value="@_editPrescribedFor"
+                                               ValueChanged="@(v => _editPrescribedFor = v)"
+                                               Placeholder="e.g. Hypertension" />
+                                </FormGroup>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_formError))
+                            {
+                                <p class="form-error">@_formError</p>
+                            }
+                            <div class="inline-form-actions">
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="SaveEdit" Disabled="@_isSaving">
+                                    @(_isSaving ? "Saving..." : "Save")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelEdit">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else if (_deletingId == med.Id)
+                    {
+                        <div class="delete-confirm-row">
+                            <span class="delete-confirm-text">Delete <strong>@med.Name</strong>?</span>
+                            <div class="delete-confirm-actions">
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="ConfirmDelete" Disabled="@_isSaving">
+                                    @(_isSaving ? "Deleting..." : "Delete")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelDelete">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-row">
+                            <div class="list-row-primary">
+                                <span class="list-row-title">@med.Name</span>
+                                <span class="list-row-meta">
+                                    @if (!string.IsNullOrEmpty(med.Dosage))
+                                    {
+                                        @med.Dosage
+                                    }
+                                    @if (!string.IsNullOrEmpty(med.Dosage) && !string.IsNullOrEmpty(med.Frequency))
+                                    {
+                                        <span> · </span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(med.Frequency))
+                                    {
+                                        @med.Frequency
+                                    }
+                                    @if (!string.IsNullOrEmpty(med.PrescribedFor))
+                                    {
+                                        <span> · For @med.PrescribedFor</span>
+                                    }
+                                </span>
+                            </div>
+                            <div class="list-row-actions">
+                                <button class="row-action" title="Edit" @onclick="@(() => StartEdit(med))">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5a1.77 1.77 0 0 1 2.5 2.5L5.5 13.5l-3.5 1 1-3.5Z"/></svg>
+                                </button>
+                                <button class="row-action row-action-danger" title="Delete" @onclick="@(() => StartDelete(med.Id))">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+            @if (_showAddForm)
+            {
+                <div class="inline-form">
+                    <div class="inline-form-grid">
+                        <FormGroup Label="Name" Id="add-med-name">
+                            <FormInput Id="add-med-name"
+                                       Value="@_addName"
+                                       ValueChanged="@(v => _addName = v)"
+                                       Placeholder="Medication name" />
+                        </FormGroup>
+                        <FormGroup Label="Dosage" Id="add-med-dosage">
+                            <FormInput Id="add-med-dosage"
+                                       Value="@_addDosage"
+                                       ValueChanged="@(v => _addDosage = v)"
+                                       Placeholder="e.g. 500mg" />
+                        </FormGroup>
+                        <FormGroup Label="Frequency" Id="add-med-freq">
+                            <FormInput Id="add-med-freq"
+                                       Value="@_addFrequency"
+                                       ValueChanged="@(v => _addFrequency = v)"
+                                       Placeholder="e.g. Twice daily" />
+                        </FormGroup>
+                        <FormGroup Label="Prescribed For" Id="add-med-for">
+                            <FormInput Id="add-med-for"
+                                       Value="@_addPrescribedFor"
+                                       ValueChanged="@(v => _addPrescribedFor = v)"
+                                       Placeholder="e.g. Hypertension" />
+                        </FormGroup>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_formError))
+                    {
+                        <p class="form-error">@_formError</p>
+                    }
+                    <div class="inline-form-actions">
+                        <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Small" OnClick="SaveAdd" Disabled="@_isSaving">
+                            @(_isSaving ? "Adding..." : "Add Medication")
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small" OnClick="CancelAdd">Cancel</Button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="add-row">
+                    <button class="add-button" @onclick="ShowAddForm">+ Add Medication</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ClientId { get; set; }
+    [Parameter] public List<ClientMedicationDto>? InitialData { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<ClientMedicationDto> _medications = new();
+    private bool _collapsed;
+    private bool _showAddForm;
+    private bool _isSaving;
+    private string? _formError;
+
+    // Add form state
+    private string _addName = string.Empty;
+    private string _addDosage = string.Empty;
+    private string _addFrequency = string.Empty;
+    private string _addPrescribedFor = string.Empty;
+
+    // Edit form state
+    private int? _editingId;
+    private string _editName = string.Empty;
+    private string _editDosage = string.Empty;
+    private string _editFrequency = string.Empty;
+    private string _editPrescribedFor = string.Empty;
+
+    // Delete state
+    private int? _deletingId;
+
+    protected override void OnParametersSet()
+    {
+        if (InitialData is not null)
+        {
+            _medications = InitialData;
+        }
+    }
+
+    private void ToggleCollapsed() => _collapsed = !_collapsed;
+
+    private async Task<string> GetUserIdAsync()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private void ShowAddForm()
+    {
+        _showAddForm = true;
+        _editingId = null;
+        _deletingId = null;
+        _formError = null;
+        _addName = string.Empty;
+        _addDosage = string.Empty;
+        _addFrequency = string.Empty;
+        _addPrescribedFor = string.Empty;
+    }
+
+    private void CancelAdd()
+    {
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private async Task SaveAdd()
+    {
+        if (string.IsNullOrWhiteSpace(_addName))
+        {
+            _formError = "Name is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _formError = null;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var dto = new CreateClientMedicationDto(
+                ClientId, _addName.Trim(),
+                NullIfEmpty(_addDosage), NullIfEmpty(_addFrequency), NullIfEmpty(_addPrescribedFor));
+            var created = await HealthProfileService.CreateMedicationAsync(dto, userId);
+            _medications.Add(created);
+            _showAddForm = false;
+        }
+        catch
+        {
+            _formError = "Failed to add medication. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void StartEdit(ClientMedicationDto med)
+    {
+        _editingId = med.Id;
+        _editName = med.Name;
+        _editDosage = med.Dosage ?? string.Empty;
+        _editFrequency = med.Frequency ?? string.Empty;
+        _editPrescribedFor = med.PrescribedFor ?? string.Empty;
+        _deletingId = null;
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _formError = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editName))
+        {
+            _formError = "Name is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _formError = null;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var dto = new UpdateClientMedicationDto(
+                _editName.Trim(),
+                NullIfEmpty(_editDosage), NullIfEmpty(_editFrequency), NullIfEmpty(_editPrescribedFor));
+            var success = await HealthProfileService.UpdateMedicationAsync(_editingId!.Value, dto, userId);
+            if (success)
+            {
+                var updated = await HealthProfileService.GetMedicationByIdAsync(_editingId.Value);
+                if (updated is not null)
+                {
+                    var idx = _medications.FindIndex(m => m.Id == _editingId.Value);
+                    if (idx >= 0) _medications[idx] = updated;
+                }
+                _editingId = null;
+            }
+            else
+            {
+                _formError = "Failed to update medication.";
+            }
+        }
+        catch
+        {
+            _formError = "Failed to update medication. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void StartDelete(int id)
+    {
+        _deletingId = id;
+        _editingId = null;
+        _showAddForm = false;
+        _formError = null;
+    }
+
+    private void CancelDelete() => _deletingId = null;
+
+    private async Task ConfirmDelete()
+    {
+        _isSaving = true;
+        try
+        {
+            var userId = await GetUserIdAsync();
+            var success = await HealthProfileService.DeleteMedicationAsync(_deletingId!.Value, userId);
+            if (success)
+            {
+                _medications.RemoveAll(m => m.Id == _deletingId.Value);
+                _deletingId = null;
+            }
+        }
+        catch
+        {
+            _formError = "Failed to delete medication.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static string? NullIfEmpty(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

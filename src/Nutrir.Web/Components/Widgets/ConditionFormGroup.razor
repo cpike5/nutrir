@@ -1,0 +1,93 @@
+@using Nutrir.Core.Enums
+
+<div class="health-form-section">
+    <div class="health-form-label">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>Conditions</span>
+    </div>
+
+    @foreach (var entry in Entries)
+    {
+        var index = Entries.IndexOf(entry);
+        <div class="health-form-entry">
+            <div class="form-grid">
+                <FormGroup Label="Condition Name" Id="@($"cond-name-{index}")">
+                    <FormInput Id="@($"cond-name-{index}")"
+                               Value="@entry.Name"
+                               ValueChanged="@(v => entry.Name = v)"
+                               Placeholder="e.g. Type 2 Diabetes" />
+                </FormGroup>
+                <FormGroup Label="Code" Id="@($"cond-code-{index}")">
+                    <FormInput Id="@($"cond-code-{index}")"
+                               Value="@entry.Code"
+                               ValueChanged="@(v => entry.Code = v)"
+                               Placeholder="e.g. E11" />
+                </FormGroup>
+                <FormGroup Label="Diagnosis Date" Id="@($"cond-date-{index}")">
+                    <FormInput Id="@($"cond-date-{index}")"
+                               Type="date"
+                               Value="@entry.DiagnosisDate"
+                               ValueChanged="@(v => entry.DiagnosisDate = v)" />
+                </FormGroup>
+                <FormGroup Label="Status" Id="@($"cond-status-{index}")">
+                    <FormSelect Id="@($"cond-status-{index}")"
+                                Value="@entry.Status.ToString()"
+                                ValueChanged="@(v => entry.Status = Enum.Parse<ConditionStatus>(v))">
+                        @foreach (var s in Enum.GetValues<ConditionStatus>())
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </FormSelect>
+                </FormGroup>
+            </div>
+            <button class="health-form-remove" type="button" @onclick="@(() => Remove(index))" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+            </button>
+        </div>
+    }
+
+    <button class="health-form-add" type="button" @onclick="Add">+ Add Condition</button>
+</div>
+
+@code {
+    [Parameter] public List<ConditionEntry> Entries { get; set; } = new();
+
+    private void Add()
+    {
+        Entries.Add(new ConditionEntry());
+    }
+
+    private void Remove(int index)
+    {
+        if (index >= 0 && index < Entries.Count)
+            Entries.RemoveAt(index);
+    }
+
+    public List<(string Name, string? Code, DateOnly? DiagnosisDate, ConditionStatus Status)> GetValidEntries()
+    {
+        return Entries
+            .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+            .Select(e => (
+                e.Name!.Trim(),
+                NullIfEmpty(e.Code),
+                ParseDate(e.DiagnosisDate),
+                e.Status))
+            .ToList();
+    }
+
+    private static string? NullIfEmpty(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static DateOnly? ParseDate(string? value) =>
+        !string.IsNullOrEmpty(value) && DateOnly.TryParse(value, out var d) ? d : null;
+
+    public class ConditionEntry
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? DiagnosisDate { get; set; }
+        public ConditionStatus Status { get; set; } = ConditionStatus.Active;
+    }
+}

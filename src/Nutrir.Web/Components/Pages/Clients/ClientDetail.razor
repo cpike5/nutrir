@@ -17,6 +17,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject ITimeZoneService TimeZoneService
+@inject IClientHealthProfileService HealthProfileService
 @inject RealTimeNotificationService NotificationService
 
 <PageTitle>@(_client is not null ? $"{_client.FirstName} {_client.LastName}" : "Client") — Nutrir</PageTitle>
@@ -177,24 +178,41 @@
             </div>
         }
 
+        @* ── Health Profile Sections ──────────────────────── *@
+        @if (_healthProfile is not null)
+        {
+            <div class="section-animate" style="animation-delay: 160ms;" @key="@($"allergies-{_refreshKey}")">
+                <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
+            </div>
+            <div class="section-animate" style="animation-delay: 200ms;" @key="@($"medications-{_refreshKey}")">
+                <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
+            </div>
+            <div class="section-animate" style="animation-delay: 240ms;" @key="@($"conditions-{_refreshKey}")">
+                <ConditionsSection ClientId="@Id" InitialData="@_healthProfile.Conditions" />
+            </div>
+            <div class="section-animate" style="animation-delay: 280ms;" @key="@($"dietary-{_refreshKey}")">
+                <DietaryRestrictionsSection ClientId="@Id" InitialData="@_healthProfile.DietaryRestrictions" />
+            </div>
+        }
+
         @* ── Widget Grid: Progress + Meal Plan ─────────── *@
-        <div class="widget-grid section-animate" style="animation-delay: 160ms;">
+        <div class="widget-grid section-animate" style="animation-delay: 320ms;">
             <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
             <ActiveMealPlanCard ClientId="@Id" @key="@($"mealplan-{_refreshKey}")" />
         </div>
 
         @* ── Upcoming Appointments Widget ──────────────── *@
-        <div class="section-animate" style="animation-delay: 240ms;">
+        <div class="section-animate" style="animation-delay: 400ms;">
             <UpcomingAppointmentsWidget ClientId="@Id" @key="@($"appointments-{_refreshKey}")" />
         </div>
 
         @* ── Visit History Timeline ────────────────────── *@
-        <div class="section-animate" style="animation-delay: 320ms;">
+        <div class="section-animate" style="animation-delay: 480ms;">
             <VisitHistoryTimeline ClientId="@Id" @key="@($"timeline-{_refreshKey}")" />
         </div>
 
         @* ── Consent Form ──────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 400ms;">
+        <div class="table-card section-animate" style="animation-delay: 560ms;">
             <div class="section-header">
                 <span class="section-header-label">Consent Form</span>
             </div>
@@ -263,7 +281,7 @@
         </div>
 
         @* ── Metadata Footer ─────────────────────────────── *@
-        <div class="meta-footer section-animate" style="animation-delay: 480ms;" @key="_refreshKey">
+        <div class="meta-footer section-animate" style="animation-delay: 640ms;" @key="_refreshKey">
             <span>Created: @_client.CreatedAt.ToString("MMM d, yyyy")</span>
             @if (_client.UpdatedAt.HasValue)
             {
@@ -280,6 +298,7 @@
 
     private ClientDto? _client;
     private ConsentFormDto? _latestConsentForm;
+    private ClientHealthProfileSummaryDto? _healthProfile;
     private int _refreshKey;
     private bool _isLoading = true;
     private bool _showDeleteConfirm;
@@ -296,6 +315,7 @@
         await TimeZoneService.InitializeAsync();
         _client = await ClientService.GetByIdAsync(Id);
         _latestConsentForm = await ConsentFormService.GetLatestFormAsync(Id);
+        _healthProfile = await HealthProfileService.GetHealthProfileSummaryAsync(Id);
         _isLoading = false;
 
         if (_client is not null)
@@ -309,7 +329,8 @@
     private void OnEntityChanged(EntityChangeNotification notification)
     {
         var isThisClient = notification.EntityType == "Client" && notification.EntityId == Id;
-        var isRelatedEntity = notification.EntityType is "MealPlan" or "Appointment" or "ProgressEntry";
+        var isRelatedEntity = notification.EntityType is "MealPlan" or "Appointment" or "ProgressEntry"
+            or "ClientAllergy" or "ClientMedication" or "ClientCondition" or "ClientDietaryRestriction";
 
         if (!isThisClient && !isRelatedEntity)
             return;
@@ -318,6 +339,7 @@
         {
             _client = await ClientService.GetByIdAsync(Id);
             _latestConsentForm = await ConsentFormService.GetLatestFormAsync(Id);
+            _healthProfile = await HealthProfileService.GetHealthProfileSummaryAsync(Id);
             _refreshKey++;
             _refreshedByRealTime = true;
             StateHasChanged();

@@ -1,0 +1,80 @@
+@using Nutrir.Core.Enums
+
+<div class="health-form-section">
+    <div class="health-form-label">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+        <span>Allergies</span>
+    </div>
+
+    @foreach (var entry in Entries)
+    {
+        var index = Entries.IndexOf(entry);
+        <div class="health-form-entry">
+            <div class="form-grid">
+                <FormGroup Label="Allergy Name" Id="@($"allergy-name-{index}")">
+                    <FormInput Id="@($"allergy-name-{index}")"
+                               Value="@entry.Name"
+                               ValueChanged="@(v => entry.Name = v)"
+                               Placeholder="e.g. Peanuts" />
+                </FormGroup>
+                <FormGroup Label="Severity" Id="@($"allergy-severity-{index}")">
+                    <FormSelect Id="@($"allergy-severity-{index}")"
+                                Value="@entry.Severity.ToString()"
+                                ValueChanged="@(v => entry.Severity = Enum.Parse<AllergySeverity>(v))">
+                        @foreach (var s in Enum.GetValues<AllergySeverity>())
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </FormSelect>
+                </FormGroup>
+                <FormGroup Label="Type" Id="@($"allergy-type-{index}")">
+                    <FormSelect Id="@($"allergy-type-{index}")"
+                                Value="@entry.AllergyType.ToString()"
+                                ValueChanged="@(v => entry.AllergyType = Enum.Parse<AllergyType>(v))">
+                        @foreach (var t in Enum.GetValues<AllergyType>())
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    </FormSelect>
+                </FormGroup>
+            </div>
+            <button class="health-form-remove" type="button" @onclick="@(() => Remove(index))" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 7v4M9.5 7v4"/><path d="M4 4.5l.5 8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5l.5-8.5"/><path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/></svg>
+            </button>
+        </div>
+    }
+
+    <button class="health-form-add" type="button" @onclick="Add">+ Add Allergy</button>
+</div>
+
+@code {
+    [Parameter] public List<AllergyEntry> Entries { get; set; } = new();
+
+    private void Add()
+    {
+        Entries.Add(new AllergyEntry());
+    }
+
+    private void Remove(int index)
+    {
+        if (index >= 0 && index < Entries.Count)
+            Entries.RemoveAt(index);
+    }
+
+    public List<(string Name, AllergySeverity Severity, AllergyType AllergyType)> GetValidEntries()
+    {
+        return Entries
+            .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+            .Select(e => (e.Name!.Trim(), e.Severity, e.AllergyType))
+            .ToList();
+    }
+
+    public class AllergyEntry
+    {
+        public string? Name { get; set; }
+        public AllergySeverity Severity { get; set; } = AllergySeverity.Mild;
+        public AllergyType AllergyType { get; set; } = AllergyType.Food;
+    }
+}

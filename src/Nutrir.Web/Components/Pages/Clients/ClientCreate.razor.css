@@ -89,6 +89,78 @@
     gap: var(--space-4);
 }
 
+/* ── Health Form Sections ─────────────────────────────── */
+::deep .health-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+
+::deep .health-form-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--color-text-muted);
+}
+
+::deep .health-form-label svg {
+    opacity: 0.7;
+}
+
+::deep .health-form-entry {
+    position: relative;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-alt);
+}
+
+::deep .health-form-entry .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+::deep .health-form-remove {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    cursor: pointer;
+    color: var(--color-text-muted);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+::deep .health-form-remove:hover {
+    color: var(--color-error);
+}
+
+::deep .health-form-add {
+    background: none;
+    border: none;
+    padding: var(--space-1) 0;
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-primary);
+    transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+::deep .health-form-add:hover {
+    opacity: 0.8;
+}
+
 /* ── Consent Section ──────────────────────────────────── */
 .consent-section {
     display: flex;
