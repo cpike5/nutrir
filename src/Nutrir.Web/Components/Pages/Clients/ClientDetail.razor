@@ -165,8 +165,16 @@
             </div>
         }
 
+        @* ── Health Snapshot ────────────────────────────────── *@
+        @if (_healthProfile is not null)
+        {
+            <div class="section-animate" style="animation-delay: 80ms;" @key="@($"snapshot-{_refreshKey}")">
+                <HealthSnapshotHeader HealthProfile="@_healthProfile" />
+            </div>
+        }
+
         @* ── Consent Form ──────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 80ms;">
+        <div class="table-card section-animate" style="animation-delay: 160ms;">
             <div class="section-header">
                 <span class="section-header-label">Consent Form</span>
             </div>
@@ -235,20 +243,20 @@
         </div>
 
         @* ── Widget Grid: Progress + Meal Plan ─────────── *@
-        <div class="widget-grid section-animate" style="animation-delay: 160ms;">
+        <div class="widget-grid section-animate" style="animation-delay: 240ms;">
             <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
             <ActiveMealPlanCard ClientId="@Id" @key="@($"mealplan-{_refreshKey}")" />
         </div>
 
         @* ── Upcoming Appointments Widget ──────────────── *@
-        <div class="section-animate" style="animation-delay: 240ms;">
+        <div class="section-animate" style="animation-delay: 320ms;">
             <UpcomingAppointmentsWidget ClientId="@Id" @key="@($"appointments-{_refreshKey}")" />
         </div>
 
         @* ── Notes ───────────────────────────────────────── *@
         @if (!string.IsNullOrEmpty(_client.Notes))
         {
-            <div class="table-card section-animate" style="animation-delay: 240ms;">
+            <div class="table-card section-animate" style="animation-delay: 320ms;">
                 <div class="section-header">
                     <span class="section-header-label">Notes</span>
                 </div>
@@ -261,27 +269,27 @@
         @* ── Health Profile Sections ──────────────────────── *@
         @if (_healthProfile is not null)
         {
-            <div class="section-animate" style="animation-delay: 320ms;" @key="@($"allergies-{_refreshKey}")">
+            <div class="section-animate" style="animation-delay: 400ms;" @key="@($"allergies-{_refreshKey}")">
                 <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
             </div>
-            <div class="section-animate" style="animation-delay: 360ms;" @key="@($"medications-{_refreshKey}")">
+            <div class="section-animate" style="animation-delay: 440ms;" @key="@($"medications-{_refreshKey}")">
                 <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
             </div>
-            <div class="section-animate" style="animation-delay: 400ms;" @key="@($"conditions-{_refreshKey}")">
+            <div class="section-animate" style="animation-delay: 480ms;" @key="@($"conditions-{_refreshKey}")">
                 <ConditionsSection ClientId="@Id" InitialData="@_healthProfile.Conditions" />
             </div>
-            <div class="section-animate" style="animation-delay: 440ms;" @key="@($"dietary-{_refreshKey}")">
+            <div class="section-animate" style="animation-delay: 520ms;" @key="@($"dietary-{_refreshKey}")">
                 <DietaryRestrictionsSection ClientId="@Id" InitialData="@_healthProfile.DietaryRestrictions" />
             </div>
         }
 
         @* ── Visit History Timeline ────────────────────── *@
-        <div class="section-animate" style="animation-delay: 480ms;">
+        <div class="section-animate" style="animation-delay: 560ms;">
             <VisitHistoryTimeline ClientId="@Id" @key="@($"timeline-{_refreshKey}")" />
         </div>
 
         @* ── Metadata Footer ─────────────────────────────── *@
-        <div class="meta-footer section-animate" style="animation-delay: 640ms;" @key="_refreshKey">
+        <div class="meta-footer section-animate" style="animation-delay: 720ms;" @key="_refreshKey">
             <span>Created: @_client.CreatedAt.ToString("MMM d, yyyy")</span>
             @if (_client.UpdatedAt.HasValue)
             {

@@ -1,0 +1,120 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+
+@if (HealthProfile is not null)
+{
+    <div class="table-card snapshot-header">
+        <div class="snapshot-grid">
+            @* ── Conditions ── *@
+            <div class="snapshot-section">
+                <span class="snapshot-label">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1v14M1 8h14"/><circle cx="8" cy="8" r="6.5"/></svg>
+                    Conditions
+                </span>
+                <div class="snapshot-badges">
+                    @{ var activeConditions = HealthProfile.Conditions.Where(c => c.Status is ConditionStatus.Active or ConditionStatus.Managed).ToList(); }
+                    @if (activeConditions.Count > 0)
+                    {
+                        @foreach (var condition in activeConditions)
+                        {
+                            <Badge Variant="@GetStatusVariant(condition.Status)">@condition.Name</Badge>
+                        }
+                    }
+                    else
+                    {
+                        <span class="snapshot-none">None</span>
+                    }
+                </div>
+            </div>
+
+            @* ── Allergies ── *@
+            <div class="snapshot-section">
+                <span class="snapshot-label">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 1.5 15h17Z"/><path d="M10 7v3M10 12.5v.5"/></svg>
+                    Allergies
+                </span>
+                <div class="snapshot-badges">
+                    @if (HealthProfile.Allergies.Count > 0)
+                    {
+                        @foreach (var allergy in HealthProfile.Allergies)
+                        {
+                            <Badge Variant="@GetSeverityVariant(allergy.Severity)">@allergy.Name</Badge>
+                        }
+                    }
+                    else
+                    {
+                        <span class="snapshot-none">None</span>
+                    }
+                </div>
+            </div>
+
+            @* ── Medications ── *@
+            <div class="snapshot-section">
+                <span class="snapshot-label">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>
+                    Medications
+                </span>
+                <div class="snapshot-badges">
+                    @if (HealthProfile.Medications.Count > 0)
+                    {
+                        <span class="snapshot-count">@HealthProfile.Medications.Count active</span>
+                    }
+                    else
+                    {
+                        <span class="snapshot-none">None</span>
+                    }
+                </div>
+            </div>
+
+            @* ── Dietary Restrictions ── *@
+            <div class="snapshot-section">
+                <span class="snapshot-label">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 1v5a3 3 0 0 0 6 0V1"/><path d="M8 10v5"/></svg>
+                    Dietary
+                </span>
+                <div class="snapshot-badges">
+                    @if (HealthProfile.DietaryRestrictions.Count > 0)
+                    {
+                        @foreach (var restriction in HealthProfile.DietaryRestrictions)
+                        {
+                            <Badge Variant="BadgeVariant.Accent">@FormatRestrictionType(restriction.RestrictionType)</Badge>
+                        }
+                    }
+                    else
+                    {
+                        <span class="snapshot-none">None</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public ClientHealthProfileSummaryDto? HealthProfile { get; set; }
+
+    private static BadgeVariant GetSeverityVariant(AllergySeverity severity) => severity switch
+    {
+        AllergySeverity.Mild => BadgeVariant.Success,
+        AllergySeverity.Moderate => BadgeVariant.Warning,
+        AllergySeverity.Severe => BadgeVariant.Error,
+        _ => BadgeVariant.Secondary
+    };
+
+    private static BadgeVariant GetStatusVariant(ConditionStatus status) => status switch
+    {
+        ConditionStatus.Active => BadgeVariant.Error,
+        ConditionStatus.Managed => BadgeVariant.Warning,
+        ConditionStatus.Resolved => BadgeVariant.Success,
+        _ => BadgeVariant.Secondary
+    };
+
+    private static string FormatRestrictionType(DietaryRestrictionType type) => type switch
+    {
+        DietaryRestrictionType.GlutenFree => "Gluten-Free",
+        DietaryRestrictionType.DairyFree => "Dairy-Free",
+        DietaryRestrictionType.NutFree => "Nut-Free",
+        DietaryRestrictionType.LowSodium => "Low Sodium",
+        _ => type.ToString()
+    };
+}
