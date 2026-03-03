@@ -95,3 +95,12 @@ public record CreateClientDietaryRestrictionDto(
 public record UpdateClientDietaryRestrictionDto(
     DietaryRestrictionType RestrictionType,
     string? Notes);
+
+// --- Summary DTO ---
+
+public record ClientHealthProfileSummaryDto(
+    int ClientId,
+    List<ClientAllergyDto> Allergies,
+    List<ClientMedicationDto> Medications,
+    List<ClientConditionDto> Conditions,
+    List<ClientDietaryRestrictionDto> DietaryRestrictions);
