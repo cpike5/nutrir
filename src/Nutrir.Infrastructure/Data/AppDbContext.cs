@@ -328,7 +328,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasQueryFilter(a => !a.IsDeleted);
 
             entity.HasOne<Client>()
-                .WithMany()
+                .WithMany(c => c.Allergies)
                 .HasForeignKey(a => a.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -346,7 +346,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasQueryFilter(m => !m.IsDeleted);
 
             entity.HasOne<Client>()
-                .WithMany()
+                .WithMany(c => c.Medications)
                 .HasForeignKey(m => m.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -365,7 +365,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasQueryFilter(c => !c.IsDeleted);
 
             entity.HasOne<Client>()
-                .WithMany()
+                .WithMany(c => c.Conditions)
                 .HasForeignKey(c => c.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -384,7 +384,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasQueryFilter(dr => !dr.IsDeleted);
 
             entity.HasOne<Client>()
-                .WithMany()
+                .WithMany(c => c.DietaryRestrictions)
                 .HasForeignKey(dr => dr.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 

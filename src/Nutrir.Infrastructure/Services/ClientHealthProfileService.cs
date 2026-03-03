@@ -392,34 +392,32 @@ public class ClientHealthProfileService : IClientHealthProfileService
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync();
 
-        var allergiesTask = db.ClientAllergies
+        var allergies = await db.ClientAllergies
             .Where(a => a.ClientId == clientId)
             .OrderBy(a => a.Name)
             .ToListAsync();
 
-        var medicationsTask = db.ClientMedications
+        var medications = await db.ClientMedications
             .Where(m => m.ClientId == clientId)
             .OrderBy(m => m.Name)
             .ToListAsync();
 
-        var conditionsTask = db.ClientConditions
+        var conditions = await db.ClientConditions
             .Where(c => c.ClientId == clientId)
             .OrderBy(c => c.Name)
             .ToListAsync();
 
-        var restrictionsTask = db.ClientDietaryRestrictions
+        var restrictions = await db.ClientDietaryRestrictions
             .Where(d => d.ClientId == clientId)
             .OrderBy(d => d.RestrictionType)
             .ToListAsync();
 
-        await Task.WhenAll(allergiesTask, medicationsTask, conditionsTask, restrictionsTask);
-
         return new ClientHealthProfileSummaryDto(
             clientId,
-            allergiesTask.Result.Select(MapToDto).ToList(),
-            medicationsTask.Result.Select(MapToDto).ToList(),
-            conditionsTask.Result.Select(MapToDto).ToList(),
-            restrictionsTask.Result.Select(MapToDto).ToList());
+            allergies.Select(MapToDto).ToList(),
+            medications.Select(MapToDto).ToList(),
+            conditions.Select(MapToDto).ToList(),
+            restrictions.Select(MapToDto).ToList());
     }
 
     // ========== Private Helpers ==========

@@ -165,54 +165,8 @@
             </div>
         }
 
-        @* ── Notes ───────────────────────────────────────── *@
-        @if (!string.IsNullOrEmpty(_client.Notes))
-        {
-            <div class="table-card section-animate" style="animation-delay: 80ms;">
-                <div class="section-header">
-                    <span class="section-header-label">Notes</span>
-                </div>
-                <div class="notes-body">
-                    <pre class="notes-text">@_client.Notes</pre>
-                </div>
-            </div>
-        }
-
-        @* ── Health Profile Sections ──────────────────────── *@
-        @if (_healthProfile is not null)
-        {
-            <div class="section-animate" style="animation-delay: 160ms;" @key="@($"allergies-{_refreshKey}")">
-                <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
-            </div>
-            <div class="section-animate" style="animation-delay: 200ms;" @key="@($"medications-{_refreshKey}")">
-                <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
-            </div>
-            <div class="section-animate" style="animation-delay: 240ms;" @key="@($"conditions-{_refreshKey}")">
-                <ConditionsSection ClientId="@Id" InitialData="@_healthProfile.Conditions" />
-            </div>
-            <div class="section-animate" style="animation-delay: 280ms;" @key="@($"dietary-{_refreshKey}")">
-                <DietaryRestrictionsSection ClientId="@Id" InitialData="@_healthProfile.DietaryRestrictions" />
-            </div>
-        }
-
-        @* ── Widget Grid: Progress + Meal Plan ─────────── *@
-        <div class="widget-grid section-animate" style="animation-delay: 320ms;">
-            <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
-            <ActiveMealPlanCard ClientId="@Id" @key="@($"mealplan-{_refreshKey}")" />
-        </div>
-
-        @* ── Upcoming Appointments Widget ──────────────── *@
-        <div class="section-animate" style="animation-delay: 400ms;">
-            <UpcomingAppointmentsWidget ClientId="@Id" @key="@($"appointments-{_refreshKey}")" />
-        </div>
-
-        @* ── Visit History Timeline ────────────────────── *@
-        <div class="section-animate" style="animation-delay: 480ms;">
-            <VisitHistoryTimeline ClientId="@Id" @key="@($"timeline-{_refreshKey}")" />
-        </div>
-
         @* ── Consent Form ──────────────────────────────────── *@
-        <div class="table-card section-animate" style="animation-delay: 560ms;">
+        <div class="table-card section-animate" style="animation-delay: 80ms;">
             <div class="section-header">
                 <span class="section-header-label">Consent Form</span>
             </div>
@@ -278,6 +232,52 @@
                     </div>
                 }
             </div>
+        </div>
+
+        @* ── Widget Grid: Progress + Meal Plan ─────────── *@
+        <div class="widget-grid section-animate" style="animation-delay: 160ms;">
+            <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
+            <ActiveMealPlanCard ClientId="@Id" @key="@($"mealplan-{_refreshKey}")" />
+        </div>
+
+        @* ── Upcoming Appointments Widget ──────────────── *@
+        <div class="section-animate" style="animation-delay: 240ms;">
+            <UpcomingAppointmentsWidget ClientId="@Id" @key="@($"appointments-{_refreshKey}")" />
+        </div>
+
+        @* ── Notes ───────────────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_client.Notes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 240ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_client.Notes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Health Profile Sections ──────────────────────── *@
+        @if (_healthProfile is not null)
+        {
+            <div class="section-animate" style="animation-delay: 320ms;" @key="@($"allergies-{_refreshKey}")">
+                <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
+            </div>
+            <div class="section-animate" style="animation-delay: 360ms;" @key="@($"medications-{_refreshKey}")">
+                <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
+            </div>
+            <div class="section-animate" style="animation-delay: 400ms;" @key="@($"conditions-{_refreshKey}")">
+                <ConditionsSection ClientId="@Id" InitialData="@_healthProfile.Conditions" />
+            </div>
+            <div class="section-animate" style="animation-delay: 440ms;" @key="@($"dietary-{_refreshKey}")">
+                <DietaryRestrictionsSection ClientId="@Id" InitialData="@_healthProfile.DietaryRestrictions" />
+            </div>
+        }
+
+        @* ── Visit History Timeline ────────────────────── *@
+        <div class="section-animate" style="animation-delay: 480ms;">
+            <VisitHistoryTimeline ClientId="@Id" @key="@($"timeline-{_refreshKey}")" />
         </div>
 
         @* ── Metadata Footer ─────────────────────────────── *@
