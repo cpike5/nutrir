@@ -57,7 +57,10 @@ public class TimeZoneService : ITimeZoneService
         }
 
         if (!TimeZoneInfo.TryFindSystemTimeZoneById(DefaultTimeZoneId, out var defaultTz))
+        {
+            _logger.LogWarning("Default timezone {DefaultTz} not found on system (missing tzdata?), falling back to UTC", DefaultTimeZoneId);
             defaultTz = TimeZoneInfo.Utc;
+        }
 
         _cachedTimeZone = defaultTz;
     }
@@ -85,7 +88,10 @@ public class TimeZoneService : ITimeZoneService
 
         // InitializeAsync was not called — fall back to default safely
         if (!TimeZoneInfo.TryFindSystemTimeZoneById(DefaultTimeZoneId, out var defaultTz))
+        {
+            _logger.LogWarning("Default timezone {DefaultTz} not found on system (missing tzdata?), falling back to UTC", DefaultTimeZoneId);
             defaultTz = TimeZoneInfo.Utc;
+        }
 
         _cachedTimeZone = defaultTz;
         return _cachedTimeZone;
