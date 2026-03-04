@@ -19,12 +19,18 @@
 .snapshot-label {
     display: flex;
     align-items: center;
-    gap: var(--space-1-5);
+    gap: var(--space-2);
     font-size: var(--text-xs);
     font-weight: 600;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.snapshot-label:hover {
+    color: var(--color-text);
 }
 
 .snapshot-badges {

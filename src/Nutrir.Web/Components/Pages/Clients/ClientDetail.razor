@@ -269,16 +269,16 @@
         @* ── Health Profile Sections ──────────────────────── *@
         @if (_healthProfile is not null)
         {
-            <div class="section-animate" style="animation-delay: 400ms;" @key="@($"allergies-{_refreshKey}")">
-                <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
-            </div>
-            <div class="section-animate" style="animation-delay: 440ms;" @key="@($"medications-{_refreshKey}")">
-                <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
-            </div>
-            <div class="section-animate" style="animation-delay: 480ms;" @key="@($"conditions-{_refreshKey}")">
+            <div id="section-conditions" class="section-animate" style="animation-delay: 400ms;" @key="@($"conditions-{_refreshKey}")">
                 <ConditionsSection ClientId="@Id" InitialData="@_healthProfile.Conditions" />
             </div>
-            <div class="section-animate" style="animation-delay: 520ms;" @key="@($"dietary-{_refreshKey}")">
+            <div id="section-allergies" class="section-animate" style="animation-delay: 440ms;" @key="@($"allergies-{_refreshKey}")">
+                <AllergiesSection ClientId="@Id" InitialData="@_healthProfile.Allergies" />
+            </div>
+            <div id="section-medications" class="section-animate" style="animation-delay: 480ms;" @key="@($"medications-{_refreshKey}")">
+                <MedicationsSection ClientId="@Id" InitialData="@_healthProfile.Medications" />
+            </div>
+            <div id="section-dietary" class="section-animate" style="animation-delay: 520ms;" @key="@($"dietary-{_refreshKey}")">
                 <DietaryRestrictionsSection ClientId="@Id" InitialData="@_healthProfile.DietaryRestrictions" />
             </div>
         }
