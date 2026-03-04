@@ -1,0 +1,409 @@
+@page "/settings/availability"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IAvailabilityService AvailabilityService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Availability Settings — Nutrir</PageTitle>
+
+<div class="form-page">
+    <div class="page-header">
+        <h1 class="page-title">Availability Settings</h1>
+        <p class="page-subtitle">Configure your working hours, buffer time, and time blocks.</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="success-banner">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="8" cy="8" r="7"/>
+                <path d="M5.5 8l2 2 3.5-3.5"/>
+            </svg>
+            @_successMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="error-banner">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 1l7 13H1L8 1Z"/>
+                <path d="M8 6v3M8 11.5v.5"/>
+            </svg>
+            @_errorMessage
+        </div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">Loading availability settings...</div>
+    }
+    else
+    {
+        <!-- Section: Weekly Schedule -->
+        <div class="settings-card">
+            <div class="card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Weekly Schedule</span>
+            </div>
+
+            <div class="card-body">
+                @foreach (var day in _weekDays)
+                {
+                    var entry = _scheduleEntries[day];
+                    <div class="schedule-row">
+                        <div class="day-label">@day.ToString().Substring(0, 3)</div>
+                        <FormCheckbox Label=""
+                                      Value="@entry.IsAvailable"
+                                      ValueChanged="@(v => { entry.IsAvailable = v; StateHasChanged(); })" />
+                        <div class="time-range @(entry.IsAvailable ? "" : "disabled")">
+                            <input type="time" class="form-input time-input"
+                                   value="@entry.StartTime"
+                                   @onchange="@(e => entry.StartTime = e.Value?.ToString() ?? "09:00")"
+                                   disabled="@(!entry.IsAvailable)" />
+                            <span class="time-sep">to</span>
+                            <input type="time" class="form-input time-input"
+                                   value="@entry.EndTime"
+                                   @onchange="@(e => entry.EndTime = e.Value?.ToString() ?? "17:00")"
+                                   disabled="@(!entry.IsAvailable)" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="card-actions">
+                <Button Variant="ButtonVariant.Primary" Disabled="@_isSavingSchedule" OnClick="SaveSchedule">
+                    @(_isSavingSchedule ? "Saving..." : "Save Schedule")
+                </Button>
+            </div>
+        </div>
+
+        <!-- Section: Buffer Time -->
+        <div class="settings-card">
+            <div class="card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Buffer Time</span>
+            </div>
+
+            <div class="card-body">
+                <p class="section-desc">Time between appointments to allow for notes, preparation, or breaks.</p>
+                <FormGroup Label="Buffer minutes" Id="bufferTime">
+                    <FormSelect Id="bufferTime"
+                                Value="@_bufferMinutes.ToString()"
+                                ValueChanged="@(v => _bufferMinutes = int.TryParse(v, out var m) ? m : 15)">
+                        <option value="0">No buffer</option>
+                        <option value="5">5 minutes</option>
+                        <option value="10">10 minutes</option>
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                    </FormSelect>
+                </FormGroup>
+            </div>
+
+            <div class="card-actions">
+                <Button Variant="ButtonVariant.Primary" Disabled="@_isSavingBuffer" OnClick="SaveBufferTime">
+                    @(_isSavingBuffer ? "Saving..." : "Save Buffer Time")
+                </Button>
+            </div>
+        </div>
+
+        <!-- Section: Time Blocks -->
+        <div class="settings-card">
+            <div class="card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+                <span>Time Blocks</span>
+            </div>
+
+            <div class="card-body">
+                <p class="section-desc">Block off specific times for lunch, personal time, or meetings.</p>
+
+                <div class="add-block-form">
+                    <div class="block-form-row">
+                        <FormGroup Label="Date" Id="blockDate">
+                            <FormInput Id="blockDate" Type="date"
+                                       Value="@_newBlockDate"
+                                       ValueChanged="@(v => _newBlockDate = v)" />
+                        </FormGroup>
+                        <FormGroup Label="Start" Id="blockStart">
+                            <FormInput Id="blockStart" Type="time"
+                                       Value="@_newBlockStartTime"
+                                       ValueChanged="@(v => _newBlockStartTime = v)" />
+                        </FormGroup>
+                        <FormGroup Label="End" Id="blockEnd">
+                            <FormInput Id="blockEnd" Type="time"
+                                       Value="@_newBlockEndTime"
+                                       ValueChanged="@(v => _newBlockEndTime = v)" />
+                        </FormGroup>
+                    </div>
+                    <div class="block-form-row">
+                        <FormGroup Label="Type" Id="blockType">
+                            <FormSelect Id="blockType"
+                                        Value="@_newBlockType"
+                                        ValueChanged="@(v => _newBlockType = v)">
+                                <option value="Lunch">Lunch</option>
+                                <option value="Personal">Personal</option>
+                                <option value="Meeting">Meeting</option>
+                            </FormSelect>
+                        </FormGroup>
+                        <FormGroup Label="Notes (optional)" Id="blockNotes">
+                            <FormInput Id="blockNotes"
+                                       Value="@_newBlockNotes"
+                                       ValueChanged="@(v => _newBlockNotes = v)"
+                                       Placeholder="Optional description..." />
+                        </FormGroup>
+                    </div>
+                    <Button Variant="ButtonVariant.Outline" Disabled="@_isAddingBlock" OnClick="AddTimeBlock">
+                        @(_isAddingBlock ? "Adding..." : "Add Time Block")
+                    </Button>
+                </div>
+
+                @if (_timeBlocks.Count > 0)
+                {
+                    <div class="blocks-list">
+                        @foreach (var block in _timeBlocks)
+                        {
+                            <div class="block-item">
+                                <div class="block-info">
+                                    <span class="block-badge @block.BlockType.ToString().ToLowerInvariant()">@block.BlockType</span>
+                                    <span class="block-date">@block.Date.ToString("ddd, MMM d")</span>
+                                    <span class="block-time">@block.StartTime.ToString("h:mm tt") &ndash; @block.EndTime.ToString("h:mm tt")</span>
+                                    @if (!string.IsNullOrEmpty(block.Notes))
+                                    {
+                                        <span class="block-notes">@block.Notes</span>
+                                    }
+                                </div>
+                                <button class="remove-btn" @onclick="() => RemoveTimeBlock(block.Id)" title="Remove">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="empty-state">No time blocks configured.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string _userId = string.Empty;
+    private bool _isLoading = true;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    // Weekly schedule
+    private readonly DayOfWeek[] _weekDays =
+    [
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
+        DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
+    ];
+    private Dictionary<DayOfWeek, ScheduleEntry> _scheduleEntries = new();
+    private bool _isSavingSchedule;
+
+    // Buffer time
+    private int _bufferMinutes = 15;
+    private bool _isSavingBuffer;
+
+    // Time blocks
+    private List<PractitionerTimeBlockDto> _timeBlocks = [];
+    private string _newBlockDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    private string _newBlockStartTime = "12:00";
+    private string _newBlockEndTime = "13:00";
+    private string _newBlockType = "Lunch";
+    private string? _newBlockNotes;
+    private bool _isAddingBlock;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState;
+        _userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        // Initialize default entries for all days
+        foreach (var day in _weekDays)
+        {
+            _scheduleEntries[day] = new ScheduleEntry
+            {
+                IsAvailable = day != DayOfWeek.Saturday && day != DayOfWeek.Sunday,
+                StartTime = "09:00",
+                EndTime = "17:00"
+            };
+        }
+
+        try
+        {
+            // Load existing schedule
+            var schedule = await AvailabilityService.GetWeeklyScheduleAsync(_userId);
+            foreach (var entry in schedule)
+            {
+                _scheduleEntries[entry.DayOfWeek] = new ScheduleEntry
+                {
+                    IsAvailable = entry.IsAvailable,
+                    StartTime = entry.StartTime.ToString("HH:mm"),
+                    EndTime = entry.EndTime.ToString("HH:mm")
+                };
+            }
+
+            // Load buffer time
+            _bufferMinutes = await AvailabilityService.GetBufferTimeMinutesAsync(_userId);
+
+            // Load time blocks (from today onwards)
+            _timeBlocks = await AvailabilityService.GetTimeBlocksAsync(_userId, DateOnly.FromDateTime(DateTime.Today));
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Failed to load availability settings.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveSchedule()
+    {
+        _isSavingSchedule = true;
+        ClearMessages();
+
+        try
+        {
+            var entries = _scheduleEntries.Select(kvp => new SetScheduleEntryDto(
+                kvp.Key,
+                TimeOnly.Parse(kvp.Value.StartTime),
+                TimeOnly.Parse(kvp.Value.EndTime),
+                kvp.Value.IsAvailable)).ToList();
+
+            await AvailabilityService.SetWeeklyScheduleAsync(_userId, entries, _userId);
+            _successMessage = "Weekly schedule saved.";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Failed to save weekly schedule.";
+        }
+        finally
+        {
+            _isSavingSchedule = false;
+        }
+    }
+
+    private async Task SaveBufferTime()
+    {
+        _isSavingBuffer = true;
+        ClearMessages();
+
+        try
+        {
+            await AvailabilityService.SetBufferTimeMinutesAsync(_userId, _bufferMinutes, _userId);
+            _successMessage = "Buffer time saved.";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Failed to save buffer time.";
+        }
+        finally
+        {
+            _isSavingBuffer = false;
+        }
+    }
+
+    private async Task AddTimeBlock()
+    {
+        _isAddingBlock = true;
+        ClearMessages();
+
+        try
+        {
+            if (!DateOnly.TryParse(_newBlockDate, out var date))
+            {
+                _errorMessage = "Please enter a valid date.";
+                return;
+            }
+
+            if (!TimeOnly.TryParse(_newBlockStartTime, out var startTime) ||
+                !TimeOnly.TryParse(_newBlockEndTime, out var endTime))
+            {
+                _errorMessage = "Please enter valid start and end times.";
+                return;
+            }
+
+            if (endTime <= startTime)
+            {
+                _errorMessage = "End time must be after start time.";
+                return;
+            }
+
+            if (!Enum.TryParse<TimeBlockType>(_newBlockType, out var blockType))
+                blockType = TimeBlockType.Lunch;
+
+            var dto = new CreateTimeBlockDto(
+                _userId, date, startTime, endTime, blockType,
+                string.IsNullOrWhiteSpace(_newBlockNotes) ? null : _newBlockNotes);
+
+            var created = await AvailabilityService.AddTimeBlockAsync(dto, _userId);
+            _timeBlocks.Add(created);
+            _timeBlocks = _timeBlocks.OrderBy(b => b.Date).ThenBy(b => b.StartTime).ToList();
+
+            // Reset form
+            _newBlockNotes = null;
+            _successMessage = "Time block added.";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Failed to add time block.";
+        }
+        finally
+        {
+            _isAddingBlock = false;
+        }
+    }
+
+    private async Task RemoveTimeBlock(int id)
+    {
+        ClearMessages();
+
+        try
+        {
+            var removed = await AvailabilityService.RemoveTimeBlockAsync(id, _userId);
+            if (removed)
+            {
+                _timeBlocks.RemoveAll(b => b.Id == id);
+                _successMessage = "Time block removed.";
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Failed to remove time block.";
+        }
+    }
+
+    private void ClearMessages()
+    {
+        _successMessage = null;
+        _errorMessage = null;
+    }
+
+    private class ScheduleEntry
+    {
+        public bool IsAvailable { get; set; }
+        public string StartTime { get; set; } = "09:00";
+        public string EndTime { get; set; } = "17:00";
+    }
+}

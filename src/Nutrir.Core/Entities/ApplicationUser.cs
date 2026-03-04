@@ -17,4 +17,6 @@ public class ApplicationUser : IdentityUser
     public DateTime? LastLoginDate { get; set; }
 
     public string TimeZoneId { get; set; } = "America/Toronto";
+
+    public int BufferTimeMinutes { get; set; } = 15;
 }
