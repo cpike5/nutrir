@@ -23,7 +23,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Architecture Overview](infrastructure/architecture.md) | Three-layer architecture, DI patterns, middleware pipeline, UI structure, design system |
 | [Architecture Diagrams](infrastructure/architecture-diagrams.md) | Mermaid diagrams — C4 context/container, domain model ER, middleware pipeline, AI flow, dependency graph |
-| [Docker & Deployment](infrastructure/docker-and-deployment.md) | Docker Compose services, Dockerfile, environment variables, local dev setup |
+| [Docker & Deployment](infrastructure/docker-and-deployment.md) | Docker Compose services, Dockerfile, environment variables, local dev setup, production deployment, CI/CD pipeline |
 | [Database & EF Core](infrastructure/database.md) | PostgreSQL setup, AppDbContext, migrations, schema, conventions |
 | [Logging & Observability](infrastructure/logging.md) | Serilog configuration, Seq, sinks, log levels |
 | [Maintenance Mode](infrastructure/maintenance-mode.md) | Admin-toggleable maintenance mode with 503 page, API endpoints, middleware |

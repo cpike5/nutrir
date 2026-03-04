@@ -1,0 +1,34 @@
+services:
+  app:
+    image: ghcr.io/cpike5/nutrir:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:?};Username=${POSTGRES_USER:?};Password=${POSTGRES_PASSWORD:?}
+      - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-}
+      - ElasticApm__ApiKey=${ELASTIC_APM_API_KEY:-}
+      - ElasticApm__Environment=Production
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

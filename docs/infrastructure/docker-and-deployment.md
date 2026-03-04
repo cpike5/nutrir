@@ -119,6 +119,112 @@ dotnet watch --project src/Nutrir.Web
 dotnet run --project src/Nutrir.Web
 ```
 
+## Production Deployment
+
+### docker-compose.prod.yml
+
+The production compose file runs only the `app` and `db` services. Seq is not included — production logging targets the external Elastic cluster (see [Logging & Observability](logging.md)).
+
+| Service | Image | Internal Port | Purpose |
+|---------|-------|---------------|---------|
+| `app` | `ghcr.io/cpike5/nutrir:latest` | 8080 | Blazor Server application |
+| `db` | `postgres:17` | 5432 | PostgreSQL database |
+
+Both services are configured with `restart: unless-stopped`. The `db` service includes a healthcheck, and `app` is configured with `depends_on: db: condition: service_healthy` so the application container does not start until Postgres is accepting connections.
+
+### Environment Variables
+
+#### Required (deployment will fail if unset)
+
+| Variable | Service | Purpose |
+|----------|---------|---------|
+| `POSTGRES_USER` | db, app | PostgreSQL username |
+| `POSTGRES_PASSWORD` | db, app | PostgreSQL password |
+| `POSTGRES_DB` | db, app | PostgreSQL database name |
+
+#### Optional
+
+| Variable | Service | Purpose |
+|----------|---------|---------|
+| `ELASTIC_APM_SERVER_URL` | app | Elastic APM ingestion endpoint |
+| `ELASTIC_APM_API_KEY` | app | Elastic APM authentication key |
+| `ANTHROPIC_API_KEY` | app | Anthropic API key for the AI assistant |
+
+### Quick Start
+
+```bash
+# 1. Create a .env file with required variables
+cat > .env <<EOF
+POSTGRES_USER=nutrir
+POSTGRES_PASSWORD=<strong-password>
+POSTGRES_DB=nutrir
+EOF
+
+# 2. Pull the latest image and start services
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+
+# 3. Check status
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs app
+```
+
+To stop without removing containers:
+
+```bash
+docker compose -f docker-compose.prod.yml stop
+```
+
+To stop and remove containers (data volume is preserved):
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+### Reverse Proxy
+
+The application listens on HTTP port 8080 inside the container. It does not terminate TLS. In production, place a reverse proxy (nginx or Caddy) in front of the app container to handle TLS termination and forward traffic to port 8080.
+
+Example Caddy configuration:
+
+```
+yourdomain.com {
+    reverse_proxy localhost:8080
+}
+```
+
+Caddy will automatically provision and renew a Let's Encrypt certificate. For nginx, configure an upstream pointing to `localhost:8080` and enable SSL with your certificates.
+
+## CI/CD Pipeline
+
+### Workflow: `docker-publish.yml`
+
+The workflow at `.github/workflows/docker-publish.yml` builds and pushes the Docker image to GitHub Container Registry (GHCR) on every push of a version tag matching `v*`.
+
+**Trigger:** `push` event on tags matching `v*` (e.g., `v1.0.0`, `v0.2.0`)
+
+**Registry:** `ghcr.io/cpike5/nutrir`
+
+### Tags Generated
+
+For a tag such as `v1.2.3`, the workflow pushes the following image tags:
+
+| Tag | Example | Description |
+|-----|---------|-------------|
+| Semver patch | `1.2.3` | Exact version |
+| Semver minor | `1.2` | Latest patch within this minor |
+| Semver major | `1` | Latest release within this major |
+| `latest` | `latest` | Latest stable release overall |
+
+### Releasing a New Version
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The workflow builds from the tagged commit, produces all four tags listed above, and pushes them to GHCR. The production compose file references `ghcr.io/cpike5/nutrir:latest`, so a `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d` on the server will pick up the new image.
+
 ## Volumes
 
 | Volume | Service | Mount Point | Purpose |
