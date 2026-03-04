@@ -630,6 +630,7 @@ public class AiToolExecutor
             ["get_appointment"] = HandleGetAppointment,
             ["list_meal_plans"] = HandleListMealPlans,
             ["get_meal_plan"] = HandleGetMealPlan,
+            ["export_meal_plan_pdf"] = HandleExportMealPlanPdf,
             ["list_goals"] = HandleListGoals,
             ["get_goal"] = HandleGetGoal,
             ["list_progress"] = HandleListProgress,
@@ -758,6 +759,13 @@ public class AiToolExecutor
                 }),
 
             CreateTool("get_meal_plan", "Get detailed information about a specific meal plan including all days, slots, and items.",
+                new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "integer", description = "The meal plan ID" }
+                },
+                "id"),
+
+            CreateTool("export_meal_plan_pdf", "Generate a PDF export download link for a meal plan. Returns a URL the user can click to download the PDF.",
                 new Dictionary<string, object>
                 {
                     ["id"] = new { type = "integer", description = "The meal plan ID" }
@@ -1580,6 +1588,20 @@ public class AiToolExecutor
         return success
             ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} deleted" })
             : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or delete failed" });
+    }
+
+    private async Task<string> HandleExportMealPlanPdf(JsonElement input)
+    {
+        var id = GetRequiredInt(input, "id");
+        var plan = await _mealPlanService.GetByIdAsync(id);
+        if (plan is null)
+            return JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found" });
+
+        return JsonSerializer.Serialize(new
+        {
+            download_url = $"/api/meal-plans/{id}/pdf",
+            message = $"PDF export ready for '{plan.Title}'. Click the link to download."
+        });
     }
 
     // =====================================================
