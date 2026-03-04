@@ -297,6 +297,7 @@
 /* ── Items Table ─────────────────────────────────────── */
 .items-table {
     width: 100%;
+    table-layout: fixed;
     font-size: var(--text-xs);
     border-collapse: collapse;
 }
