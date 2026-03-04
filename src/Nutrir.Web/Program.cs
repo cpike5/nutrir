@@ -144,6 +144,9 @@ try
     // Consent form API endpoints.
     app.MapConsentFormEndpoints();
 
+    // Meal plan API endpoints.
+    app.MapMealPlanEndpoints();
+
     // SignalR hub for real-time notifications.
     app.MapHub<NutrirHub>("/hubs/nutrir");
 

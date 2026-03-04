@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IMealPlanService, MealPlanService>();
+        services.AddScoped<IMealPlanPdfService, MealPlanPdfService>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<ITimeZoneService, TimeZoneService>();

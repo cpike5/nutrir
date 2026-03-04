@@ -46,6 +46,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Health Profile](clients/health-profile.md) | Client health profile data model — allergies, medications, conditions, dietary restrictions (ERD, enums, design decisions) |
 
+## Meal Plans Documents
+
+| Document | Description |
+|----------|-------------|
+| [PDF Export Layout](meal-plans/pdf-export-layout.md) | PDF export layout spec — page setup, header/content/footer structure, color palette, table columns |
+
 ## Compliance Documents
 
 | Document | Description |

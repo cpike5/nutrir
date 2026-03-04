@@ -97,6 +97,7 @@
                         <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="ActivatePlan">Activate</Button>
+                        <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
                     }
                     else if (_plan.Status is MealPlanStatus.Active)
@@ -104,11 +105,13 @@
                         <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                        <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="ArchivePlan">Archive</Button>
                     }
                     else if (_plan.Status is MealPlanStatus.Archived)
                     {
                         <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                        <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="ReactivatePlan">Reactivate</Button>
                     }
                 </div>
