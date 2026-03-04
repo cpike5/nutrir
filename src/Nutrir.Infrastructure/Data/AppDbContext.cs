@@ -52,6 +52,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<PractitionerTimeBlock> PractitionerTimeBlocks => Set<PractitionerTimeBlock>();
 
+    public DbSet<AllergenWarningOverride> AllergenWarningOverrides => Set<AllergenWarningOverride>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -415,6 +417,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(s => s.DayOfWeek).HasConversion<string>();
             entity.Property(s => s.IsDeleted).HasDefaultValue(false);
             entity.Property(s => s.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<AllergenWarningOverride>(entity =>
+        {
+            entity.HasOne<MealPlan>()
+                .WithMany(mp => mp.AllergenWarningOverrides)
+                .HasForeignKey(o => o.MealPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(o => new { o.MealPlanId, o.FoodName, o.AllergenCategory }).IsUnique();
+
+            entity.Property(o => o.AllergenCategory).HasConversion<string>();
+            entity.Property(o => o.FoodName).HasMaxLength(200);
+            entity.Property(o => o.OverrideNote).HasColumnType("text");
+            entity.Property(o => o.AcknowledgedByUserId).HasMaxLength(450);
+            entity.Property(o => o.AcknowledgedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<PractitionerTimeBlock>(entity =>

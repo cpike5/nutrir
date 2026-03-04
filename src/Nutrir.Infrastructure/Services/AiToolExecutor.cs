@@ -14,6 +14,7 @@ public class AiToolExecutor
     private readonly IClientHealthProfileService _healthProfileService;
     private readonly IAppointmentService _appointmentService;
     private readonly IMealPlanService _mealPlanService;
+    private readonly IAllergenCheckService _allergenCheckService;
     private readonly IProgressService _progressService;
     private readonly IUserManagementService _userManagementService;
     private readonly ISearchService _searchService;
@@ -605,6 +606,7 @@ public class AiToolExecutor
         IClientHealthProfileService healthProfileService,
         IAppointmentService appointmentService,
         IMealPlanService mealPlanService,
+        IAllergenCheckService allergenCheckService,
         IProgressService progressService,
         IUserManagementService userManagementService,
         ISearchService searchService,
@@ -615,6 +617,7 @@ public class AiToolExecutor
         _healthProfileService = healthProfileService;
         _appointmentService = appointmentService;
         _mealPlanService = mealPlanService;
+        _allergenCheckService = allergenCheckService;
         _progressService = progressService;
         _userManagementService = userManagementService;
         _searchService = searchService;
@@ -947,7 +950,7 @@ public class AiToolExecutor
                 },
                 "id", "client_id", "title", "number_of_days"),
 
-            CreateTool("activate_meal_plan", "Set a meal plan's status to Active.",
+            CreateTool("activate_meal_plan", "Set a meal plan's status to Active. Will be blocked if there are severe unacknowledged allergen warnings. Moderate/mild warnings are returned but do not block.",
                 new Dictionary<string, object>
                 {
                     ["id"] = new { type = "integer", description = "The meal plan ID" },
@@ -1296,9 +1299,31 @@ public class AiToolExecutor
     {
         var id = GetRequiredInt(input, "id");
         var plan = await _mealPlanService.GetByIdAsync(id);
-        return plan is null
-            ? JsonSerializer.Serialize(new { error = $"Meal plan with ID {id} not found" })
-            : JsonSerializer.Serialize(plan, SerializerOptions);
+        if (plan is null)
+            return JsonSerializer.Serialize(new { error = $"Meal plan with ID {id} not found" });
+
+        var warnings = await _allergenCheckService.CheckAsync(id);
+        if (warnings.Count > 0)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                plan,
+                allergen_warnings = warnings.Select(w => new
+                {
+                    w.FoodName,
+                    w.DayNumber,
+                    w.DayLabel,
+                    meal_type = w.MealType.ToString(),
+                    allergen_category = w.AllergenCategory?.ToString(),
+                    w.MatchedAllergyName,
+                    severity = w.Severity.ToString(),
+                    w.IsOverridden,
+                    w.OverrideNote
+                })
+            }, SerializerOptions);
+        }
+
+        return JsonSerializer.Serialize(plan, SerializerOptions);
     }
 
     private async Task<string> HandleListGoals(JsonElement input)
@@ -1557,19 +1582,25 @@ public class AiToolExecutor
     private async Task<string> HandleActivateMealPlan(JsonElement input)
     {
         var id = GetRequiredInt(input, "id");
-        var success = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Active, _currentUserId ?? "system");
-        return success
-            ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} activated" })
-            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or activation failed" });
+        var result = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Active, _currentUserId ?? "system");
+        if (!result.Success)
+            return JsonSerializer.Serialize(new { error = result.ErrorMessage ?? $"Meal plan #{id} not found or activation failed" });
+
+        var warnings = await _allergenCheckService.CheckAsync(id);
+        var remaining = warnings.Where(w => !w.IsOverridden && w.Severity != Nutrir.Core.Enums.AllergySeverity.Severe).ToList();
+        if (remaining.Count > 0)
+            return JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} activated", warnings = remaining.Select(w => new { w.FoodName, w.MatchedAllergyName, severity = w.Severity.ToString() }) });
+
+        return JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} activated" });
     }
 
     private async Task<string> HandleArchiveMealPlan(JsonElement input)
     {
         var id = GetRequiredInt(input, "id");
-        var success = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Archived, _currentUserId ?? "system");
-        return success
+        var result = await _mealPlanService.UpdateStatusAsync(id, MealPlanStatus.Archived, _currentUserId ?? "system");
+        return result.Success
             ? JsonSerializer.Serialize(new { success = true, message = $"Meal plan #{id} archived" })
-            : JsonSerializer.Serialize(new { error = $"Meal plan #{id} not found or archive failed" });
+            : JsonSerializer.Serialize(new { error = result.ErrorMessage ?? $"Meal plan #{id} not found or archive failed" });
     }
 
     private async Task<string> HandleDuplicateMealPlan(JsonElement input)

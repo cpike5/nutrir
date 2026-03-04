@@ -9,6 +9,7 @@
 @using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IMealPlanService MealPlanService
+@inject IAllergenCheckService AllergenCheckService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Meal Plan — Nutrir</PageTitle>
@@ -37,6 +38,19 @@
             <h1 class="page-title">@_plan.Title</h1>
             <Badge Variant="@GetStatusVariant(_plan.Status)">@_plan.Status</Badge>
         </div>
+
+        @if (_allergenWarnings.Count > 0)
+        {
+            var unacknowledged = _allergenWarnings.Where(w => !w.IsOverridden).ToList();
+            var hasSevere = unacknowledged.Any(w => w.Severity == AllergySeverity.Severe);
+            @if (unacknowledged.Count > 0)
+            {
+                <div class="allergen-banner @(hasSevere ? "allergen-banner-severe" : "allergen-banner-warning")">
+                    <strong>@unacknowledged.Count allergen warning@(unacknowledged.Count != 1 ? "s" : "")</strong>
+                    &mdash; review on the <a href="@($"/meal-plans/{Id}")">detail page</a> before activating.
+                </div>
+            }
+        }
 
         @if (_plan.CalorieTarget.HasValue || _plan.ProteinTargetG.HasValue)
         {
@@ -241,6 +255,7 @@
     private string _newSlotType = "Breakfast";
     private EditSlot? _addingToSlot;
     private NewItemModel _newItem = new();
+    private List<AllergenWarningDto> _allergenWarnings = [];
     private string? _successMessage;
     private string? _errorMessage;
 
@@ -276,6 +291,8 @@
             }).ToList();
 
             if (_days.Count > 0) _selectedDay = _days[0].DayNumber;
+
+            _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
         }
         _isLoading = false;
     }
@@ -388,8 +405,9 @@
             if (success)
             {
                 _successMessage = "Meal plan saved.";
-                // Reload to get updated IDs
+                // Reload to get updated IDs and allergen warnings
                 _plan = await MealPlanService.GetByIdAsync(Id);
+                _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
             }
             else
             {
