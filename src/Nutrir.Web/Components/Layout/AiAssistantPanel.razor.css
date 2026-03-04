@@ -623,3 +623,24 @@
         display: none;
     }
 }
+
+/* Confirmation warning banner */
+.cc-ai-confirmation-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+    margin: 8px 0;
+    background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 35%, transparent);
+    border-radius: 6px;
+    color: var(--color-warning-text, #92400e);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.cc-ai-confirmation-warning svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--color-warning, #f59e0b);
+}

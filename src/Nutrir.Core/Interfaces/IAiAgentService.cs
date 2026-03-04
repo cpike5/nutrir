@@ -9,7 +9,8 @@ public record EntityContext(
     string OperationType,
     int? EntityId,
     string? DisplayName,
-    List<FieldChange>? Fields
+    List<FieldChange>? Fields,
+    List<string>? Warnings = null
 );
 
 public record ToolConfirmationRequest(
