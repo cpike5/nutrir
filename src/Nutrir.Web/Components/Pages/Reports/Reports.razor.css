@@ -1,0 +1,173 @@
+.reports-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+}
+
+.reports-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.25rem;
+    color: var(--color-text);
+}
+
+/* Period Selector */
+.reports-period-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.period-btn {
+    padding: 0.4rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.period-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.period-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* Custom Range */
+.reports-custom-range {
+    display: flex;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.custom-range-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.custom-range-field label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.custom-range-field input[type="date"] {
+    padding: 0.4rem 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+/* Secondary Metrics */
+.reports-secondary-metrics {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0.75rem 0 1.25rem;
+    flex-wrap: wrap;
+}
+
+.secondary-metric {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.secondary-metric strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+/* Chart Card */
+.reports-chart-card,
+.reports-type-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.reports-section-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 1rem;
+}
+
+.reports-chart-wrapper {
+    position: relative;
+    height: 280px;
+}
+
+/* Type Table */
+.reports-type-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.reports-type-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.reports-type-table td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-light, var(--color-border));
+    color: var(--color-text);
+}
+
+.reports-type-table tr:last-child td {
+    border-bottom: none;
+}
+
+.reports-type-table td:last-child {
+    font-weight: 600;
+    text-align: right;
+}
+
+.reports-type-table th:last-child {
+    text-align: right;
+}
+
+/* Loading */
+.reports-loading {
+    margin-top: 1rem;
+}
+
+::deep .cc-skeleton-chart {
+    height: 280px;
+    border-radius: 10px;
+    margin-top: 1rem;
+}
+
+/* Empty State */
+.reports-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-text-muted);
+}
+
+.reports-empty p {
+    margin: 0.75rem 0 0;
+    font-size: 0.875rem;
+}

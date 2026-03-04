@@ -1,0 +1,260 @@
+@page "/reports"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+
+@inject IReportService ReportService
+@inject IJSRuntime JS
+
+<PageTitle>Practice Reports — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Reports") })" />
+
+<div class="reports-page">
+    <h1 class="reports-title">Practice Reports</h1>
+
+    <!-- Period Selector -->
+    <div class="reports-period-selector">
+        <button class="period-btn @(_selectedPeriod == Period.ThisWeek ? "active" : "")"
+                @onclick="() => SelectPeriod(Period.ThisWeek)">This Week</button>
+        <button class="period-btn @(_selectedPeriod == Period.ThisMonth ? "active" : "")"
+                @onclick="() => SelectPeriod(Period.ThisMonth)">This Month</button>
+        <button class="period-btn @(_selectedPeriod == Period.ThisQuarter ? "active" : "")"
+                @onclick="() => SelectPeriod(Period.ThisQuarter)">This Quarter</button>
+        <button class="period-btn @(_selectedPeriod == Period.Custom ? "active" : "")"
+                @onclick="() => SelectPeriod(Period.Custom)">Custom</button>
+    </div>
+
+    @if (_selectedPeriod == Period.Custom)
+    {
+        <div class="reports-custom-range">
+            <div class="custom-range-field">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" value="@_customStart.ToString("yyyy-MM-dd")"
+                       @onchange="OnStartDateChanged" />
+            </div>
+            <div class="custom-range-field">
+                <label for="endDate">End Date</label>
+                <input type="date" id="endDate" value="@_customEnd.ToString("yyyy-MM-dd")"
+                       @onchange="OnEndDateChanged" />
+            </div>
+            <button class="period-btn active" @onclick="LoadData">Apply</button>
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="reports-loading">
+            <div class="cc-skeleton-metrics">
+                <div class="cc-skeleton cc-skeleton-metric"></div>
+                <div class="cc-skeleton cc-skeleton-metric"></div>
+                <div class="cc-skeleton cc-skeleton-metric"></div>
+                <div class="cc-skeleton cc-skeleton-metric"></div>
+            </div>
+            <div class="cc-skeleton cc-skeleton-chart"></div>
+        </div>
+    }
+    else if (_summary is not null)
+    {
+        <!-- KPI Cards -->
+        <div class="cc-metrics-bar">
+            <MetricCard Label="Total Visits"
+                        Value="@_summary.TotalVisits.ToString()" />
+            <MetricCard Label="New Clients"
+                        Value="@_summary.NewClients.ToString()"
+                        DeltaText="@(_summary.ReturningClients > 0 ? $"{_summary.ReturningClients} returning" : null)" />
+            <MetricCard Label="No-Show Rate"
+                        Value="@($"{_summary.NoShowRate}%")"
+                        DeltaText="@(_summary.NoShowCount > 0 ? $"{_summary.NoShowCount} total" : null)"
+                        Delta="@(_summary.NoShowCount > 0 ? MetricDelta.Down : MetricDelta.Flat)" />
+            <MetricCard Label="Cancellation Rate"
+                        Value="@($"{_summary.CancellationRate}%")"
+                        DeltaText="@(_summary.CancellationCount > 0 ? $"{_summary.CancellationCount} total" : null)"
+                        Delta="@(_summary.CancellationCount > 0 ? MetricDelta.Down : MetricDelta.Flat)" />
+        </div>
+
+        <!-- Additional Metrics -->
+        <div class="reports-secondary-metrics">
+            <span class="secondary-metric">
+                <strong>@_summary.ActiveClients</strong> Active Clients
+            </span>
+            <span class="secondary-metric">
+                <strong>@_summary.ReturningClients</strong> Returning Clients
+            </span>
+        </div>
+
+        <!-- Trend Chart -->
+        @if (_summary.TrendData.Count > 0)
+        {
+            <div class="reports-chart-card">
+                <h2 class="reports-section-title">Trends</h2>
+                <div class="reports-chart-wrapper">
+                    <canvas id="@_canvasId"></canvas>
+                </div>
+            </div>
+        }
+
+        <!-- Appointments by Type -->
+        @if (_summary.AppointmentsByType.Count > 0)
+        {
+            <div class="reports-type-card">
+                <h2 class="reports-section-title">Appointments by Type</h2>
+                <table class="reports-type-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _summary.AppointmentsByType)
+                        {
+                            <tr>
+                                <td>@FormatTypeName(item.Type)</td>
+                                <td>@item.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (_summary.TotalVisits == 0 && _summary.NewClients == 0 && _summary.ActiveClients == 0)
+        {
+            <div class="reports-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.4;">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                <p>No data for the selected period</p>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private enum Period { ThisWeek, ThisMonth, ThisQuarter, Custom }
+
+    private Period _selectedPeriod = Period.ThisMonth;
+    private DateTime _customStart = DateTime.UtcNow.AddMonths(-1).Date;
+    private DateTime _customEnd = DateTime.UtcNow.Date;
+    private bool _loading = true;
+    private PracticeSummaryDto? _summary;
+    private string _canvasId = $"reports-chart-{Guid.NewGuid():N}";
+    private bool _chartRendered;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_summary is not null && _summary.TrendData.Count > 0 && !_chartRendered)
+        {
+            await RenderChart();
+        }
+    }
+
+    private async Task SelectPeriod(Period period)
+    {
+        _selectedPeriod = period;
+        if (period != Period.Custom)
+        {
+            await LoadData();
+        }
+    }
+
+    private void OnStartDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+            _customStart = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+    }
+
+    private void OnEndDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+            _customEnd = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+    }
+
+    private (DateTime Start, DateTime End) GetDateRange()
+    {
+        var now = DateTime.UtcNow;
+        return _selectedPeriod switch
+        {
+            Period.ThisWeek => (now.Date.AddDays(-(int)now.DayOfWeek + (int)DayOfWeek.Monday),
+                                now.Date.AddDays(-(int)now.DayOfWeek + (int)DayOfWeek.Monday + 7)),
+            Period.ThisMonth => (new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                                 new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1)),
+            Period.ThisQuarter => GetQuarterRange(now),
+            Period.Custom => (_customStart, _customEnd.AddDays(1)),
+            _ => (now.Date.AddDays(-30), now.Date.AddDays(1))
+        };
+    }
+
+    private static (DateTime Start, DateTime End) GetQuarterRange(DateTime now)
+    {
+        var quarterMonth = ((now.Month - 1) / 3) * 3 + 1;
+        var start = new DateTime(now.Year, quarterMonth, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (start, start.AddMonths(3));
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        await DestroyChart();
+
+        var (start, end) = GetDateRange();
+        _summary = await ReportService.GetPracticeSummaryAsync(start, end);
+
+        _loading = false;
+        _chartRendered = false;
+    }
+
+    private async Task RenderChart()
+    {
+        if (_summary is null) return;
+
+        var labels = _summary.TrendData.Select(t => t.Label).ToArray();
+        var visits = _summary.TrendData.Select(t => t.Visits).ToArray();
+        var noShows = _summary.TrendData.Select(t => t.NoShows).ToArray();
+        var cancellations = _summary.TrendData.Select(t => t.Cancellations).ToArray();
+
+        try
+        {
+            await JS.InvokeVoidAsync("reportsChart.create", _canvasId, labels, visits, noShows, cancellations);
+            _chartRendered = true;
+        }
+        catch (JSException) { }
+    }
+
+    private async Task DestroyChart()
+    {
+        if (_chartRendered)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("reportsChart.destroy", _canvasId);
+                _chartRendered = false;
+            }
+            catch (JSException) { }
+        }
+    }
+
+    private static string FormatTypeName(string type) => type switch
+    {
+        "InitialConsultation" => "Initial Consultation",
+        "FollowUp" => "Follow-Up",
+        "CheckIn" => "Check-In",
+        _ => type
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        await DestroyChart();
+    }
+}
