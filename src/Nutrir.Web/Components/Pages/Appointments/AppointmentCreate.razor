@@ -7,10 +7,12 @@
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
+@using Nutrir.Core.Exceptions
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
 @inject IClientService ClientService
+@inject IAvailabilityService AvailabilityService
 @inject ITimeZoneService TimeZoneService
 @inject NavigationManager NavigationManager
 
@@ -86,20 +88,20 @@
                     <FormGroup Label="Date" Id="date" Error="@GetFieldError(nameof(_model.Date))">
                         <FormInput Id="date" Type="date"
                                    Value="@_model.Date"
-                                   ValueChanged="@(v => _model.Date = v)" />
+                                   ValueChanged="OnDateChanged" />
                     </FormGroup>
 
                     <FormGroup Label="Time" Id="time" Error="@GetFieldError(nameof(_model.Time))">
                         <FormInput Id="time" Type="time"
                                    Value="@_model.Time"
-                                   ValueChanged="@(v => _model.Time = v)" />
+                                   ValueChanged="OnTimeChanged" />
                     </FormGroup>
                 </div>
 
                 <FormGroup Label="Duration" Id="duration">
                     <FormSelect Id="duration"
                                 Value="@_model.Duration"
-                                ValueChanged="@(v => _model.Duration = v)">
+                                ValueChanged="OnDurationChanged">
                         <option value="15">15 minutes</option>
                         <option value="30">30 minutes</option>
                         <option value="45">45 minutes</option>
@@ -108,6 +110,45 @@
                         <option value="90">90 minutes</option>
                     </FormSelect>
                 </FormGroup>
+
+                @if (_availableSlots.Count > 0)
+                {
+                    <div class="slots-section">
+                        <label class="slots-label">Available time slots</label>
+                        <div class="slots-grid">
+                            @foreach (var slot in _availableSlots)
+                            {
+                                var timeValue = slot.Start.ToString("HH:mm");
+                                var isSelected = _model.Time == timeValue;
+                                <button type="button"
+                                        class="slot-btn @(isSelected ? "selected" : "")"
+                                        @onclick="() => SelectSlot(timeValue)">
+                                    @slot.Start.ToString("h:mm tt")
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_slotsLoaded && !_isLoadingSlots)
+                {
+                    <p class="no-slots-msg">No available slots for this date and duration.</p>
+                }
+
+                @if (_isLoadingSlots)
+                {
+                    <p class="slots-loading">Loading available slots...</p>
+                }
+
+                @if (!string.IsNullOrEmpty(_availabilityWarning))
+                {
+                    <div class="availability-warning">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 1l7 13H1L8 1Z"/>
+                            <path d="M8 6v3M8 11.5v.5"/>
+                        </svg>
+                        @_availabilityWarning
+                    </div>
+                }
             </div>
             }
 
@@ -226,6 +267,13 @@
     private string? _errorMessage;
     private HashSet<string> _expandedSections = ["Client", "Schedule", "Location", "Notes"];
 
+    // Availability slots
+    private List<AvailableSlotDto> _availableSlots = [];
+    private bool _isLoadingSlots;
+    private bool _slotsLoaded;
+    private string? _availabilityWarning;
+    private string _userId = string.Empty;
+
     private void ToggleSection(string section)
     {
         if (!_expandedSections.Remove(section))
@@ -238,6 +286,9 @@
         _editContext = new EditContext(_model);
         _clients = await ClientService.GetListAsync();
 
+        var authState = await AuthState;
+        _userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
         if (ClientId.HasValue)
         {
             _model.ClientId = ClientId.Value.ToString();
@@ -245,6 +296,84 @@
 
         _model.Date = TimeZoneService.UserNow.AddDays(1).ToString("yyyy-MM-dd");
         _model.Time = "09:00";
+
+        await LoadAvailableSlotsAsync();
+    }
+
+    private async Task OnDateChanged(string value)
+    {
+        _model.Date = value;
+        await LoadAvailableSlotsAsync();
+    }
+
+    private async Task OnTimeChanged(string value)
+    {
+        _model.Time = value;
+        CheckTimeAgainstSlots();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDurationChanged(string value)
+    {
+        _model.Duration = value;
+        await LoadAvailableSlotsAsync();
+    }
+
+    private void SelectSlot(string timeValue)
+    {
+        _model.Time = timeValue;
+        _availabilityWarning = null;
+    }
+
+    private async Task LoadAvailableSlotsAsync()
+    {
+        _availabilityWarning = null;
+
+        if (string.IsNullOrEmpty(_model.Date) || !DateOnly.TryParse(_model.Date, out var date))
+        {
+            _availableSlots = [];
+            _slotsLoaded = false;
+            return;
+        }
+
+        if (!int.TryParse(_model.Duration, out var duration))
+            duration = 30;
+
+        _isLoadingSlots = true;
+        StateHasChanged();
+
+        try
+        {
+            _availableSlots = await AvailabilityService.GetAvailableSlotsAsync(_userId, date, duration);
+            _slotsLoaded = true;
+            CheckTimeAgainstSlots();
+        }
+        catch
+        {
+            _availableSlots = [];
+            _slotsLoaded = false;
+        }
+        finally
+        {
+            _isLoadingSlots = false;
+        }
+    }
+
+    private void CheckTimeAgainstSlots()
+    {
+        _availabilityWarning = null;
+
+        if (!_slotsLoaded || _availableSlots.Count == 0 || string.IsNullOrEmpty(_model.Time))
+            return;
+
+        if (!TimeOnly.TryParse(_model.Time, out var selectedTime))
+            return;
+
+        var matchesSlot = _availableSlots.Any(s => s.Start == selectedTime);
+        if (!matchesSlot)
+        {
+            _availabilityWarning = "Selected time falls outside your available slots.";
+        }
     }
 
     private void OnLocationChanged(string value)
@@ -290,9 +419,6 @@
             if (!int.TryParse(_model.Duration, out var duration))
                 duration = 30;
 
-            var authState = await AuthState;
-            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-
             var dto = new CreateAppointmentDto(
                 ClientId: clientId,
                 Type: type,
@@ -303,8 +429,12 @@
                 LocationNotes: string.IsNullOrWhiteSpace(_model.LocationNotes) ? null : _model.LocationNotes,
                 Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes);
 
-            var created = await AppointmentService.CreateAsync(dto, userId);
+            var created = await AppointmentService.CreateAsync(dto, _userId);
             NavigationManager.NavigateTo($"/appointments/{created.Id}");
+        }
+        catch (SchedulingConflictException ex)
+        {
+            _errorMessage = ex.Message;
         }
         catch
         {

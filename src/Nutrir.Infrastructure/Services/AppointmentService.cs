@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
+using Nutrir.Core.Exceptions;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -159,6 +160,8 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId)
     {
+        await CheckOverlapAsync(_dbContext, userId, dto.StartTime, dto.DurationMinutes);
+
         var entity = new Appointment
         {
             ClientId = dto.ClientId,
@@ -199,6 +202,12 @@ public class AppointmentService : IAppointmentService
         var entity = await _dbContext.Appointments.FindAsync(dto.Id);
 
         if (entity is null) return false;
+
+        // Check overlap only if time or duration changed
+        if (entity.StartTime != dto.StartTime || entity.DurationMinutes != dto.DurationMinutes)
+        {
+            await CheckOverlapAsync(_dbContext, entity.NutritionistId, dto.StartTime, dto.DurationMinutes, dto.Id);
+        }
 
         entity.Type = dto.Type;
         entity.Status = dto.Status;
@@ -379,6 +388,54 @@ public class AppointmentService : IAppointmentService
                 ? appUser.DisplayName
                 : $"{appUser.FirstName} {appUser.LastName}".Trim();
         return null;
+    }
+
+    private async Task CheckOverlapAsync(AppDbContext db, string nutritionistId, DateTime startUtc, int durationMinutes, int? excludeAppointmentId = null)
+    {
+        var endUtc = startUtc.AddMinutes(durationMinutes);
+
+        // Load buffer time
+        var user = await db.Users.OfType<ApplicationUser>().FirstOrDefaultAsync(u => u.Id == nutritionistId);
+        var bufferMinutes = user?.BufferTimeMinutes ?? 15;
+
+        // Expand window by buffer on both sides
+        var checkStart = startUtc.AddMinutes(-bufferMinutes);
+        var checkEnd = endUtc.AddMinutes(bufferMinutes);
+
+        var query = db.Appointments
+            .Where(a => a.NutritionistId == nutritionistId
+                        && a.Status != AppointmentStatus.Cancelled
+                        && a.Status != AppointmentStatus.LateCancellation);
+
+        if (excludeAppointmentId.HasValue)
+            query = query.Where(a => a.Id != excludeAppointmentId.Value);
+
+        // Find any appointment whose time range (with buffer) overlaps
+        var conflicts = await query
+            .Where(a => a.StartTime < checkEnd
+                        && a.StartTime.AddMinutes(a.DurationMinutes) > checkStart)
+            .ToListAsync();
+
+        if (conflicts.Count == 0) return;
+
+        var conflict = conflicts.First();
+        var conflictEnd = conflict.StartTime.AddMinutes(conflict.DurationMinutes);
+
+        // Determine the reason
+        var directOverlap = conflict.StartTime < endUtc && conflictEnd > startUtc;
+        var reason = directOverlap ? "Overlapping appointment" : "Buffer time violation";
+
+        // Resolve client name for error message
+        var client = await db.Clients.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == conflict.ClientId);
+        var clientName = client is not null ? $"{client.FirstName} {client.LastName}" : "Unknown";
+
+        throw new SchedulingConflictException(
+            reason,
+            $"{reason}: conflicts with appointment on {conflict.StartTime:g} for {clientName}",
+            conflict.Id,
+            conflict.StartTime,
+            conflictEnd,
+            clientName);
     }
 
     private static AppointmentDto MapToDto(Appointment entity, string clientFirstName, string clientLastName, string? nutritionistName)

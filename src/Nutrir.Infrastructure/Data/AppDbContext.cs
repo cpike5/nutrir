@@ -48,6 +48,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ClientDietaryRestriction> ClientDietaryRestrictions => Set<ClientDietaryRestriction>();
 
+    public DbSet<PractitionerSchedule> PractitionerSchedules => Set<PractitionerSchedule>();
+
+    public DbSet<PractitionerTimeBlock> PractitionerTimeBlocks => Set<PractitionerTimeBlock>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -59,6 +63,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(u => u.DisplayName).HasMaxLength(200);
             entity.Property(u => u.IsActive).HasDefaultValue(true);
             entity.Property(u => u.CreatedDate).HasDefaultValueSql("now() at time zone 'utc'");
+            entity.Property(u => u.BufferTimeMinutes).HasDefaultValue(15);
         });
 
         builder.Entity<InviteCode>(entity =>
@@ -394,6 +399,39 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(dr => dr.Notes).HasColumnType("text");
             entity.Property(dr => dr.IsDeleted).HasDefaultValue(false);
             entity.Property(dr => dr.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<PractitionerSchedule>(entity =>
+        {
+            entity.HasQueryFilter(s => !s.IsDeleted);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(s => new { s.UserId, s.DayOfWeek });
+
+            entity.Property(s => s.DayOfWeek).HasConversion<string>();
+            entity.Property(s => s.IsDeleted).HasDefaultValue(false);
+            entity.Property(s => s.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<PractitionerTimeBlock>(entity =>
+        {
+            entity.HasQueryFilter(tb => !tb.IsDeleted);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(tb => tb.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(tb => new { tb.UserId, tb.Date });
+
+            entity.Property(tb => tb.BlockType).HasConversion<string>();
+            entity.Property(tb => tb.Notes).HasColumnType("text");
+            entity.Property(tb => tb.IsDeleted).HasDefaultValue(false);
+            entity.Property(tb => tb.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 
