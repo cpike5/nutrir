@@ -19,6 +19,7 @@ public class AiToolExecutor
     private readonly IUserManagementService _userManagementService;
     private readonly ISearchService _searchService;
     private readonly IDashboardService _dashboardService;
+    private readonly IAvailabilityService _availabilityService;
     private readonly ILogger<AiToolExecutor> _logger;
 
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
@@ -240,6 +241,45 @@ public class AiToolExecutor
         return (desc, new EntityContext("Client", verb, id, name ?? $"#{id}", null));
     }
 
+    private async Task<string?> CheckWorkingHoursAsync(DateTime startTime, int durationMinutes)
+    {
+        if (_currentUserId is null) return null;
+
+        try
+        {
+            var date = DateOnly.FromDateTime(startTime);
+            var slots = await _availabilityService.GetAvailableSlotsAsync(_currentUserId, date, durationMinutes);
+            var requestedStart = TimeOnly.FromDateTime(startTime);
+            var requestedEnd = requestedStart.AddMinutes(durationMinutes);
+
+            var fitsInSlot = slots.Any(s => s.Start <= requestedStart && s.End >= requestedEnd);
+            if (!fitsInSlot)
+            {
+                var timeStr = startTime.ToString("h:mm tt", CultureInfo.InvariantCulture);
+                var dayStr = startTime.ToString("dddd, MMM d", CultureInfo.InvariantCulture);
+                return $"This appointment ({timeStr} on {dayStr}) is outside your configured working hours";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to check working hours for appointment at {StartTime}", startTime);
+        }
+
+        return null;
+    }
+
+    private async Task<List<string>?> GetAppointmentWarningsAsync(JsonElement input)
+    {
+        var startTimeStr = GetOptionalString(input, "start_time");
+        var durationMinutes = GetOptionalInt(input, "duration_minutes") ?? 60;
+
+        if (startTimeStr is null || !DateTime.TryParse(startTimeStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var startTime))
+            return null;
+
+        var warning = await CheckWorkingHoursAsync(startTime, durationMinutes);
+        return warning is not null ? [warning] : null;
+    }
+
     private async Task<(string Description, EntityContext? Entity)> BuildCreateAppointmentContext(JsonElement input)
     {
         var clientId = GetOptionalInt(input, "client_id");
@@ -248,7 +288,8 @@ public class AiToolExecutor
             ? $"create an appointment for \"{clientName}\" (client #{clientId})"
             : $"create an appointment for client #{clientId?.ToString() ?? "?"}";
         var fields = BuildFieldChangesFromInput(input);
-        return (desc, new EntityContext("Appointment", "create", null, clientName is not null ? $"Appointment for {clientName}" : "New Appointment", fields));
+        var warnings = await GetAppointmentWarningsAsync(input);
+        return (desc, new EntityContext("Appointment", "create", null, clientName is not null ? $"Appointment for {clientName}" : "New Appointment", fields, warnings));
     }
 
     private async Task<(string Description, EntityContext? Entity)> BuildAppointmentContext(string verb, JsonElement input)
@@ -284,7 +325,8 @@ public class AiToolExecutor
             };
             var fields = BuildUpdateFieldChanges(input, currentValues, "id");
             desc = AppendChangedFields(desc, verb, input, "id");
-            return (desc, new EntityContext("Appointment", verb, id, displayName!, fields));
+            var warnings = await GetAppointmentWarningsAsync(input);
+            return (desc, new EntityContext("Appointment", verb, id, displayName!, fields, warnings));
         }
 
         if ((verb == "delete" || verb == "cancel") && appt is not null)
@@ -611,6 +653,7 @@ public class AiToolExecutor
         IUserManagementService userManagementService,
         ISearchService searchService,
         IDashboardService dashboardService,
+        IAvailabilityService availabilityService,
         ILogger<AiToolExecutor> logger)
     {
         _clientService = clientService;
@@ -622,6 +665,7 @@ public class AiToolExecutor
         _userManagementService = userManagementService;
         _searchService = searchService;
         _dashboardService = dashboardService;
+        _availabilityService = availabilityService;
         _logger = logger;
 
         _handlers = new Dictionary<string, Func<JsonElement, Task<string>>>
