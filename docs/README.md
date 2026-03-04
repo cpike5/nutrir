@@ -14,6 +14,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | `design-system/` | Component API docs, design tokens, style guidelines |
 | `infrastructure/` | Docker, deployment, database, logging, hosting |
 | `compliance/` | Privacy laws, data handling, consent, regulatory |
+| `reports/` | Practice reports, analytics, metrics |
 | `temp/` | Drafts and work-in-progress — move to proper folder when finalized |
 
 ## Infrastructure Documents
@@ -67,6 +68,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Calendar View](scheduling/calendar-view.md) | PoC spec — Radzen Blazor Scheduler integration for appointment calendar view |
 | [Domain Summary](scheduling/domain-summary.md) | Current state of the scheduling domain — entities, services, gaps |
+
+## Reports Documents
+
+| Document | Description |
+|----------|-------------|
+| [Practice Reports Spec](reports/practice-reports-spec.md) | Monthly practice reports — metrics, trend data, period options, UI layout |
 
 ## Architecture Decision Records
 
