@@ -13,6 +13,7 @@ public class MealPlanService : IMealPlanService
     private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
+    private readonly IAllergenCheckService _allergenCheckService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<MealPlanService> _logger;
 
@@ -20,12 +21,14 @@ public class MealPlanService : IMealPlanService
         AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
+        IAllergenCheckService allergenCheckService,
         INotificationDispatcher notificationDispatcher,
         ILogger<MealPlanService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
+        _allergenCheckService = allergenCheckService;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
@@ -333,10 +336,16 @@ public class MealPlanService : IMealPlanService
         return true;
     }
 
-    public async Task<bool> UpdateStatusAsync(int id, MealPlanStatus newStatus, string userId)
+    public async Task<UpdateStatusResultDto> UpdateStatusAsync(int id, MealPlanStatus newStatus, string userId)
     {
         var entity = await _dbContext.MealPlans.FindAsync(id);
-        if (entity is null) return false;
+        if (entity is null) return new UpdateStatusResultDto(false, "Meal plan not found.");
+
+        if (newStatus == MealPlanStatus.Active && !await _allergenCheckService.CanActivateAsync(id))
+        {
+            return new UpdateStatusResultDto(false,
+                "Cannot activate: this meal plan has severe allergen warnings that must be acknowledged first.");
+        }
 
         var oldStatus = entity.Status;
         entity.Status = newStatus;
@@ -357,7 +366,7 @@ public class MealPlanService : IMealPlanService
 
         await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
 
-        return true;
+        return new UpdateStatusResultDto(true);
     }
 
     public async Task<bool> DuplicateAsync(int id, string userId)

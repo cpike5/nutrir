@@ -14,6 +14,7 @@
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject IAllergenCheckService AllergenCheckService
 @inject RealTimeNotificationService NotificationService
 
 <PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
@@ -257,9 +258,70 @@
             </div>
         }
 
+        @if (!string.IsNullOrEmpty(_statusError))
+        {
+            <div class="status-error">@_statusError</div>
+        }
+
         @if (!string.IsNullOrEmpty(_successMessage))
         {
             <div class="success-msg">@_successMessage</div>
+        }
+
+        @if (_allergenWarnings.Count > 0)
+        {
+            <div class="table-card allergen-warnings section-animate">
+                <div class="allergen-warning-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                        <path d="M12 9v4"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                    <span>Allergen Warnings (@_allergenWarnings.Count)</span>
+                </div>
+
+                @foreach (var group in _allergenWarnings
+                    .GroupBy(w => w.Severity)
+                    .OrderByDescending(g => g.Key))
+                {
+                    <div class="allergen-severity-group">
+                        <div class="allergen-severity-label">@group.Key</div>
+                        @foreach (var warning in group)
+                        {
+                            var warningKey = $"{warning.FoodName}:{warning.AllergenCategory}";
+                            <div class="allergen-warning-row @(warning.IsOverridden ? "warning-overridden" : "")">
+                                <span class="severity-badge severity-@warning.Severity.ToString().ToLowerInvariant()">@warning.Severity</span>
+                                <span class="warning-food">@warning.FoodName</span>
+                                <span class="warning-context">@(warning.DayLabel ?? $"Day {warning.DayNumber}") &middot; @FormatMealType(warning.MealType)</span>
+                                <span class="warning-allergy">@warning.MatchedAllergyName</span>
+                                @if (warning.AllergenCategory.HasValue)
+                                {
+                                    <span class="warning-category">@warning.AllergenCategory</span>
+                                }
+                                <span class="warning-actions">
+                                    @if (warning.IsOverridden)
+                                    {
+                                        <span class="warning-override-note" title="@warning.OverrideNote">Acknowledged@(string.IsNullOrEmpty(warning.OverrideNote) ? "" : $": {warning.OverrideNote}")</span>
+                                        <button class="btn-link btn-link-danger" @onclick="() => RemoveAcknowledgement(warning)">Remove</button>
+                                    }
+                                    else if (_acknowledgingKey == warningKey)
+                                    {
+                                        <div class="acknowledge-form">
+                                            <input type="text" class="ack-note-input" placeholder="Note (optional)" @bind="_acknowledgeNote" @bind:event="oninput" />
+                                            <button class="btn-link btn-link-confirm" @onclick="() => ConfirmAcknowledge(warning)">Confirm</button>
+                                            <button class="btn-link" @onclick="CancelAcknowledge">Cancel</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-link" @onclick="() => StartAcknowledge(warningKey)">Acknowledge</button>
+                                    }
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         }
 
         <div class="meta-footer">
@@ -283,6 +345,10 @@
     private bool _refreshedByRealTime;
     private string? _errorMessage;
     private string? _successMessage;
+    private string? _statusError;
+    private List<AllergenWarningDto> _allergenWarnings = new();
+    private string? _acknowledgingKey;
+    private string _acknowledgeNote = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -293,6 +359,7 @@
 
         if (_plan is not null)
         {
+            _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "MealPlanViewed", "MealPlan", Id.ToString(), "Viewed MealPlan record");
@@ -307,6 +374,7 @@
         _ = InvokeAsync(async () =>
         {
             _plan = await MealPlanService.GetByIdAsync(Id);
+            _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
             _refreshedByRealTime = true;
             StateHasChanged();
         });
@@ -330,8 +398,11 @@
     private async Task ActivatePlan()
     {
         _isProcessing = true;
+        _statusError = null;
         var userId = await GetUserId();
-        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        var result = await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        if (!result.Success)
+            _statusError = result.ErrorMessage;
         _plan = await MealPlanService.GetByIdAsync(Id);
         _isProcessing = false;
     }
@@ -339,8 +410,11 @@
     private async Task ArchivePlan()
     {
         _isProcessing = true;
+        _statusError = null;
         var userId = await GetUserId();
-        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Archived, userId);
+        var result = await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Archived, userId);
+        if (!result.Success)
+            _statusError = result.ErrorMessage;
         _plan = await MealPlanService.GetByIdAsync(Id);
         _isProcessing = false;
     }
@@ -348,8 +422,11 @@
     private async Task ReactivatePlan()
     {
         _isProcessing = true;
+        _statusError = null;
         var userId = await GetUserId();
-        await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        var result = await MealPlanService.UpdateStatusAsync(Id, MealPlanStatus.Active, userId);
+        if (!result.Success)
+            _statusError = result.ErrorMessage;
         _plan = await MealPlanService.GetByIdAsync(Id);
         _isProcessing = false;
     }
@@ -403,6 +480,34 @@
         MealType.EveningSnack => "Evening Snack",
         _ => type.ToString()
     };
+
+    private void StartAcknowledge(string warningKey)
+    {
+        _acknowledgingKey = warningKey;
+        _acknowledgeNote = string.Empty;
+    }
+
+    private void CancelAcknowledge()
+    {
+        _acknowledgingKey = null;
+        _acknowledgeNote = string.Empty;
+    }
+
+    private async Task ConfirmAcknowledge(AllergenWarningDto warning)
+    {
+        var userId = await GetUserId();
+        await AllergenCheckService.AcknowledgeAsync(Id, warning.FoodName, warning.AllergenCategory, _acknowledgeNote, userId);
+        _acknowledgingKey = null;
+        _acknowledgeNote = string.Empty;
+        _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
+    }
+
+    private async Task RemoveAcknowledgement(AllergenWarningDto warning)
+    {
+        var userId = await GetUserId();
+        await AllergenCheckService.RemoveAcknowledgementAsync(Id, warning.FoodName, warning.AllergenCategory, userId);
+        _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
+    }
 
     private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
     {

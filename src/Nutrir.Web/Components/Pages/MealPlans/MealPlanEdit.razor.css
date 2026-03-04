@@ -66,6 +66,32 @@
     margin-top: var(--space-4);
 }
 
+/* ── Allergen Banner ─────────────────────────────────── */
+.allergen-banner {
+    padding: var(--space-2) var(--space-4);
+    border-left: 3px solid;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+}
+
+.allergen-banner a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.allergen-banner-severe {
+    background: rgba(var(--rgb-error, 200, 60, 60), 0.08);
+    border-left-color: var(--color-error);
+    color: var(--color-error);
+}
+
+.allergen-banner-warning {
+    background: rgba(196, 136, 47, 0.08);
+    border-left-color: var(--color-warning);
+    color: var(--color-warning);
+}
+
 /* ── Targets Bar ─────────────────────────────────────── */
 .targets-bar {
     display: flex;

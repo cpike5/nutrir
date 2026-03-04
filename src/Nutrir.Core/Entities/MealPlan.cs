@@ -43,4 +43,6 @@ public class MealPlan
     public string? DeletedBy { get; set; }
 
     public List<MealPlanDay> Days { get; set; } = [];
+
+    public List<AllergenWarningOverride> AllergenWarningOverrides { get; set; } = [];
 }

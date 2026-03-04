@@ -280,10 +280,10 @@ public static class MealPlanCommands
                 using var scope = host.Services.CreateScope();
                 var service = scope.ServiceProvider.GetRequiredService<IMealPlanService>();
 
-                var success = await service.UpdateStatusAsync(id, MealPlanStatus.Active, userId);
-                if (!success)
+                var result = await service.UpdateStatusAsync(id, MealPlanStatus.Active, userId);
+                if (!result.Success)
                 {
-                    OutputFormatter.WriteError($"Meal plan {id} not found", format);
+                    OutputFormatter.WriteError(result.ErrorMessage ?? $"Meal plan {id} not found", format);
                     context.ExitCode = 1;
                     return;
                 }
@@ -329,10 +329,10 @@ public static class MealPlanCommands
                 using var scope = host.Services.CreateScope();
                 var service = scope.ServiceProvider.GetRequiredService<IMealPlanService>();
 
-                var success = await service.UpdateStatusAsync(id, MealPlanStatus.Archived, userId);
-                if (!success)
+                var result = await service.UpdateStatusAsync(id, MealPlanStatus.Archived, userId);
+                if (!result.Success)
                 {
-                    OutputFormatter.WriteError($"Meal plan {id} not found", format);
+                    OutputFormatter.WriteError(result.ErrorMessage ?? $"Meal plan {id} not found", format);
                     context.ExitCode = 1;
                     return;
                 }
