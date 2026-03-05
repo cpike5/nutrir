@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrir — Practice Management for Nutrition Professionals</title>
+  <meta name="description" content="AI-powered, compliance-first practice management built for Canadian nutrition professionals. Open source, self-hosted, purpose-built.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="promo.css">
+</head>
+<body>
+
+  <!-- Scroll Progress -->
+  <div class="scroll-progress"></div>
+
+  <!-- ── Navigation ───────────────────────────────────────── -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="container nav-inner">
+      <a href="#" class="nav-logo" aria-label="Nutrir home">nutri<span>r</span></a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#tech">Tech Stack</a></li>
+        <li><a href="#open-source">Open Source</a></li>
+        <li>
+          <a href="https://github.com/cpike5/nutrir" class="nav-cta" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </li>
+      </ul>
+      <button class="nav-mobile-btn" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-aurora"></div>
+      <div class="hero-gradient-orb"></div>
+      <div class="hero-gradient-orb"></div>
+      <div class="hero-gradient-orb"></div>
+      <div class="hero-grid"></div>
+      <canvas id="particle-canvas"></canvas>
+    </div>
+    <div class="container hero-content">
+      <div class="hero-badge reveal">
+        <span class="hero-badge-dot"></span>
+        Open Source &middot; Self-Hosted &middot; Canadian
+      </div>
+      <h1 class="reveal reveal-delay-1">
+        Practice Management,<br>
+        <span class="gradient-text" id="typing-target">Reimagined for Nutrition</span><span class="typing-cursor" id="typing-cursor"></span>
+      </h1>
+      <p class="hero-sub reveal reveal-delay-2">
+        AI-powered, compliance-first practice management built for Canadian nutrition professionals.
+        Smart scheduling, personalized meal plans, and a built-in AI assistant &mdash; all self-hosted.
+      </p>
+      <div class="hero-actions reveal reveal-delay-3">
+        <a href="https://github.com/cpikrt/nutrir" class="btn btn-primary" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#features" class="btn btn-ghost">
+          Explore Features
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7.8H7.8"/></svg>
+        </a>
+      </div>
+
+      <!-- Hero Mockup -->
+      <div class="hero-mockup reveal reveal-delay-4">
+        <div class="hero-mockup-bar">
+          <div class="hero-mockup-dot"></div>
+          <div class="hero-mockup-dot"></div>
+          <div class="hero-mockup-dot"></div>
+          <span class="hero-mockup-url">elisamtz.ca/nutrir/dashboard</span>
+        </div>
+        <div class="hero-mockup-body">
+          <div class="mockup-card">
+            <div class="mockup-card-title">Active Clients</div>
+            <div class="mockup-metric" data-count="47">0</div>
+            <div class="mockup-metric-label">+3 this week</div>
+            <div class="mockup-bars">
+              <div class="mockup-bar" style="height:40%"></div>
+              <div class="mockup-bar" style="height:55%"></div>
+              <div class="mockup-bar" style="height:45%"></div>
+              <div class="mockup-bar" style="height:70%"></div>
+              <div class="mockup-bar" style="height:85%"></div>
+              <div class="mockup-bar" style="height:65%"></div>
+              <div class="mockup-bar" style="height:95%"></div>
+            </div>
+          </div>
+          <div class="mockup-card">
+            <div class="mockup-card-title">Today's Appointments</div>
+            <div class="mockup-list-item">
+              <div class="mockup-avatar"></div>
+              <div>
+                <div class="mockup-list-text"><strong>Sarah Chen</strong></div>
+                <div class="mockup-list-text">Follow-Up &middot; 9:00 AM</div>
+              </div>
+              <span class="mockup-tag">In-Person</span>
+            </div>
+            <div class="mockup-list-item">
+              <div class="mockup-avatar"></div>
+              <div>
+                <div class="mockup-list-text"><strong>Mark Johnson</strong></div>
+                <div class="mockup-list-text">Initial &middot; 10:30 AM</div>
+              </div>
+              <span class="mockup-tag">Virtual</span>
+            </div>
+            <div class="mockup-list-item" style="border:none">
+              <div class="mockup-avatar"></div>
+              <div>
+                <div class="mockup-list-text"><strong>Emma Li</strong></div>
+                <div class="mockup-list-text">Check-In &middot; 2:00 PM</div>
+              </div>
+              <span class="mockup-tag">Phone</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </section>
+
+  <!-- ── Value Props ──────────────────────────────────────── -->
+  <div class="section-divider"></div>
+  <section class="values noise-overlay" id="values">
+    <div class="container">
+      <div class="section-label reveal">Why Nutrir</div>
+      <h2 class="section-title section-title-light reveal">Built different, on purpose</h2>
+      <p class="section-desc section-desc-light reveal">
+        Not another generic CRM with nutrition bolted on. Every feature is designed from the ground up for how nutrition professionals actually work.
+      </p>
+      <div class="values-grid">
+        <div class="value-card reveal-left reveal-delay-1">
+          <div class="spotlight"></div>
+          <div class="value-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 5h4c0-2 2-3 2-5a4 4 0 0 0-4-4z"/><path d="M10 17v1a2 2 0 1 0 4 0v-1"/><path d="M10 11h4"/></svg>
+          </div>
+          <h3>AI-Powered Assistant</h3>
+          <p>Built-in Claude AI with 38 integrated tools. Create clients, schedule appointments, and build meal plans through natural language. Smart confirmation gates for every data mutation.</p>
+        </div>
+        <div class="value-card reveal-scale reveal-delay-2">
+          <div class="spotlight"></div>
+          <div class="value-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+          </div>
+          <h3>Compliance Built-In</h3>
+          <p>PIPEDA and PHIPA-ready from day one. Audit logging, MFA enforcement, soft-delete, and Canadian data residency. Privacy is architecture, not an afterthought.</p>
+        </div>
+        <div class="value-card reveal-scale reveal-delay-3">
+          <div class="spotlight"></div>
+          <div class="value-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Purpose-Built for Nutrition</h3>
+          <p>Health profiles with allergies, medications, and conditions. Personalized meal plans with macro targets. Progress tracking with goal visualization. Not a generic tool.</p>
+        </div>
+        <div class="value-card reveal-right reveal-delay-4">
+          <div class="spotlight"></div>
+          <div class="value-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          </div>
+          <h3>Self-Hosted &amp; Open Source</h3>
+          <p>Own your data completely. Run on your own Canadian VPS with Docker Compose. No vendor lock-in, no monthly SaaS fees, no data leaving your control.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How It Works ─────────────────────────────────────── -->
+  <div class="section-divider"></div>
+  <section class="how-it-works noise-overlay">
+    <div class="container">
+      <div class="section-label reveal">Get Started</div>
+      <h2 class="section-title section-title-light reveal">Up and running in minutes</h2>
+      <p class="section-desc section-desc-light reveal">
+        From zero to managing your practice in three steps.
+      </p>
+      <div class="steps">
+        <div class="step reveal reveal-delay-1">
+          <div class="step-number">1</div>
+          <h3>Deploy</h3>
+          <p>Clone the repo, configure your domain, and run <code style="background:rgba(255,255,255,0.1);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.85em;">docker compose up</code>. That's it.</p>
+        </div>
+        <div class="step reveal reveal-delay-2">
+          <div class="step-number">2</div>
+          <h3>Onboard</h3>
+          <p>Add your clients, set up health profiles, capture consent. The intake workflow guides you through everything.</p>
+        </div>
+        <div class="step reveal reveal-delay-3">
+          <div class="step-number">3</div>
+          <h3>Manage</h3>
+          <p>Schedule appointments, create meal plans, track progress. Let the AI assistant handle the repetitive work.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features Showcase ────────────────────────────────── -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-label reveal">Features</div>
+      <h2 class="section-title section-title-dark reveal">Everything your practice needs</h2>
+      <p class="section-desc section-desc-dark reveal">
+        From first consultation to meal plan delivery, Nutrir handles the complete practitioner workflow.
+      </p>
+
+      <div class="features-list">
+        <!-- AI Assistant -->
+        <div class="feature-row reveal">
+          <div class="feature-info">
+            <div class="feature-label">AI Assistant</div>
+            <h3 class="feature-title">Your intelligent practice co-pilot</h3>
+            <p class="feature-desc">
+              A collapsible side panel powered by Claude AI. Issue natural language commands and let the assistant handle the complexity. Every data mutation requires your explicit confirmation.
+            </p>
+            <ul class="feature-bullets">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                38 integrated tools for all practice operations
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Confirmation gates before any data changes
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Entity link chips and markdown rendering
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Context-aware suggestions based on current page
+              </li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <div class="visual-card">
+              <div class="ai-chat">
+                <div class="ai-chat-msg user">Create a meal plan for Sarah Chen with 1800 calories, high protein</div>
+                <div class="ai-chat-msg assistant">
+                  I'll create a 7-day meal plan for <span class="entity-chip">Sarah Chen</span> targeting:<br>
+                  &bull; 1,800 kcal &bull; 135g protein &bull; 180g carbs &bull; 60g fat<br><br>
+                  This accounts for her noted <strong>dairy allergy</strong>.
+                </div>
+                <div class="ai-confirm">
+                  <strong>Confirm: Create Meal Plan</strong><br>
+                  7-day plan for Sarah Chen &middot; 1,800 kcal/day
+                  <div class="ai-confirm-actions">
+                    <button class="ai-confirm-btn ai-confirm-yes">Confirm</button>
+                    <button class="ai-confirm-btn ai-confirm-no">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="feature-row reverse reveal">
+          <div class="feature-info">
+            <div class="feature-label">Dashboard</div>
+            <h3 class="feature-title">Your practice at a glance</h3>
+            <p class="feature-desc">
+              Start every day with a clear picture. Active clients, upcoming appointments, weekly stats, and active meal plans &mdash; all with time-aware greetings and real-time updates.
+            </p>
+            <ul class="feature-bullets">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Real-time practice metrics and trends
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Today's schedule with quick navigation
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Weekly appointment and client activity
+              </li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <div class="visual-card">
+              <div class="stats-visual">
+                <div class="stat-mini">
+                  <div class="stat-mini-label">Active Clients</div>
+                  <div class="stat-mini-value" data-count="47">0</div>
+                  <div class="stat-mini-change">+6.8% this month</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="stat-mini-label">This Week</div>
+                  <div class="stat-mini-value" data-count="18">0</div>
+                  <div class="stat-mini-change">appointments</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="stat-mini-label">Active Plans</div>
+                  <div class="stat-mini-value" data-count="32">0</div>
+                  <div class="stat-mini-change">meal plans running</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="stat-mini-label">Avg. Adherence</div>
+                  <div class="stat-mini-value" data-count="84" data-suffix="%">0%</div>
+                  <div class="stat-mini-change">+2.1% vs last month</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meal Planning -->
+        <div class="feature-row reveal">
+          <div class="feature-info">
+            <div class="feature-label">Meal Planning</div>
+            <h3 class="feature-title">Personalized nutrition, delivered</h3>
+            <p class="feature-desc">
+              Build multi-day meal plans with precise nutritional targets. Per-slot organization, allergen cross-referencing, PDF export for client handoff, and template duplication for efficiency.
+            </p>
+            <ul class="feature-bullets">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Calorie, protein, carb, and fat targets
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Automatic allergen cross-reference warnings
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                PDF export with QuestPDF
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Template duplication for faster plans
+              </li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <div class="visual-card">
+              <div class="meal-visual-header">
+                <div class="meal-visual-title">Sarah's 7-Day Plan</div>
+              </div>
+              <div class="meal-macros">
+                <div class="macro-pill"><div class="macro-dot cal"></div>1,800 kcal</div>
+                <div class="macro-pill"><div class="macro-dot protein"></div>135g P</div>
+                <div class="macro-pill"><div class="macro-dot carbs"></div>180g C</div>
+                <div class="macro-pill"><div class="macro-dot fat"></div>60g F</div>
+              </div>
+              <div class="meal-slot">
+                <div><div class="meal-slot-name">Breakfast</div><div class="meal-slot-items">Oat bowl, berries, hemp seeds</div></div>
+                <div class="meal-slot-cals">420 kcal</div>
+              </div>
+              <div class="meal-slot">
+                <div><div class="meal-slot-name">Lunch</div><div class="meal-slot-items">Grilled chicken salad, quinoa</div></div>
+                <div class="meal-slot-cals">520 kcal</div>
+              </div>
+              <div class="meal-slot">
+                <div><div class="meal-slot-name">Dinner</div><div class="meal-slot-items">Salmon, roasted vegetables, rice</div></div>
+                <div class="meal-slot-cals">580 kcal</div>
+              </div>
+              <div class="meal-slot" style="margin-bottom:0">
+                <div><div class="meal-slot-name">Snack</div><div class="meal-slot-items">Protein smoothie, almond butter</div></div>
+                <div class="meal-slot-cals">280 kcal</div>
+              </div>
+              <div class="allergen-warn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Dairy allergy flagged &mdash; all items verified dairy-free
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Search -->
+        <div class="feature-row reverse reveal">
+          <div class="feature-info">
+            <div class="feature-label">Global Search</div>
+            <h3 class="feature-title">Find anything, instantly</h3>
+            <p class="feature-desc">
+              Hit Ctrl+K to search across clients, appointments, and meal plans. Fuzzy matching, keyboard navigation, and recent searches make everything one keystroke away.
+            </p>
+            <ul class="feature-bullets">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Cross-entity search in milliseconds
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Keyboard-first navigation
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Smart result grouping and recent history
+              </li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <div class="visual-card">
+              <div class="search-visual">
+                <div class="search-input-row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <span class="search-input-text">Sarah</span>
+                  <span class="search-kbd">Ctrl+K</span>
+                </div>
+                <div class="search-results">
+                  <div class="search-result active">
+                    <div class="search-result-icon client">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div>
+                      <div class="search-result-text">Sarah Chen</div>
+                      <div class="search-result-meta">Client &middot; Active &middot; Last visit Mar 1</div>
+                    </div>
+                  </div>
+                  <div class="search-result">
+                    <div class="search-result-icon appt">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
+                    <div>
+                      <div class="search-result-text">Follow-Up with Sarah Chen</div>
+                      <div class="search-result-meta">Appointment &middot; Mar 5 at 9:00 AM</div>
+                    </div>
+                  </div>
+                  <div class="search-result">
+                    <div class="search-result-icon meal">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    </div>
+                    <div>
+                      <div class="search-result-text">Sarah's 7-Day Meal Plan</div>
+                      <div class="search-result-meta">Meal Plan &middot; Active &middot; 1,800 kcal</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Screenshot Showcase ──────────────────────────────── -->
+  <section class="screenshots" id="screenshots">
+    <div class="container">
+      <div class="section-label reveal">See It In Action</div>
+      <h2 class="section-title section-title-dark reveal">Built for real workflows</h2>
+      <p class="section-desc section-desc-dark reveal">
+        Every screen designed around how nutrition professionals actually work.
+      </p>
+
+      <div class="screenshot-tabs reveal" style="position:relative;">
+        <button class="screenshot-tab active" data-tab="ss-dashboard">Dashboard</button>
+        <button class="screenshot-tab" data-tab="ss-clients">Clients</button>
+        <button class="screenshot-tab" data-tab="ss-mealplans">Meal Plans</button>
+        <button class="screenshot-tab" data-tab="ss-scheduling">Scheduling</button>
+        <button class="screenshot-tab" data-tab="ss-ai">AI Assistant</button>
+        <button class="screenshot-tab" data-tab="ss-progress">Progress</button>
+        <div class="tab-indicator"></div>
+      </div>
+
+      <div class="screenshot-viewport reveal">
+        <!-- Dashboard -->
+        <div class="screenshot-panel active" id="ss-dashboard">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/dashboard</div>
+            </div>
+            <div class="browser-chrome-body">
+              <div class="mock-dashboard">
+                <div class="mock-sidebar">
+                  <div class="mock-sidebar-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                  </div>
+                  <div class="mock-sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Clients
+                  </div>
+                  <div class="mock-sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+                    Appointments
+                  </div>
+                  <div class="mock-sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+                    Meal Plans
+                  </div>
+                  <div class="mock-sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Progress
+                  </div>
+                </div>
+                <div class="mock-main">
+                  <div class="mock-greeting">Good morning, Elisa</div>
+                  <div class="mock-metrics">
+                    <div class="mock-metric-card"><div class="mock-metric-label">Active Clients</div><div class="mock-metric-value">47</div></div>
+                    <div class="mock-metric-card"><div class="mock-metric-label">Today</div><div class="mock-metric-value">5</div></div>
+                    <div class="mock-metric-card"><div class="mock-metric-label">This Week</div><div class="mock-metric-value">18</div></div>
+                    <div class="mock-metric-card"><div class="mock-metric-label">Active Plans</div><div class="mock-metric-value">32</div></div>
+                  </div>
+                  <div class="mock-schedule">
+                    <div class="mock-schedule-title">Today's Schedule</div>
+                    <div class="mock-schedule-item"><span class="mock-schedule-time">9:00</span><span class="mock-schedule-name">Sarah Chen</span><span class="mock-schedule-type">Follow-Up</span></div>
+                    <div class="mock-schedule-item"><span class="mock-schedule-time">10:30</span><span class="mock-schedule-name">Mark Johnson</span><span class="mock-schedule-type">Initial</span></div>
+                    <div class="mock-schedule-item"><span class="mock-schedule-time">13:00</span><span class="mock-schedule-name">Priya Patel</span><span class="mock-schedule-type">Follow-Up</span></div>
+                    <div class="mock-schedule-item"><span class="mock-schedule-time">14:00</span><span class="mock-schedule-name">Emma Li</span><span class="mock-schedule-type">Check-In</span></div>
+                    <div class="mock-schedule-item" style="border:none"><span class="mock-schedule-time">15:30</span><span class="mock-schedule-name">James Wu</span><span class="mock-schedule-type">Initial</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clients -->
+        <div class="screenshot-panel" id="ss-clients">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/clients</div>
+            </div>
+            <div class="browser-chrome-body">
+              <table class="mock-table">
+                <thead>
+                  <tr><th>Client</th><th>Status</th><th>Last Visit</th><th>Allergies</th><th>Active Plan</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><div class="name-cell"><div class="mini-avatar"></div>Sarah Chen</div></td>
+                    <td><span class="mock-status active">Active</span></td>
+                    <td>Mar 1, 2026</td>
+                    <td><span class="mock-allergy-tag">Dairy</span></td>
+                    <td>7-Day High Protein</td>
+                  </tr>
+                  <tr>
+                    <td><div class="name-cell"><div class="mini-avatar"></div>Mark Johnson</div></td>
+                    <td><span class="mock-status active">Active</span></td>
+                    <td>Feb 28, 2026</td>
+                    <td><span class="mock-allergy-tag">Gluten</span><span class="mock-allergy-tag">Nuts</span></td>
+                    <td>Mediterranean Plan</td>
+                  </tr>
+                  <tr>
+                    <td><div class="name-cell"><div class="mini-avatar"></div>Emma Li</div></td>
+                    <td><span class="mock-status active">Active</span></td>
+                    <td>Feb 27, 2026</td>
+                    <td>&mdash;</td>
+                    <td>Weight Management</td>
+                  </tr>
+                  <tr>
+                    <td><div class="name-cell"><div class="mini-avatar"></div>Priya Patel</div></td>
+                    <td><span class="mock-status pending">Pending Consent</span></td>
+                    <td>Feb 25, 2026</td>
+                    <td><span class="mock-allergy-tag">Shellfish</span></td>
+                    <td>&mdash;</td>
+                  </tr>
+                  <tr>
+                    <td><div class="name-cell"><div class="mini-avatar"></div>James Wu</div></td>
+                    <td><span class="mock-status active">Active</span></td>
+                    <td>Feb 24, 2026</td>
+                    <td>&mdash;</td>
+                    <td>Athletic Performance</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meal Plans -->
+        <div class="screenshot-panel" id="ss-mealplans">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/meal-plans/12</div>
+            </div>
+            <div class="browser-chrome-body">
+              <div style="font-size:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                  <div>
+                    <div style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;color:var(--gray-800);">Sarah's 7-Day High Protein Plan</div>
+                    <div style="color:var(--gray-400);margin-top:0.15rem;">Created Feb 20 &middot; <span style="color:var(--green-700);font-weight:600;">Active</span></div>
+                  </div>
+                  <div style="display:flex;gap:0.5rem;">
+                    <div style="padding:0.3rem 0.75rem;border-radius:6px;background:var(--green-50);color:var(--green-700);font-weight:600;font-size:0.7rem;">Export PDF</div>
+                    <div style="padding:0.3rem 0.75rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:600;font-size:0.7rem;">Duplicate</div>
+                  </div>
+                </div>
+                <div class="meal-macros" style="margin-bottom:0.75rem;">
+                  <div class="macro-pill"><div class="macro-dot cal"></div>1,800 kcal</div>
+                  <div class="macro-pill"><div class="macro-dot protein"></div>135g P</div>
+                  <div class="macro-pill"><div class="macro-dot carbs"></div>180g C</div>
+                  <div class="macro-pill"><div class="macro-dot fat"></div>60g F</div>
+                </div>
+                <div style="display:flex;gap:0.35rem;margin-bottom:0.75rem;">
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--green-700);color:white;font-weight:600;font-size:0.65rem;">Day 1</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 2</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 3</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 4</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 5</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 6</div>
+                  <div style="padding:0.25rem 0.65rem;border-radius:6px;background:var(--gray-100);color:var(--gray-600);font-weight:500;font-size:0.65rem;">Day 7</div>
+                </div>
+                <div class="meal-slot"><div><div class="meal-slot-name">Breakfast</div><div class="meal-slot-items">Oat bowl, berries, hemp seeds, protein powder</div></div><div class="meal-slot-cals">420 kcal</div></div>
+                <div class="meal-slot"><div><div class="meal-slot-name">Lunch</div><div class="meal-slot-items">Grilled chicken breast, quinoa salad, avocado</div></div><div class="meal-slot-cals">520 kcal</div></div>
+                <div class="meal-slot"><div><div class="meal-slot-name">Dinner</div><div class="meal-slot-items">Baked salmon, roasted sweet potato, steamed broccoli</div></div><div class="meal-slot-cals">580 kcal</div></div>
+                <div class="meal-slot" style="margin-bottom:0"><div><div class="meal-slot-name">Snack</div><div class="meal-slot-items">Protein smoothie, almond butter, banana</div></div><div class="meal-slot-cals">280 kcal</div></div>
+                <div class="allergen-warn" style="margin-top:0.5rem;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Client has Dairy allergy &mdash; all items verified dairy-free
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scheduling -->
+        <div class="screenshot-panel" id="ss-scheduling">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/appointments</div>
+            </div>
+            <div class="browser-chrome-body">
+              <div class="mock-calendar">
+                <div class="mock-cal-header">
+                  <span></span>
+                  <span>Mon 3</span>
+                  <span>Tue 4</span>
+                  <span>Wed 5</span>
+                  <span>Thu 6</span>
+                  <span>Fri 7</span>
+                </div>
+                <div class="mock-cal-body">
+                  <div class="mock-cal-time">9:00</div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">Sarah C.<br>Follow-Up</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event initial">James W.<br>Initial</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">Emma L.<br>Follow-Up</div></div>
+
+                  <div class="mock-cal-time">10:30</div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event initial">Mark J.<br>Initial</div></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event checkin">Priya P.<br>Check-In</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">Sarah C.<br>Follow-Up</div></div>
+                  <div class="mock-cal-cell"></div>
+
+                  <div class="mock-cal-time">13:00</div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">Priya P.<br>Follow-Up</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event checkin">Mark J.<br>Check-In</div></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event initial">New Client<br>Initial</div></div>
+                  <div class="mock-cal-cell"></div>
+
+                  <div class="mock-cal-time">14:00</div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event checkin">Emma L.<br>Check-In</div></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">James W.<br>Follow-Up</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event followup">Priya P.<br>Follow-Up</div></div>
+
+                  <div class="mock-cal-time">15:30</div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event initial">James W.<br>Initial</div></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"></div>
+                  <div class="mock-cal-cell"><div class="mock-cal-event checkin">Emma L.<br>Check-In</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Assistant -->
+        <div class="screenshot-panel" id="ss-ai">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/clients/5</div>
+            </div>
+            <div class="browser-chrome-body" style="padding:0;">
+              <div class="mock-app-with-ai">
+                <div class="mock-app-main">
+                  Client Profile: Sarah Chen
+                </div>
+                <div class="mock-ai-panel">
+                  <div class="mock-ai-header"><span class="ai-dot"></span> AI Assistant</div>
+                  <div class="mock-ai-messages">
+                    <div class="mock-ai-msg user">Schedule a follow-up with Sarah next Tuesday at 2pm</div>
+                    <div class="mock-ai-msg bot">I'll schedule a follow-up appointment for <strong>Sarah Chen</strong> on Tuesday, March 10 at 2:00 PM. The appointment type will be <strong>Follow-Up</strong>.</div>
+                    <div class="mock-ai-msg bot" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;">
+                      <strong>Confirm appointment?</strong><br>
+                      Follow-Up &middot; Mar 10 &middot; 2:00 PM
+                    </div>
+                    <div class="mock-ai-msg user">yes</div>
+                    <div class="mock-ai-msg bot">Done! Appointment created for Sarah Chen on March 10 at 2:00 PM.</div>
+                  </div>
+                  <div class="mock-ai-input">Ask anything about your practice...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="screenshot-panel" id="ss-progress">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">elisamtz.ca/nutrir/progress/client/5</div>
+            </div>
+            <div class="browser-chrome-body">
+              <div class="mock-progress">
+                <div class="mock-chart-area">
+                  <div class="mock-chart-title">Weight Progress &mdash; Sarah Chen</div>
+                  <svg class="mock-chart-svg" viewBox="0 0 400 160">
+                    <!-- Grid lines -->
+                    <line x1="0" y1="40" x2="400" y2="40" stroke="#e9ecef" stroke-width="1"/>
+                    <line x1="0" y1="80" x2="400" y2="80" stroke="#e9ecef" stroke-width="1"/>
+                    <line x1="0" y1="120" x2="400" y2="120" stroke="#e9ecef" stroke-width="1"/>
+                    <!-- Y labels -->
+                    <text x="0" y="38" fill="#adb5bd" font-size="9">72 kg</text>
+                    <text x="0" y="78" fill="#adb5bd" font-size="9">70 kg</text>
+                    <text x="0" y="118" fill="#adb5bd" font-size="9">68 kg</text>
+                    <!-- Area fill -->
+                    <path d="M40,35 L100,50 L160,45 L220,65 L280,80 L340,90 L380,95 L380,150 L40,150 Z" fill="url(#chartGrad)" opacity="0.3"/>
+                    <!-- Line -->
+                    <polyline points="40,35 100,50 160,45 220,65 280,80 340,90 380,95" fill="none" stroke="#2d6a4f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+                    <!-- Dots -->
+                    <circle cx="40" cy="35" r="4" fill="#2d6a4f"/><circle cx="100" cy="50" r="4" fill="#2d6a4f"/>
+                    <circle cx="160" cy="45" r="4" fill="#2d6a4f"/><circle cx="220" cy="65" r="4" fill="#2d6a4f"/>
+                    <circle cx="280" cy="80" r="4" fill="#2d6a4f"/><circle cx="340" cy="90" r="4" fill="#2d6a4f"/>
+                    <circle cx="380" cy="95" r="3.5" fill="white" stroke="#2d6a4f" stroke-width="2.5"/>
+                    <!-- Target line -->
+                    <line x1="40" y1="105" x2="380" y2="105" stroke="#52b788" stroke-width="1" stroke-dasharray="4,4"/>
+                    <text x="340" y="102" fill="#52b788" font-size="8" font-weight="600">Target: 67kg</text>
+                    <!-- X labels -->
+                    <text x="40" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Jan</text>
+                    <text x="100" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Feb</text>
+                    <text x="160" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Mar</text>
+                    <text x="220" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Apr</text>
+                    <text x="280" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">May</text>
+                    <text x="340" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Jun</text>
+                    <text x="380" y="155" fill="#adb5bd" font-size="8" text-anchor="middle">Jul</text>
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#2d6a4f" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="#2d6a4f" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+                <div class="mock-goals">
+                  <div class="mock-goal">
+                    <div class="mock-goal-name">Weight Loss</div>
+                    <div class="mock-goal-meta">Target: 67 kg by Aug 2026</div>
+                    <div class="mock-goal-bar"><div class="mock-goal-fill" style="width:62%"></div></div>
+                    <div class="mock-goal-meta">62% complete</div>
+                  </div>
+                  <div class="mock-goal">
+                    <div class="mock-goal-name">Daily Protein</div>
+                    <div class="mock-goal-meta">Target: 135g daily average</div>
+                    <div class="mock-goal-bar"><div class="mock-goal-fill" style="width:88%"></div></div>
+                    <div class="mock-goal-meta">88% adherence</div>
+                  </div>
+                  <div class="mock-goal">
+                    <div class="mock-goal-name">Hydration</div>
+                    <div class="mock-goal-meta">Target: 2.5L daily</div>
+                    <div class="mock-goal-bar"><div class="mock-goal-fill" style="width:74%"></div></div>
+                    <div class="mock-goal-meta">74% adherence</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tech Stack ───────────────────────────────────────── -->
+  <div class="section-divider"></div>
+  <section class="tech noise-overlay" id="tech">
+    <div class="container">
+      <div class="section-label reveal">Technology</div>
+      <h2 class="section-title section-title-light reveal">Modern stack, production-ready</h2>
+      <p class="section-desc section-desc-light reveal">
+        Built on battle-tested technologies with a clean three-layer architecture. Deploy with a single <code style="background:rgba(255,255,255,0.08);padding:0.125rem 0.375rem;border-radius:4px;font-size:0.9em;">docker compose up</code>.
+      </p>
+      <div class="tech-grid">
+        <div class="tech-item reveal reveal-delay-1">
+          <div class="tech-icon" style="background:rgba(104,33,222,0.15);color:#8b5cf6;">.NET</div>
+          <div><div class="tech-item-name">.NET 9 + Blazor Server</div><div class="tech-item-desc">Full-stack C# with real-time UI</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-1">
+          <div class="tech-icon" style="background:rgba(51,103,214,0.15);color:#336fd6;">PG</div>
+          <div><div class="tech-item-name">PostgreSQL 17</div><div class="tech-item-desc">Reliable, performant data store</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-2">
+          <div class="tech-icon" style="background:rgba(217,119,6,0.15);color:#d97706;">AI</div>
+          <div><div class="tech-item-name">Anthropic Claude</div><div class="tech-item-desc">C# SDK with agentic tool use</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-2">
+          <div class="tech-icon" style="background:rgba(37,99,235,0.15);color:#2563eb;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.186.186 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.186.186 0 0 0-.185.185v1.888c0 .102.082.185.185.186m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.186.186 0 0 0-.185.185v1.887c0 .102.082.186.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.186.186 0 0 0-.185.185v1.887c0 .102.083.186.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.186.186 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.186.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.186.186 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.186.186 0 0 0 .185-.185V9.006a.186.186 0 0 0-.185-.186H5.136a.186.186 0 0 0-.186.185v1.888c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.186.186 0 0 0-.186.185v1.888c0 .102.084.185.186.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 0 0-.75.748 11.376 11.376 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 0 0 3.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg>
+          </div>
+          <div><div class="tech-item-name">Docker Compose</div><div class="tech-item-desc">One-command deployment</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-3">
+          <div class="tech-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div><div class="tech-item-name">ASP.NET Identity + MFA</div><div class="tech-item-desc">TOTP two-factor authentication</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-3">
+          <div class="tech-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div><div class="tech-item-name">QuestPDF</div><div class="tech-item-desc">Beautiful document generation</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-4">
+          <div class="tech-icon" style="background:rgba(45,106,79,0.15);color:var(--green-500);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div><div class="tech-item-name">Serilog + Seq + Elastic</div><div class="tech-item-desc">Structured logging &amp; APM</div></div>
+        </div>
+        <div class="tech-item reveal reveal-delay-4">
+          <div class="tech-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div><div class="tech-item-name">SignalR</div><div class="tech-item-desc">Real-time notifications</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Testimonial ──────────────────────────────────────── -->
+  <section class="testimonial">
+    <div class="container">
+      <div class="testimonial-card reveal">
+        <div class="testimonial-quote">
+          I went from juggling spreadsheets and three different apps to having everything in one place. The AI assistant alone saves me an hour a day &mdash; I just tell it what I need and confirm.
+        </div>
+        <div class="testimonial-author">Elisa Martinez Garcia</div>
+        <div class="testimonial-role">Registered Dietitian, Private Practice &mdash; Toronto, ON</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Open Source CTA ──────────────────────────────────── -->
+  <section class="oss" id="open-source">
+    <div class="container">
+      <div class="oss-card reveal">
+        <div class="oss-glow"></div>
+        <h2>Built in the Open</h2>
+        <p>
+          Nutrir is free and open source under the MIT license. Contributions, feedback, and ideas from the community make it better for everyone.
+        </p>
+        <div class="oss-stats">
+          <div class="oss-stat-item">
+            <div class="oss-stat-value">MIT</div>
+            <div class="oss-stat-label">License</div>
+          </div>
+          <div class="oss-stat-item">
+            <div class="oss-stat-value">100%</div>
+            <div class="oss-stat-label">Open Source</div>
+          </div>
+          <div class="oss-stat-item">
+            <div class="oss-stat-value">C#</div>
+            <div class="oss-stat-label">Full Stack</div>
+          </div>
+        </div>
+        <div class="oss-actions">
+          <a href="https://github.com/cpikrt/nutrir" class="btn-oss" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            View Repository
+          </a>
+          <a href="https://github.com/cpikrt/nutrir/issues" class="btn-oss" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Report Issues
+          </a>
+          <a href="https://github.com/cpikrt/nutrir/pulls" class="btn-oss" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+            Contribute
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ───────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">nutri<span>r</span></div>
+          <div class="footer-tagline">AI-powered practice management for nutrition professionals. Open source, self-hosted, Canadian-compliant.</div>
+        </div>
+        <div>
+          <div class="footer-col-title">Quick Links</div>
+          <ul class="footer-list">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#screenshots">Screenshots</a></li>
+            <li><a href="#tech">Tech Stack</a></li>
+            <li><a href="#open-source">Open Source</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Built With</div>
+          <ul class="footer-list">
+            <li><a href="https://dotnet.microsoft.com/" target="_blank" rel="noopener">.NET 9 &amp; Blazor</a></li>
+            <li><a href="https://www.postgresql.org/" target="_blank" rel="noopener">PostgreSQL</a></li>
+            <li><a href="https://www.anthropic.com/" target="_blank" rel="noopener">Anthropic Claude</a></li>
+            <li><a href="https://www.docker.com/" target="_blank" rel="noopener">Docker</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copy">&copy; 2026 Nutrir. Built with care for nutrition professionals.</div>
+        <button class="back-to-top" aria-label="Back to top">
+          Back to top
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <script src="promo.js"></script>
+</body>
+</html>
