@@ -10,6 +10,7 @@ services:
       - seq
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-nutrir};Username=${POSTGRES_USER:-nutrir};Password=${POSTGRES_PASSWORD:-nutrir_dev}
@@ -23,6 +24,7 @@ services:
     image: postgres:17
     ports:
       - "7103:5432"
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nutrir}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nutrir_dev}
