@@ -41,6 +41,13 @@
     color: white;
 }
 
+.no-slots-msg,
+.slots-loading {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    padding: var(--space-1) 0;
+}
+
 .availability-warning {
     display: flex;
     align-items: center;
