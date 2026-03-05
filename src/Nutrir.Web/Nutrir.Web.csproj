@@ -21,6 +21,7 @@
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.2" />
+    <PackageReference Include="Radzen.Blazor" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

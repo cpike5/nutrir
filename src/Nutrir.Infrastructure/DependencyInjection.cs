@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IConsentFormService, ConsentFormService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
+        services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<IMealPlanService, MealPlanService>();
         services.AddScoped<IAllergenCheckService, AllergenCheckService>();

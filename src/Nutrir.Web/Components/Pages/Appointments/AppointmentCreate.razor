@@ -258,6 +258,8 @@
 
 @code {
     [SupplyParameterFromQuery] public int? ClientId { get; set; }
+    [SupplyParameterFromQuery(Name = "date")] public string? PrefilledDate { get; set; }
+    [SupplyParameterFromQuery(Name = "duration")] public int? PrefilledDuration { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private AppointmentFormModel _model = new();
@@ -294,8 +296,21 @@
             _model.ClientId = ClientId.Value.ToString();
         }
 
-        _model.Date = TimeZoneService.UserNow.AddDays(1).ToString("yyyy-MM-dd");
-        _model.Time = "09:00";
+        if (!string.IsNullOrEmpty(PrefilledDate) && DateTime.TryParse(PrefilledDate, out var prefilledDateTime))
+        {
+            _model.Date = prefilledDateTime.ToString("yyyy-MM-dd");
+            _model.Time = prefilledDateTime.ToString("HH:mm");
+        }
+        else
+        {
+            _model.Date = TimeZoneService.UserNow.AddDays(1).ToString("yyyy-MM-dd");
+            _model.Time = "09:00";
+        }
+
+        if (PrefilledDuration.HasValue && PrefilledDuration.Value >= 15 && PrefilledDuration.Value <= 90)
+        {
+            _model.Duration = PrefilledDuration.Value.ToString();
+        }
 
         await LoadAvailableSlotsAsync();
     }
