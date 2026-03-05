@@ -12,6 +12,7 @@ using Elastic.Apm.SerilogEnricher;
 using Nutrir.Web.Endpoints;
 using Nutrir.Web.Hubs;
 using Nutrir.Web.Services;
+using Radzen;
 using QuestPDF.Infrastructure;
 using Serilog;
 
@@ -55,6 +56,7 @@ try
         builder.Services.AddAllElasticApm();
 
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddRadzenComponents();
     builder.Services.AddScoped<Nutrir.Web.Components.Layout.AiPanelState>();
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddSingleton<NotificationBroadcaster>();
