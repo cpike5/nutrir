@@ -215,8 +215,6 @@
                    type="text"
                    placeholder="Ask about clients, appointments, meal plans..."
                    autocomplete="off"
-                   @onkeydown="HandleKeyDown"
-                   @onkeydown:preventDefault="_shouldPreventDefault"
                    @onfocusout="OnInputFocusOut"
                    role="combobox"
                    aria-autocomplete="list"
@@ -250,7 +248,6 @@
     private int _selectedSuggestionIndex = -1;
     private bool _showSuggestions;
     private Timer? _debounceTimer;
-    private bool _shouldPreventDefault;
     private DotNetObjectReference<AiAssistantPanel>? _dotNetRef;
 
     protected override void OnInitialized()
@@ -414,7 +411,6 @@
         _showSuggestions = false;
         _filteredSuggestions.Clear();
         _selectedSuggestionIndex = -1;
-        _shouldPreventDefault = false;
     }
 
     private async Task SelectSuggestion(int index)
@@ -440,39 +436,32 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+    [JSInvokable]
+    public async Task OnInputKeyAction(string key)
     {
-        _shouldPreventDefault = false;
-
         if (_showSuggestions && _filteredSuggestions.Count > 0)
         {
-            switch (e.Key)
+            switch (key)
             {
                 case "ArrowDown":
                     _selectedSuggestionIndex = (_selectedSuggestionIndex + 1) % _filteredSuggestions.Count;
-                    _shouldPreventDefault = true;
+                    StateHasChanged();
                     return;
                 case "ArrowUp":
                     _selectedSuggestionIndex = _selectedSuggestionIndex <= 0
                         ? _filteredSuggestions.Count - 1
                         : _selectedSuggestionIndex - 1;
-                    _shouldPreventDefault = true;
+                    StateHasChanged();
                     return;
                 case "Tab":
                     if (_selectedSuggestionIndex >= 0)
-                    {
                         _inputText = _filteredSuggestions[_selectedSuggestionIndex];
-                        HideSuggestions();
-                        _shouldPreventDefault = true;
-                    }
                     else if (_filteredSuggestions.Count > 0)
-                    {
                         _inputText = _filteredSuggestions[0];
-                        HideSuggestions();
-                        _shouldPreventDefault = true;
-                    }
+                    HideSuggestions();
                     try { await JS.InvokeVoidAsync("aiPanel.setInputValue", _inputText); }
                     catch (JSException) { }
+                    StateHasChanged();
                     return;
                 case "Enter":
                     if (_selectedSuggestionIndex >= 0)
@@ -482,19 +471,18 @@
                         catch (JSException) { }
                     }
                     HideSuggestions();
-                    _shouldPreventDefault = true;
                     if (!_isStreaming && !string.IsNullOrWhiteSpace(_inputText))
-                    {
                         await SendMessage();
-                    }
+                    StateHasChanged();
                     return;
                 case "Escape":
                     HideSuggestions();
+                    StateHasChanged();
                     return;
             }
         }
 
-        if (e.Key == "Enter" && !_isStreaming)
+        if (key == "Enter" && !_isStreaming)
         {
             try { _inputText = await JS.InvokeAsync<string>("aiPanel.flushInput"); }
             catch (JSException) { }

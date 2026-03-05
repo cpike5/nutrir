@@ -48,6 +48,8 @@ window.aiPanel = {
         }
     },
 
+    _boundHandleKeyDown: null,
+
     initInputHandler: function (dotNetRef) {
         this._dotNetRef = dotNetRef;
         this._currentValue = '';
@@ -63,9 +65,30 @@ window.aiPanel = {
                 }
             }, 200);
         };
+        this._boundHandleKeyDown = function (e) {
+            var actionKeys = ['Enter', 'ArrowDown', 'ArrowUp', 'Tab', 'Escape'];
+            if (actionKeys.indexOf(e.key) === -1) return;
+
+            // For Enter, flush the current value immediately
+            if (e.key === 'Enter') {
+                if (self._debounceTimer) {
+                    clearTimeout(self._debounceTimer);
+                    self._debounceTimer = null;
+                }
+                self._currentValue = e.target.value;
+            }
+
+            self._dotNetRef.invokeMethodAsync('OnInputKeyAction', e.key);
+
+            // Prevent default browser behavior for action keys
+            if (e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+                e.preventDefault();
+            }
+        };
         var input = document.getElementById('ai-input');
         if (input) {
             input.addEventListener('input', this._boundHandleInput);
+            input.addEventListener('keydown', this._boundHandleKeyDown);
         }
     },
 
@@ -92,8 +115,13 @@ window.aiPanel = {
 
     disposeInputHandler: function () {
         var input = document.getElementById('ai-input');
-        if (input && this._boundHandleInput) {
-            input.removeEventListener('input', this._boundHandleInput);
+        if (input) {
+            if (this._boundHandleInput) {
+                input.removeEventListener('input', this._boundHandleInput);
+            }
+            if (this._boundHandleKeyDown) {
+                input.removeEventListener('keydown', this._boundHandleKeyDown);
+            }
         }
         if (this._debounceTimer) {
             clearTimeout(this._debounceTimer);
@@ -101,5 +129,6 @@ window.aiPanel = {
         this._dotNetRef = null;
         this._currentValue = '';
         this._boundHandleInput = null;
+        this._boundHandleKeyDown = null;
     }
 };
