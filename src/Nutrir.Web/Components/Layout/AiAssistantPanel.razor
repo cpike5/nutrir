@@ -215,8 +215,6 @@
                    type="text"
                    placeholder="Ask about clients, appointments, meal plans..."
                    autocomplete="off"
-                   value="@_inputText"
-                   @oninput="OnInputChanged"
                    @onkeydown="HandleKeyDown"
                    @onkeydown:preventDefault="_shouldPreventDefault"
                    @onfocusout="OnInputFocusOut"
@@ -253,6 +251,7 @@
     private bool _showSuggestions;
     private Timer? _debounceTimer;
     private bool _shouldPreventDefault;
+    private DotNetObjectReference<AiAssistantPanel>? _dotNetRef;
 
     protected override void OnInitialized()
     {
@@ -280,6 +279,9 @@
                     _isOpen = true;
                     PanelState.SetOpen(true);
                 }
+
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("aiPanel.initInputHandler", _dotNetRef);
             }
             catch (JSException) { }
 
@@ -369,14 +371,16 @@
         }
     }
 
-    private void OnInputChanged(ChangeEventArgs e)
+    [JSInvokable]
+    public void OnInputTextChanged(string text)
     {
-        _inputText = e.Value?.ToString() ?? "";
+        _inputText = text;
         _selectedSuggestionIndex = -1;
 
         if (string.IsNullOrWhiteSpace(_inputText) || _isStreaming)
         {
             HideSuggestions();
+            StateHasChanged();
             return;
         }
 
@@ -419,7 +423,11 @@
         {
             _inputText = _filteredSuggestions[index];
             HideSuggestions();
-            try { await JS.InvokeVoidAsync("aiPanel.focusInput", "ai-input"); }
+            try
+            {
+                await JS.InvokeVoidAsync("aiPanel.setInputValue", _inputText);
+                await JS.InvokeVoidAsync("aiPanel.focusInput", "ai-input");
+            }
             catch (JSException) { }
         }
     }
@@ -463,11 +471,15 @@
                         HideSuggestions();
                         _shouldPreventDefault = true;
                     }
+                    try { await JS.InvokeVoidAsync("aiPanel.setInputValue", _inputText); }
+                    catch (JSException) { }
                     return;
                 case "Enter":
                     if (_selectedSuggestionIndex >= 0)
                     {
                         _inputText = _filteredSuggestions[_selectedSuggestionIndex];
+                        try { await JS.InvokeVoidAsync("aiPanel.setInputValue", _inputText); }
+                        catch (JSException) { }
                     }
                     HideSuggestions();
                     _shouldPreventDefault = true;
@@ -482,18 +494,26 @@
             }
         }
 
-        if (e.Key == "Enter" && !_isStreaming && !string.IsNullOrWhiteSpace(_inputText))
+        if (e.Key == "Enter" && !_isStreaming)
         {
-            HideSuggestions();
-            await SendMessage();
+            try { _inputText = await JS.InvokeAsync<string>("aiPanel.flushInput"); }
+            catch (JSException) { }
+
+            if (!string.IsNullOrWhiteSpace(_inputText))
+            {
+                HideSuggestions();
+                await SendMessage();
+            }
         }
     }
 
-    private Task SendStarter(string text)
+    private async Task SendStarter(string text)
     {
         _inputText = text;
         HideSuggestions();
-        return SendMessage();
+        try { await JS.InvokeVoidAsync("aiPanel.setInputValue", text); }
+        catch (JSException) { }
+        await SendMessage();
     }
 
     private async Task SendMessage()
@@ -504,6 +524,8 @@
         var userText = _inputText.Trim();
         _inputText = "";
         HideSuggestions();
+        try { await JS.InvokeVoidAsync("aiPanel.setInputValue", ""); }
+        catch (JSException) { }
         _isStreaming = true;
         _justCompletedTool = false;
         _streamCts = new CancellationTokenSource();
@@ -648,15 +670,18 @@
         _debounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
+        _dotNetRef?.Dispose();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         PanelState.OnChange -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
         _debounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
-        return ValueTask.CompletedTask;
+        try { await JS.InvokeVoidAsync("aiPanel.disposeInputHandler"); }
+        catch (JSException) { }
+        _dotNetRef?.Dispose();
     }
 }
