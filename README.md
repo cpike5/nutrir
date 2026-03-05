@@ -2,7 +2,7 @@
 
 **Privacy-compliant practice management for Canadian nutrition professionals.**
 
-Nutrir is a self-hosted CRM built for a solo dietitian/nutritionist practicing in Canada. It handles client management, scheduling, meal planning, and progress tracking — with PIPEDA, PHIPA, and HIA compliance baked into the architecture, not bolted on.
+Nutrir is a self-hosted CRM built for a solo dietitian/nutritionist practicing in Canada. It handles client management, scheduling, meal planning, and progress tracking — designed with Canadian health-data privacy requirements (PIPEDA, PHIPA, HIA) in mind from day one.
 
 > **Status:** Active development · Single-practitioner v1
 
@@ -19,7 +19,7 @@ Most practice management tools for nutritionists are either US-centric SaaS plat
 - **Scheduling** — Book appointments, track sessions, see your calendar at a glance
 - **Meal Planning** — Create, customize, and assign meal plans per client
 - **Progress Tracking** — Set goals, record measurements, and visualize progress over time
-- **Search** — Find any client, appointment, or meal plan instantly
+- **Search** — Find any client, appointment, or meal plan quickly
 - **Admin Controls** — User management, invite codes, maintenance mode
 
 ## Compliance & Privacy
@@ -29,12 +29,12 @@ Designed around Canadian health-data privacy requirements from day one:
 | Requirement | Implementation |
 |-------------|---------------|
 | **Consent capture** | Per-client consent records with timestamps |
-| **Audit logging** | All data access and modifications logged |
+| **Audit logging** | Data access and modifications logged |
 | **MFA enforcement** | TOTP-based multi-factor authentication |
 | **Soft-delete** | Client data is never hard-deleted |
 | **Transport security** | HTTPS/HSTS enforced |
 | **Secure sessions** | HttpOnly, Secure, SameSite cookies |
-| **Data residency** | Self-hosted — data stays where you host it |
+| **Data residency** | Self-hosted — client data stays in your database |
 
 See [`docs/compliance/requirements.md`](docs/compliance/requirements.md) for the full v1/v2 compliance roadmap.
 
@@ -49,7 +49,7 @@ See [`docs/compliance/requirements.md`](docs/compliance/requirements.md) for the
 | **Data** | EF Core + PostgreSQL | Open-source DB, strong .NET integration, avoids vendor lock-in |
 | **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) + TOTP MFA | Compliance requirement: MFA enforcement |
 | **Logging** | Serilog → Seq (dev), Elastic APM (prod) | Structured logging with full APM in production |
-| **Hosting** | Self-hosted Linux VPS, Docker | Data residency control — no third-party SaaS dependency |
+| **Hosting** | Self-hosted Linux VPS, Docker | Data residency control — no third-party SaaS required for core data storage |
 
 ## Architecture
 
@@ -107,7 +107,7 @@ English (en-CA) only for v1. Application structure supports future localization 
    dotnet run --project src/Nutrir.Web
    ```
 
-4. **Access the app** at `https://localhost:7084` and **Seq logs** at `http://localhost:7101` (admin / `SeqDev123!`).
+4. **Access the app** at `https://localhost:7084` and **Seq logs** at `http://localhost:7101` (see .env.example for default credentials).
 
 ### Full Docker Setup
 
@@ -146,6 +146,10 @@ docs/                       # Domain-organized documentation (see docs/README.md
 - **Client self-service portal** — Invite-code registration, clients view their own plans and progress
 - **Invoicing & payments** — Session billing, receipt generation
 - **Multi-language support** — French (fr-CA) and beyond; localization infrastructure already in place
+
+## Disclaimers
+
+Nutrir is a practice management tool for qualified nutrition professionals. It does not provide medical, health, or legal advice. Users are responsible for ensuring their own compliance with applicable privacy legislation. This software is provided under the MIT License with no warranty — see [LICENSE](LICENSE) for details.
 
 ## Documentation
 
