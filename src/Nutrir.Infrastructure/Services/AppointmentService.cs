@@ -93,6 +93,17 @@ public class AppointmentService : IAppointmentService
         if (query.StatusFilter.HasValue)
             dbQuery = dbQuery.Where(a => a.Status == query.StatusFilter.Value);
 
+        // Text search filter (client name)
+        if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+        {
+            var pattern = $"%{query.SearchTerm.Trim()}%";
+            dbQuery = dbQuery.Where(a =>
+                db.Clients.IgnoreQueryFilters().Any(c => c.Id == a.ClientId &&
+                    (EF.Functions.ILike(c.FirstName, pattern) ||
+                     EF.Functions.ILike(c.LastName, pattern) ||
+                     EF.Functions.ILike(c.FirstName + " " + c.LastName, pattern))));
+        }
+
         var totalCount = await dbQuery.CountAsync();
 
         // Determine if sorting by a column that requires in-memory sort

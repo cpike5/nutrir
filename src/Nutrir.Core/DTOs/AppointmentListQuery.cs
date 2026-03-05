@@ -9,4 +9,5 @@ public record AppointmentListQuery(
     SortDirection SortDirection = SortDirection.None,
     DateTime? From = null,
     DateTime? To = null,
-    AppointmentStatus? StatusFilter = null);
+    AppointmentStatus? StatusFilter = null,
+    string? SearchTerm = null);
