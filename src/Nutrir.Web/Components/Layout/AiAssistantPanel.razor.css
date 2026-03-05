@@ -202,13 +202,13 @@
 
 .cc-ai-msg--assistant .cc-ai-msg-content ul,
 .cc-ai-msg--assistant .cc-ai-msg-content ol {
-    margin: 0.25rem 0;
-    padding-left: var(--space-4);
+    margin: var(--space-2) 0;
+    padding-left: var(--space-5);
 }
 
 .cc-ai-msg--assistant .cc-ai-msg-content li {
     margin-left: 0;
-    margin-bottom: var(--space-1);
+    margin-bottom: var(--space-2);
     line-height: var(--leading-normal);
 }
 
