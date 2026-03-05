@@ -40,6 +40,14 @@
               IsLoading="@_isLoading"
               ShowRealtimeBanner="@_refreshedByRealTime">
         <ToolbarContent>
+            <div class="filter-group filter-group--search">
+                <label for="filter-search" class="filter-label">Search</label>
+                <input type="search" id="filter-search" class="filter-input"
+                       placeholder="Client name…"
+                       value="@_searchTerm"
+                       @onchange="@(e => OnSearchChanged(e.Value?.ToString() ?? ""))" />
+            </div>
+            <div class="filter-divider" aria-hidden="true"></div>
             <div class="filter-group">
                 <label for="filter-from" class="filter-label">From</label>
                 <input type="date" id="filter-from" class="filter-input"
@@ -146,13 +154,21 @@
                 </svg>
                 <p class="empty-state-title">No appointments found</p>
                 <p class="empty-state-desc">
-                    @if (_query.StatusFilter is null)
+                    @if (!string.IsNullOrWhiteSpace(_searchTerm) && _query.StatusFilter is not null)
                     {
-                        <span>Schedule your first appointment to get started.</span>
+                        <span>No appointments matching '@_searchTerm' with the selected status filter.</span>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_searchTerm))
+                    {
+                        <span>No appointments matching '@_searchTerm'.</span>
+                    }
+                    else if (_query.StatusFilter is not null)
+                    {
+                        <span>Try adjusting your filters.</span>
                     }
                     else
                     {
-                        <span>Try adjusting your filters.</span>
+                        <span>Schedule your first appointment to get started.</span>
                     }
                 </p>
             </div>
@@ -161,10 +177,14 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? SearchQuery { get; set; }
+
     private PagedResult<AppointmentDto>? _result;
     private AppointmentListQuery _query = new();
     private string? _fromDate;
     private string? _toDate;
+    private string _searchTerm = "";
     private bool _isLoading = true;
     private bool _refreshedByRealTime;
     private System.Threading.Timer? _debounceTimer;
@@ -175,10 +195,29 @@
         NotificationService.OnEntityChanged += OnEntityChanged;
         await NotificationService.StartAsync();
         await TimeZoneService.InitializeAsync();
-        var now = TimeZoneService.UserNow;
-        _fromDate = now.ToString("yyyy-MM-dd");
-        _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
+        ApplySearchQuery();
         await LoadDataAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplySearchQuery();
+    }
+
+    private void ApplySearchQuery()
+    {
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            _searchTerm = SearchQuery;
+            _fromDate = null;
+            _toDate = null;
+        }
+        else if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var now = TimeZoneService.UserNow;
+            _fromDate = now.ToString("yyyy-MM-dd");
+            _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
+        }
     }
 
     private async Task LoadDataAsync()
@@ -194,7 +233,7 @@
         if (DateTime.TryParse(_toDate, out var parsedTo))
             to = TimeZoneService.ToUtc(parsedTo.AddDays(1).AddTicks(-1));
 
-        _query = _query with { From = from, To = to };
+        _query = _query with { From = from, To = to, SearchTerm = string.IsNullOrWhiteSpace(_searchTerm) ? null : _searchTerm.Trim() };
         _result = await AppointmentService.GetPagedAsync(_query);
         _isLoading = false;
     }
@@ -230,6 +269,29 @@
             status = parsed;
         _query = _query with { StatusFilter = status, Page = 1 };
         DebouncedLoad();
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _searchTerm = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            // Restore default date range when clearing search
+            var now = TimeZoneService.UserNow;
+            _fromDate = now.ToString("yyyy-MM-dd");
+            _toDate = now.AddDays(7).ToString("yyyy-MM-dd");
+        }
+        _query = _query with { Page = 1 };
+        UpdateUrl();
+        DebouncedLoad();
+    }
+
+    private void UpdateUrl()
+    {
+        var uri = string.IsNullOrWhiteSpace(_searchTerm)
+            ? "/appointments"
+            : $"/appointments?q={Uri.EscapeDataString(_searchTerm)}";
+        NavigationManager.NavigateTo(uri, replace: true);
     }
 
     private void DebouncedLoad()
