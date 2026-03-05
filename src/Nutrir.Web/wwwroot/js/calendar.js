@@ -1,0 +1,1 @@
+window.getWindowWidth = () => window.innerWidth;

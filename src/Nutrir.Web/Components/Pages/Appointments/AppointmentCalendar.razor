@@ -1,0 +1,207 @@
+@page "/appointments/calendar"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Services
+@using Radzen
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject ICalendarService CalendarService
+@inject ITimeZoneService TimeZoneService
+@inject NavigationManager NavigationManager
+@inject RealTimeNotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Calendar — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Appointments", "/appointments"), new BreadcrumbItem("Calendar") })" />
+
+<div class="calendar-page">
+    <div class="page-header">
+        <h1 class="page-title">Appointments</h1>
+        <div class="header-actions">
+            <div class="view-toggle" role="tablist" aria-label="View mode">
+                <a href="/appointments" class="toggle-btn" role="tab" aria-selected="false">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 4h12M2 8h12M2 12h12"/>
+                    </svg>
+                    List
+                </a>
+                <a href="/appointments/calendar" class="toggle-btn active" role="tab" aria-selected="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                        <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                    </svg>
+                    Calendar
+                </a>
+            </div>
+            <Button Variant="ButtonVariant.Primary" OnClick="NavigateToCreate">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                    <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                    <path d="M8 9v4M6 11h4"/>
+                </svg>
+                New Appointment
+            </Button>
+        </div>
+    </div>
+
+    <div class="calendar-toolbar">
+        <div class="date-picker-group">
+            <label for="jump-date" class="filter-label">Jump to date</label>
+            <input type="date" id="jump-date" class="filter-input"
+                   value="@_jumpDate"
+                   @onchange="OnJumpDateChanged" />
+        </div>
+    </div>
+
+    <div class="calendar-container">
+        @if (_isLoading)
+        {
+            <div class="calendar-loading">
+                <div class="calendar-skeleton" aria-label="Loading calendar"></div>
+            </div>
+        }
+        else
+        {
+            <RadzenScheduler @ref="_scheduler"
+                             TItem="CalendarAppointmentDto"
+                             Data="@_appointments"
+                             StartProperty="StartTime"
+                             EndProperty="EndTime"
+                             TextProperty="Title"
+                             SelectedIndex="@_selectedViewIndex"
+                             Date="@_currentDate"
+                             AppointmentSelect="@OnAppointmentSelect"
+                             SlotSelect="@OnSlotSelect"
+                             AppointmentRender="@OnAppointmentRender"
+                             LoadData="@OnLoadData">
+                <RadzenDayView />
+                <RadzenWeekView />
+                <RadzenMonthView />
+            </RadzenScheduler>
+        }
+    </div>
+</div>
+
+@code {
+    private RadzenScheduler<CalendarAppointmentDto>? _scheduler;
+    private List<CalendarAppointmentDto> _appointments = [];
+    private DateTime _currentDate = DateTime.UtcNow.Date;
+    private int _selectedViewIndex = 2; // Month view by default
+    private bool _isLoading = true;
+    private bool _disposed;
+    private string? _jumpDate;
+    private System.Threading.Timer? _notificationDebounceTimer;
+    private bool _windowSizeChecked;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotificationService.OnEntityChanged += OnEntityChanged;
+        await NotificationService.StartAsync();
+        await TimeZoneService.InitializeAsync();
+
+        _currentDate = TimeZoneService.UserNow.Date;
+        _jumpDate = _currentDate.ToString("yyyy-MM-dd");
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_windowSizeChecked)
+        {
+            _windowSizeChecked = true;
+            try
+            {
+                var width = await JSRuntime.InvokeAsync<int>("getWindowWidth");
+                if (width <= 768)
+                {
+                    _selectedViewIndex = 0; // Day view on mobile
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // JS interop not available during prerender
+            }
+        }
+    }
+
+    private async Task OnLoadData(SchedulerLoadDataEventArgs args)
+    {
+        var start = TimeZoneService.ToUtc(args.Start);
+        var end = TimeZoneService.ToUtc(args.End);
+        _appointments = await CalendarService.GetAppointmentsByDateRangeAsync(start, end);
+    }
+
+    private void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<CalendarAppointmentDto> args)
+    {
+        NavigationManager.NavigateTo($"/appointments/{args.Data.Id}");
+    }
+
+    private void OnSlotSelect(SchedulerSlotSelectEventArgs args)
+    {
+        var start = args.Start;
+        var durationMinutes = Math.Clamp((int)(args.End - args.Start).TotalMinutes, 15, 90);
+
+        var dateParam = start.ToString("yyyy-MM-ddTHH:mm");
+        NavigationManager.NavigateTo($"/appointments/new?date={Uri.EscapeDataString(dateParam)}&duration={durationMinutes}");
+    }
+
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<CalendarAppointmentDto> args)
+    {
+        var isCancelled = args.Data.Status is AppointmentStatus.Cancelled or AppointmentStatus.NoShow;
+        var cancelledStyle = isCancelled ? " opacity: 0.5; text-decoration: line-through;" : "";
+
+        args.Attributes["style"] = args.Data.Type switch
+        {
+            AppointmentType.InitialConsultation => $"background: var(--color-primary); color: var(--color-text-on-primary);{cancelledStyle}",
+            AppointmentType.FollowUp => $"background: var(--color-secondary); color: var(--color-text-on-primary);{cancelledStyle}",
+            AppointmentType.CheckIn => $"background: var(--color-info); color: var(--color-text-on-primary);{cancelledStyle}",
+            _ => $"background: var(--color-primary); color: var(--color-text-on-primary);{cancelledStyle}"
+        };
+    }
+
+    private void OnJumpDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            _jumpDate = date.ToString("yyyy-MM-dd");
+            _currentDate = date;
+            _scheduler?.Reload();
+        }
+    }
+
+    private void NavigateToCreate()
+    {
+        NavigationManager.NavigateTo("/appointments/new");
+    }
+
+    private void OnEntityChanged(EntityChangeNotification notification)
+    {
+        if (_disposed || notification.EntityType != "Appointment")
+            return;
+
+        _notificationDebounceTimer?.Dispose();
+        _notificationDebounceTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_disposed) return;
+            await InvokeAsync(() =>
+            {
+                if (_disposed) return;
+                _scheduler?.Reload();
+                StateHasChanged();
+            });
+        }, null, 1500, Timeout.Infinite);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        NotificationService.OnEntityChanged -= OnEntityChanged;
+        _notificationDebounceTimer?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

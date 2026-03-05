@@ -80,6 +80,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | ADR | Domain | Title |
 |-----|--------|-------|
 | [ADR-0001](infrastructure/adr-0001-url-structure.md) | Infrastructure | URL structure & application routing |
+| [ADR-0001](scheduling/adr-0001-calendar-component.md) | Scheduling | Calendar component selection |
 
 ## Worklog
 
