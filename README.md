@@ -1,39 +1,55 @@
 # Nutrir
 
-A compliance-first CRM for a solo nutritionist/dietitian, focused on client tracking, scheduling, meal planning, and progress monitoring.
+**Privacy-compliant practice management for Canadian nutrition professionals.**
 
-## Overview
+Nutrir is a self-hosted CRM built for a solo dietitian/nutritionist practicing in Canada. It handles client management, scheduling, meal planning, and progress tracking — with PIPEDA, PHIPA, and HIA compliance baked into the architecture, not bolted on.
 
-Built for a freelance nutritionist practicing in Canada. The initial version supports a single practitioner managing clients, with plans to later open client-facing registration via invite codes. Designed to meet Canadian privacy requirements (PIPEDA, PHIPA, HIA).
+> **Status:** Active development · Single-practitioner v1
+
+<!-- TODO: Add a screenshot of the dashboard here once available -->
+<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
+
+## Why This Exists
+
+Most practice management tools for nutritionists are either US-centric SaaS platforms with unclear data residency, or generic CRMs that require manual compliance work. Nutrir is purpose-built for a Canadian practitioner who needs to own their data, meet provincial and federal privacy law, and not pay monthly SaaS fees for features they don't use.
 
 ## Core Features (v1)
 
-- **Client Management** — Profiles, contact info, health history, dietary restrictions, consent capture
-- **Scheduling** — Appointment booking and session tracking
-- **Meal Plans** — Create and assign meal plans to clients
-- **Progress Tracking** — Goals, measurements, and progress charting over time
-- **Global Search** — Search across clients, appointments, and meal plans
-- **User Management** — Admin user administration with invite codes
-- **Compliance** — Consent tracking, audit logging, MFA enforcement, HTTPS/HSTS, soft-delete, secure cookies
+- **Client Records** — Profiles, health history, dietary restrictions, and consent — all in one place
+- **Scheduling** — Book appointments, track sessions, see your calendar at a glance
+- **Meal Planning** — Create, customize, and assign meal plans per client
+- **Progress Tracking** — Set goals, record measurements, and visualize progress over time
+- **Search** — Find any client, appointment, or meal plan instantly
+- **Admin Controls** — User management, invite codes, maintenance mode
 
-### Out of Scope (v1)
+## Compliance & Privacy
 
-- Invoicing and payments
-- Client self-registration (future: invite-code based)
-- Multi-language support (future: built with localization in mind)
+Designed around Canadian health-data privacy requirements from day one:
+
+| Requirement | Implementation |
+|-------------|---------------|
+| **Consent capture** | Per-client consent records with timestamps |
+| **Audit logging** | All data access and modifications logged |
+| **MFA enforcement** | TOTP-based multi-factor authentication |
+| **Soft-delete** | Client data is never hard-deleted |
+| **Transport security** | HTTPS/HSTS enforced |
+| **Secure sessions** | HttpOnly, Secure, SameSite cookies |
+| **Data residency** | Self-hosted — data stays where you host it |
+
+See [`docs/compliance/requirements.md`](docs/compliance/requirements.md) for the full v1/v2 compliance roadmap.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **UI** | Blazor Server (.NET 9) |
-| **CSS** | Custom design system + Tailwind |
-| **API** | ASP.NET Core |
-| **Domain** | Three-layer architecture (Core → Infrastructure → App) |
-| **Data** | EF Core + PostgreSQL |
-| **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) + TOTP MFA |
-| **Logging** | Serilog → Seq (dev), Elastic APM (prod) |
-| **Hosting** | Self-hosted Linux VPS, Docker |
+| Layer | Technology | Rationale |
+|-------|-----------|-----------|
+| **UI** | Blazor Server (.NET 9) | Single codebase, real-time updates, no JS framework overhead |
+| **CSS** | Custom design system | Purpose-built tokens and components, no framework bloat |
+| **API** | ASP.NET Core | Unified .NET stack, strong Identity/auth integration |
+| **Domain** | Four-layer architecture (UI → App → Infrastructure → Core) | Clear separation of concerns, testable domain logic |
+| **Data** | EF Core + PostgreSQL | Open-source DB, strong .NET integration, avoids vendor lock-in |
+| **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) + TOTP MFA | Compliance requirement: MFA enforcement |
+| **Logging** | Serilog → Seq (dev), Elastic APM (prod) | Structured logging with full APM in production |
+| **Hosting** | Self-hosted Linux VPS, Docker | Data residency control — no third-party SaaS dependency |
 
 ## Architecture
 
@@ -120,9 +136,16 @@ The app will be available at `http://localhost:7100`.
 src/
 ├── Nutrir.Core/           # Domain entities, interfaces, enums, DTOs
 ├── Nutrir.Infrastructure/  # EF Core, repositories, services
-└── Nutrir.Web/            # Blazor Server UI, components, pages, auth
+├── Nutrir.Web/            # Blazor Server UI, components, pages, auth
+└── Nutrir.Cli/            # CLI tools for admin and maintenance tasks
 docs/                       # Domain-organized documentation (see docs/README.md)
 ```
+
+## Roadmap (Post-v1)
+
+- **Client self-service portal** — Invite-code registration, clients view their own plans and progress
+- **Invoicing & payments** — Session billing, receipt generation
+- **Multi-language support** — French (fr-CA) and beyond; localization infrastructure already in place
 
 ## Documentation
 
