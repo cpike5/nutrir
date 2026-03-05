@@ -137,6 +137,15 @@
                             </div>
                         </div>
                     }
+                    else if (_slotsLoaded && !_isLoadingSlots)
+                    {
+                        <p class="no-slots-msg">No available slots for this date and duration.</p>
+                    }
+
+                    @if (_isLoadingSlots)
+                    {
+                        <p class="slots-loading">Loading available slots...</p>
+                    }
 
                     @if (!string.IsNullOrEmpty(_availabilityWarning))
                     {
@@ -209,6 +218,8 @@
 
     // Availability slots
     private List<AvailableSlotDto> _availableSlots = [];
+    private bool _isLoadingSlots;
+    private bool _slotsLoaded;
     private string? _availabilityWarning;
 
     protected override async Task OnInitializedAsync()
@@ -351,20 +362,30 @@
         if (string.IsNullOrEmpty(_model.Date) || !DateOnly.TryParse(_model.Date, out var date))
         {
             _availableSlots = [];
+            _slotsLoaded = false;
             return;
         }
 
         if (!int.TryParse(_model.Duration, out var duration))
             duration = 30;
 
+        _isLoadingSlots = true;
+        StateHasChanged();
+
         try
         {
             _availableSlots = await AvailabilityService.GetAvailableSlotsAsync(_userId, date, duration);
+            _slotsLoaded = true;
             CheckTimeAgainstSlots();
         }
         catch
         {
             _availableSlots = [];
+            _slotsLoaded = false;
+        }
+        finally
+        {
+            _isLoadingSlots = false;
         }
     }
 
@@ -372,7 +393,7 @@
     {
         _availabilityWarning = null;
 
-        if (_availableSlots.Count == 0 || string.IsNullOrEmpty(_model.Time))
+        if (!_slotsLoaded || _availableSlots.Count == 0 || string.IsNullOrEmpty(_model.Time))
             return;
 
         if (!TimeOnly.TryParse(_model.Time, out var selectedTime))
