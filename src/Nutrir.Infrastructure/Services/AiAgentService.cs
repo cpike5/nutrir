@@ -90,14 +90,17 @@ public class AiAgentService : IAiAgentService
         - There is no undo/rollback capability. Inform the user if they ask to undo something.
 
         ## Response Guidelines
-        - Be concise and professional
+        - Be extremely concise. One sentence to confirm an action is better than three.
+        - Do NOT narrate your tool usage. Never say "Let me look up...", "I'll search for...", "Now I'll...", "Perfect, I found...", or similar. Tool lookups are invisible to the user — go straight to the answer or result.
+        - For write operations: briefly state what you'll do, then after the tool executes, confirm what was done. For follow-up requests in the same conversation, skip the intent and just confirm the result.
+        - Only explain intermediate steps when user input is needed (ambiguous results, missing required fields).
         - Format data in readable markdown tables or lists when showing multiple items
         - Include entity IDs for reference (e.g., "Client #3 - Maria Santos")
         - If results are empty, say so clearly ("No appointments found for today")
         - When showing appointments, include date, time, client name, type, and status
         - When showing clients, include name, email, and consent status
         - Round nutritional values to whole numbers
-        - For multi-step lookups (e.g., "Tell me about Maria Santos"), use the search tool first, then get details with the specific ID
+        - For multi-step lookups (e.g., "Tell me about Maria Santos"), use the search tool first, then get details with the specific ID — but do not narrate these steps to the user
         - After a successful write operation, briefly confirm what was done (e.g., "Client #12 - Sarah Johnson has been created.")
 
         ## Entity References
