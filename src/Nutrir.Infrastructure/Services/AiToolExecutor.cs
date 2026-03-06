@@ -1485,23 +1485,28 @@ public class AiToolExecutor
     private async Task<string> HandleUpdateClient(JsonElement input)
     {
         var id = GetRequiredInt(input, "id");
+
+        var existing = await _clientService.GetByIdAsync(id);
+        if (existing is null)
+            return JsonSerializer.Serialize(new { error = $"Client #{id} not found" });
+
         var dto = new ClientDto(
             Id: id,
             FirstName: GetRequiredString(input, "first_name"),
             LastName: GetRequiredString(input, "last_name"),
-            Email: GetOptionalString(input, "email"),
-            Phone: GetOptionalString(input, "phone"),
-            DateOfBirth: GetOptionalDateOnly(input, "date_of_birth"),
+            Email: input.TryGetProperty("email", out _) ? GetOptionalString(input, "email") : existing.Email,
+            Phone: input.TryGetProperty("phone", out _) ? GetOptionalString(input, "phone") : existing.Phone,
+            DateOfBirth: input.TryGetProperty("date_of_birth", out _) ? GetOptionalDateOnly(input, "date_of_birth") : existing.DateOfBirth,
             PrimaryNutritionistId: GetRequiredString(input, "primary_nutritionist_id"),
-            PrimaryNutritionistName: null,
-            ConsentGiven: false,
-            ConsentTimestamp: null,
-            ConsentPolicyVersion: null,
-            Notes: GetOptionalString(input, "notes"),
-            IsDeleted: false,
-            CreatedAt: DateTime.UtcNow,
-            UpdatedAt: null,
-            DeletedAt: null);
+            PrimaryNutritionistName: existing.PrimaryNutritionistName,
+            ConsentGiven: existing.ConsentGiven,
+            ConsentTimestamp: existing.ConsentTimestamp,
+            ConsentPolicyVersion: existing.ConsentPolicyVersion,
+            Notes: input.TryGetProperty("notes", out _) ? GetOptionalString(input, "notes") : existing.Notes,
+            IsDeleted: existing.IsDeleted,
+            CreatedAt: existing.CreatedAt,
+            UpdatedAt: DateTime.UtcNow,
+            DeletedAt: existing.DeletedAt);
 
         var success = await _clientService.UpdateAsync(id, dto, _currentUserId ?? "system");
         return success
