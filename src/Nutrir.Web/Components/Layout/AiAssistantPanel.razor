@@ -10,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject IClientService ClientService
 @inject IUserManagementService UserManagementService
+@inject ILogger<AiAssistantPanel> Logger
 @using Nutrir.Core.Interfaces
 @using Nutrir.Core.Models
 @using Microsoft.AspNetCore.Components.Authorization
@@ -215,14 +216,16 @@
         }
         @if (_showMentionDropdown && _mentionResults.Any())
         {
-            <div class="cc-ai-mention-dropdown" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
+            <div class="cc-ai-mention-dropdown" role="listbox" aria-label="Mention results" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
                 @for (var i = 0; i < _mentionResults.Count; i++)
                 {
                     var index = i;
                     var result = _mentionResults[i];
                     <div class="cc-ai-mention-item @(index == _mentionSelectedIndex ? "active" : "")"
+                         role="option"
+                         aria-selected="@(index == _mentionSelectedIndex)"
                          @onclick="() => SelectMention(index)">
-                        <span class="cc-ai-mention-icon">@(_mentionTrigger == "@" ? "@" : "#")</span>
+                        <span class="cc-ai-mention-icon" aria-hidden="true">@(_mentionTrigger == "@" ? "@" : "#")</span>
                         <span class="cc-ai-mention-name">@result.DisplayName</span>
                     </div>
                 }
@@ -230,8 +233,8 @@
         }
         else if (_showMentionDropdown && !_mentionResults.Any())
         {
-            <div class="cc-ai-mention-dropdown" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
-                <div class="cc-ai-mention-item no-results">No results</div>
+            <div class="cc-ai-mention-dropdown" role="listbox" aria-label="Mention results" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
+                <div class="cc-ai-mention-item no-results" role="option">No results</div>
             </div>
         }
         <div class="cc-ai-input-row">
@@ -549,14 +552,15 @@
             }
             catch { /* fallback to default position */ }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogWarning(ex, "Failed to search mentions for trigger '{Trigger}' query '{Query}'", _mentionTrigger, _mentionQuery);
             _mentionResults.Clear();
             _showMentionDropdown = false;
         }
     }
 
-    private record MentionPosition(double Bottom, double Left);
+    private record MentionPosition(double Bottom, double Left); // matches JS { bottom, left }
 
     private async Task SelectMention(int index)
     {
@@ -798,6 +802,7 @@
     {
         _streamCts?.Cancel();
         _messages.Clear();
+        _currentMessageTags.Clear();
         await AiAgent.ClearHistoryAsync();
         StateHasChanged();
     }
