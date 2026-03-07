@@ -55,6 +55,11 @@
   justify-content: center;
 }
 
+.rail-brand-logo {
+  width: 28px;
+  height: 28px;
+}
+
 .rail-nav {
   display: flex;
   flex-direction: column;
