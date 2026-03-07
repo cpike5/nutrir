@@ -19,6 +19,8 @@ services:
       - ElasticApm__ApiKey=${ELASTIC_APM_API_KEY:-}
       - ElasticApm__Environment=${ASPNETCORE_ENVIRONMENT:-Development}
       - ElasticApm__OpenTelemetryBridgeEnabled=true
+      - Elasticsearch__Url=${ELASTICSEARCH_URL:-}
+      - Elasticsearch__ApiKey=${ELASTICSEARCH_API_KEY:-}
       - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
 
   db:

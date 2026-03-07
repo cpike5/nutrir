@@ -9,6 +9,8 @@ using Nutrir.Web.Components;
 using Nutrir.Web.Components.Account;
 using Nutrir.Web.Middleware;
 using Elastic.Apm.SerilogEnricher;
+using Elastic.Serilog.Sinks;
+using Elastic.Transport;
 using Nutrir.Web.Endpoints;
 using Nutrir.Web.Hubs;
 using Nutrir.Web.Services;
@@ -33,6 +35,24 @@ try
 
         if (!string.IsNullOrEmpty(context.Configuration["ElasticApm:ServerUrl"]))
             configuration.Enrich.WithElasticApmCorrelationInfo();
+
+        var elasticsearchUrl = context.Configuration["Elasticsearch:Url"];
+        if (!string.IsNullOrEmpty(elasticsearchUrl))
+        {
+            var apiKey = context.Configuration["Elasticsearch:ApiKey"];
+            var nodes = new[] { new Uri(elasticsearchUrl) };
+            configuration.WriteTo.Elasticsearch(nodes,
+                opts =>
+                {
+                    opts.DataStream = new Elastic.Ingest.Elasticsearch.DataStreams.DataStreamName("logs", "nutrir");
+                    opts.BootstrapMethod = Elastic.Ingest.Elasticsearch.BootstrapMethod.None;
+                },
+                transport =>
+                {
+                    if (!string.IsNullOrEmpty(apiKey))
+                        transport.Authentication(new ApiKey(apiKey));
+                });
+        }
     });
 
     // Add services to the container.

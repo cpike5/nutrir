@@ -122,7 +122,7 @@ Every log event is enriched with:
 |------|-------------|----------|---------|
 | Console | All | stdout | Development output, container logs |
 | Seq | Dev (primary) | `http://localhost:7102` (local) / `http://seq:5341` (Docker) | Structured log search and dashboards |
-| Elasticsearch | Prod (future) | External cluster | Production log aggregation |
+| Elasticsearch | Prod | External cluster | Production log aggregation with APM log correlation |
 
 ## Seq
 
@@ -213,10 +213,43 @@ If no APM Server is reachable, the agent logs a warning at startup but **does no
 | `Serilog.Enrichers.Thread` | `WithThreadId` |
 | `Elastic.Apm.NetCoreAll` | APM agent with auto-instrumentation |
 | `Elastic.Apm.SerilogEnricher` | Injects trace IDs into Serilog log events |
+| `Elastic.Serilog.Sinks` | Writes ECS-formatted logs to Elasticsearch with APM correlation |
+
+## Elasticsearch Sink & APM Log Correlation
+
+The `Elastic.Serilog.Sinks` package sends logs directly to Elasticsearch in ECS (Elastic Common Schema) format. This automatically maps the APM enricher properties (`ElasticApmTraceId`, `ElasticApmTransactionId`, `ElasticApmSpanId`) to the correct ECS fields (`trace.id`, `transaction.id`, `span.id`), enabling log-trace correlation in Kibana.
+
+### Configuration
+
+In `appsettings.json`:
+
+```json
+{
+  "Elasticsearch": {
+    "Url": "https://your-elasticsearch:9200",
+    "ApiKey": "your-api-key"
+  }
+}
+```
+
+Or via environment variables:
+
+```yaml
+- Elasticsearch__Url=${ELASTICSEARCH_URL:-}
+- Elasticsearch__ApiKey=${ELASTICSEARCH_API_KEY:-}
+```
+
+The sink is only registered when `Elasticsearch:Url` is configured. Logs are written to the `logs-nutrir-*` data stream.
+
+### How Correlation Works
+
+1. **Elastic APM agent** (`AddAllElasticApm`) captures transactions/spans and assigns trace IDs
+2. **Serilog enricher** (`WithElasticApmCorrelationInfo`) injects those IDs into every log event
+3. **Elasticsearch sink** formats logs as ECS documents, mapping IDs to `trace.id`/`transaction.id`/`span.id`
+4. **Kibana** uses matching `trace.id` values to link logs ↔ APM traces in the Observability UI
 
 ## Future Considerations
 
-- **Elasticsearch sink**: Add `Serilog.Sinks.Elasticsearch` for production, configured to an external Elastic cluster
 - **Custom spans**: Custom `ActivitySource` spans are defined in `NutrirTelemetry.cs` (`Nutrir.AI`, `Nutrir.App`, `Nutrir.Documents`) and bridged to Elastic APM via `OpenTelemetryBridgeEnabled`
 - **Transaction sample rate**: Reduce `TransactionSampleRate` in production (e.g., `0.1` for 10%)
 - **Health checks**: Add APM health check endpoint
