@@ -8,6 +8,7 @@
 @using Nutrir.Core.DTOs
 @using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IMealPlanService MealPlanService
 @inject IClientService ClientService
@@ -15,28 +16,34 @@
 
 <PageTitle>Edit Meal Plan Details — Nutrir</PageTitle>
 
-<div class="form-page">
-    <div class="page-header">
-        <a href="/meal-plans/@Id" class="back-link">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m15 18-6-6 6-6"/>
-            </svg>
-        </a>
-        <h1 class="page-title">Edit Meal Plan Details</h1>
-    </div>
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Meal Plans", "/meal-plans"), new BreadcrumbItem(_plan?.Title ?? "Meal Plan", $"/meal-plans/{Id}"), new BreadcrumbItem("Edit Details") })" />
 
+<div class="md-edit-page">
     @if (_isLoading)
     {
-        <p>Loading...</p>
+        <div class="md-loading">
+            <div class="md-spinner"></div>
+            <span>Loading meal plan details...</span>
+        </div>
     }
     else if (_notFound)
     {
         <div class="table-card">
-            <div class="error-banner">Meal plan not found.</div>
+            <div class="md-not-found">
+                <p class="not-found-title">Meal plan not found</p>
+                <div class="not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/meal-plans"))">Back to Meal Plans</Button>
+                </div>
+            </div>
         </div>
     }
     else
     {
+        <div class="page-header">
+            <h1 class="page-title">@_plan!.Title</h1>
+            <Badge Variant="@GetStatusVariant(_plan.Status)">@_plan.Status</Badge>
+        </div>
+
         <div class="table-card">
             <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditMealPlanMetadata">
                 <DataAnnotationsValidator />
@@ -74,7 +81,7 @@
 
                         <FormGroup Label="Description" Id="description">
                             <textarea id="description"
-                                      class="form-input"
+                                      class="form-textarea"
                                       rows="2"
                                       @bind="_model.Description"
                                       placeholder="Overview or goals..."></textarea>
@@ -165,7 +172,7 @@
                     <div class="form-body">
                         <FormGroup Label="Internal Notes" Id="notes">
                             <textarea id="notes"
-                                      class="form-input"
+                                      class="form-textarea"
                                       rows="2"
                                       @bind="_model.Notes"
                                       placeholder="Practitioner notes..."></textarea>
@@ -173,7 +180,7 @@
 
                         <FormGroup Label="Client Instructions" Id="instructions">
                             <textarea id="instructions"
-                                      class="form-input"
+                                      class="form-textarea"
                                       rows="2"
                                       @bind="_model.Instructions"
                                       placeholder="Instructions for the client..."></textarea>
@@ -211,6 +218,7 @@
     [Parameter] public int Id { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
+    private MealPlanDetailDto? _plan;
     private MealPlanFormModel _model = new();
     private EditContext? _editContext;
     private List<ClientDto> _clients = [];
@@ -227,32 +235,32 @@
         _editContext = new EditContext(_model);
         _clients = await ClientService.GetListAsync();
 
-        var plan = await MealPlanService.GetByIdAsync(Id);
-        if (plan is null)
+        _plan = await MealPlanService.GetByIdAsync(Id);
+        if (_plan is null)
         {
             _notFound = true;
             _isLoading = false;
             return;
         }
 
-        if (plan.Status is MealPlanStatus.Archived)
+        if (_plan.Status is MealPlanStatus.Archived)
         {
             NavigationManager.NavigateTo($"/meal-plans/{Id}");
             return;
         }
 
-        _model.ClientId = plan.ClientId.ToString();
-        _model.Title = plan.Title;
-        _model.Description = plan.Description;
-        _model.StartDate = plan.StartDate?.ToString("yyyy-MM-dd");
-        _model.EndDate = plan.EndDate?.ToString("yyyy-MM-dd");
-        _model.NumberOfDays = plan.Days.Count > 0 ? plan.Days.Count.ToString() : "7";
-        _model.CalorieTarget = plan.CalorieTarget?.ToString();
-        _model.ProteinTarget = plan.ProteinTargetG?.ToString();
-        _model.CarbsTarget = plan.CarbsTargetG?.ToString();
-        _model.FatTarget = plan.FatTargetG?.ToString();
-        _model.Notes = plan.Notes;
-        _model.Instructions = plan.Instructions;
+        _model.ClientId = _plan.ClientId.ToString();
+        _model.Title = _plan.Title;
+        _model.Description = _plan.Description;
+        _model.StartDate = _plan.StartDate?.ToString("yyyy-MM-dd");
+        _model.EndDate = _plan.EndDate?.ToString("yyyy-MM-dd");
+        _model.NumberOfDays = _plan.Days.Count > 0 ? _plan.Days.Count.ToString() : "7";
+        _model.CalorieTarget = _plan.CalorieTarget?.ToString();
+        _model.ProteinTarget = _plan.ProteinTargetG?.ToString();
+        _model.CarbsTarget = _plan.CarbsTargetG?.ToString();
+        _model.FatTarget = _plan.FatTargetG?.ToString();
+        _model.Notes = _plan.Notes;
+        _model.Instructions = _plan.Instructions;
 
         _isLoading = false;
     }
@@ -346,6 +354,14 @@
         var messages = _editContext.GetValidationMessages(new FieldIdentifier(_model, fieldName));
         return messages.FirstOrDefault();
     }
+
+    private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
+    {
+        MealPlanStatus.Draft => BadgeVariant.Secondary,
+        MealPlanStatus.Active => BadgeVariant.Success,
+        MealPlanStatus.Archived => BadgeVariant.Accent,
+        _ => BadgeVariant.Primary
+    };
 
     private class MealPlanFormModel
     {
