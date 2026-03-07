@@ -54,6 +54,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AllergenWarningOverride> AllergenWarningOverrides => Set<AllergenWarningOverride>();
 
+    public DbSet<Medication> Medications => Set<Medication>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -450,6 +452,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(tb => tb.Notes).HasColumnType("text");
             entity.Property(tb => tb.IsDeleted).HasDefaultValue(false);
             entity.Property(tb => tb.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<Medication>(entity =>
+        {
+            entity.HasQueryFilter(m => !m.IsDeleted);
+            entity.HasIndex(m => m.Name);
+            entity.Property(m => m.Name).HasMaxLength(200);
+            entity.Property(m => m.GenericName).HasMaxLength(200);
+            entity.Property(m => m.IsDeleted).HasDefaultValue(false);
+            entity.Property(m => m.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 

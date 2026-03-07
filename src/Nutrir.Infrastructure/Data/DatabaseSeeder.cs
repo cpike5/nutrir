@@ -228,6 +228,47 @@ public class DatabaseSeeder
         _logger.LogInformation("Seeded {AppointmentCount} appointments, {MealPlanCount} meal plans, {GoalCount} goals, {EntryCount} progress entries, {AllergyCount} allergies, {MedicationCount} medications, {ConditionCount} conditions, {RestrictionCount} dietary restrictions",
             appointments.Count, mealPlans.Count, goals.Count, entries.Count, allergies.Count, medications.Count, conditions.Count, dietaryRestrictions.Count);
 
+        // Stage 2b: Seed Medication lookup table from seeded client medications
+        var distinctMedicationNames = medications
+            .Select(m => m.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var commonMedications = new[]
+        {
+            "Metformin", "Lisinopril", "Atorvastatin", "Amlodipine", "Omeprazole", "Losartan", "Simvastatin", "Levothyroxine",
+            "Gabapentin", "Hydrochlorothiazide", "Sertraline", "Metoprolol", "Pantoprazole", "Montelukast", "Furosemide",
+            "Escitalopram", "Rosuvastatin", "Bupropion", "Trazodone", "Duloxetine", "Fluoxetine", "Prednisone", "Tamsulosin",
+            "Meloxicam", "Carvedilol", "Clopidogrel", "Venlafaxine", "Albuterol", "Ibuprofen", "Acetaminophen", "Aspirin",
+            "Amoxicillin", "Azithromycin", "Ciprofloxacin", "Doxycycline", "Cephalexin", "Clindamycin", "Fluticasone",
+            "Cetirizine", "Loratadine", "Diphenhydramine", "Famotidine", "Ranitidine", "Ondansetron", "Diazepam",
+            "Alprazolam", "Clonazepam", "Zolpidem", "Cyclobenzaprine", "Naproxen", "Tramadol", "Oxycodone", "Morphine",
+            "Warfarin", "Apixaban", "Rivaroxaban", "Citalopram", "Paroxetine", "Mirtazapine", "Quetiapine", "Aripiprazole",
+            "Lamotrigine", "Topiramate", "Pregabalin", "Amitriptyline", "Nortriptyline", "Spironolactone", "Finasteride",
+            "Sildenafil", "Tadalafil", "Insulin Lispro", "Insulin Aspart", "Empagliflozin", "Sitagliptin", "Glipizide",
+            "Pioglitazone", "Liraglutide", "Semaglutide", "Dapagliflozin", "Canagliflozin", "Valsartan", "Irbesartan",
+            "Diltiazem", "Nifedipine", "Propranolol", "Bisoprolol", "Atenolol", "Digoxin", "Nitroglycerin", "Hydralazine",
+            "Doxazosin", "Prazosin", "Potassium Chloride", "Magnesium Oxide", "Calcium Carbonate", "Ferrous Sulfate",
+            "Cholecalciferol", "Cyanocobalamin", "Folic Acid", "Biotin"
+        };
+
+        var allMedicationNames = distinctMedicationNames
+            .Concat(commonMedications)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var medicationLookups = allMedicationNames
+            .Select(name => new Medication
+            {
+                Name = name,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToList();
+
+        _dbContext.Medications.AddRange(medicationLookups);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Seeded {Count} medication lookup entries", medicationLookups.Count);
+
         // Stage 3: Generate audit logs (now all entities have real IDs) and persist
         var auditLogs = generator.GenerateAuditLogs(ids);
         _dbContext.AuditLogEntries.AddRange(auditLogs);
