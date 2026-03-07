@@ -444,6 +444,10 @@
             {
                 // Save health profile changes (delete all existing, re-create from form)
                 await SaveHealthProfileChangesAsync(userId);
+
+                // Ensure medications are in the lookup table for future auto-complete
+                await _medicationFormGroup.EnsureMedicationsInLookupAsync(userId);
+
                 NavigationManager.NavigateTo($"/clients/{Id}");
             }
             else
