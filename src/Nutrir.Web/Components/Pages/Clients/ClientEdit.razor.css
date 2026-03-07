@@ -175,7 +175,20 @@
 
 /* ── Consent Row ──────────────────────────────────────── */
 .consent-row {
-    padding: var(--space-2) 0;
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.consent-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.consent-meta {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
 }
 
 /* ── Error Banner ─────────────────────────────────────── */
@@ -304,5 +317,9 @@
 
     .form-actions {
         padding: var(--space-4);
+    }
+
+    .consent-status {
+        gap: var(--space-2);
     }
 }
