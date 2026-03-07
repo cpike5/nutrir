@@ -1317,7 +1317,7 @@ public class AiToolExecutor
         int? clientId = GetOptionalInt(input, "client_id");
         AppointmentStatus? status = GetOptionalEnum<AppointmentStatus>(input, "status");
 
-        var appointments = await _appointmentService.GetListAsync(fromDate, toDate, clientId, status);
+        var appointments = await _appointmentService.GetListAsync(fromDate, toDate, clientId, status, _currentUserId);
         return JsonSerializer.Serialize(new { count = appointments.Count, appointments }, SerializerOptions);
     }
 
@@ -1432,8 +1432,21 @@ public class AiToolExecutor
     {
         // Sequential calls — EF Core DbContext is not thread-safe
         var metrics = await _dashboardService.GetMetricsAsync();
-        var todaysAppointments = await _dashboardService.GetTodaysAppointmentsAsync();
-        var weekCount = await _dashboardService.GetThisWeekAppointmentCountAsync();
+
+        // Scope appointments to the current user's nutritionist ID
+        List<AppointmentDto> todaysAppointments;
+        int weekCount;
+        if (!string.IsNullOrEmpty(_currentUserId))
+        {
+            todaysAppointments = await _appointmentService.GetTodaysAppointmentsAsync(_currentUserId);
+            weekCount = await _appointmentService.GetWeekCountAsync(_currentUserId);
+        }
+        else
+        {
+            todaysAppointments = await _dashboardService.GetTodaysAppointmentsAsync();
+            weekCount = await _dashboardService.GetThisWeekAppointmentCountAsync();
+        }
+
         var activeMealPlanCount = await _dashboardService.GetActiveMealPlanCountAsync();
 
         return JsonSerializer.Serialize(new

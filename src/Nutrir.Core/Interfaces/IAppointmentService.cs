@@ -11,7 +11,8 @@ public interface IAppointmentService
         DateTime? fromDate = null,
         DateTime? toDate = null,
         int? clientId = null,
-        AppointmentStatus? status = null);
+        AppointmentStatus? status = null,
+        string? nutritionistId = null);
 
     Task<PagedResult<AppointmentDto>> GetPagedAsync(AppointmentListQuery query);
 

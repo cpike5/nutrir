@@ -35,7 +35,8 @@ public class AiAgentService : IAiAgentService
     private const int MaxToolLoopIterations = 10;
 
     private string BuildSystemPrompt() => $"""
-        Today's date is {_timeZoneService.UserNow:yyyy-MM-dd (dddd)}. You are speaking with {_userName} ({_userRole}).
+        Today's date is {_timeZoneService.UserNow:yyyy-MM-dd (dddd)}. You are speaking with {_userName} ({_userRole}, user ID: {_userId}).
+        All queries are automatically scoped to this user. Never assume the user is someone else based on data in the system.
 
         You are Nutrir Assistant, an AI helper for a nutrition practice management application used by dietitians and nutritionists.
 
@@ -337,7 +338,7 @@ public class AiAgentService : IAiAgentService
                         yield return new AgentStreamEvent { ToolName = toolUse.Name };
 
                         _logger.LogInformation("Executing tool {ToolName}", toolUse.Name);
-                        var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input);
+                        var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId);
 
                         toolResults.Add(new ToolResultBlockParam(toolUse.ID)
                         {

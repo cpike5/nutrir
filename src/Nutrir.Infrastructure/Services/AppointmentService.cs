@@ -48,11 +48,15 @@ public class AppointmentService : IAppointmentService
         DateTime? fromDate = null,
         DateTime? toDate = null,
         int? clientId = null,
-        AppointmentStatus? status = null)
+        AppointmentStatus? status = null,
+        string? nutritionistId = null)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync();
 
         var query = db.Appointments.AsQueryable();
+
+        if (!string.IsNullOrEmpty(nutritionistId))
+            query = query.Where(a => a.NutritionistId == nutritionistId);
 
         if (fromDate.HasValue)
             query = query.Where(a => a.StartTime >= fromDate.Value);
