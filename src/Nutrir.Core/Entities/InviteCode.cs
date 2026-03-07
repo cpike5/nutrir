@@ -23,4 +23,8 @@ public class InviteCode
     public ApplicationUser? RedeemedBy { get; set; }
 
     public DateTime? RedeemedAt { get; set; }
+
+    public bool IsCancelled { get; set; }
+
+    public DateTime? CancelledAt { get; set; }
 }

@@ -74,6 +74,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(ic => ic.Code).HasMaxLength(10).IsRequired();
             entity.Property(ic => ic.TargetRole).HasMaxLength(50).IsRequired();
             entity.Property(ic => ic.IsUsed).HasDefaultValue(false);
+            entity.Property(ic => ic.IsCancelled).HasDefaultValue(false);
             entity.Property(ic => ic.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
 
             entity.HasOne(ic => ic.CreatedBy)

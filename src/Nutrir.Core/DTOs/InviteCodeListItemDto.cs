@@ -9,4 +9,6 @@ public record InviteCodeListItemDto(
     DateTime CreatedAt,
     string CreatedByName,
     string? RedeemedByName,
-    DateTime? RedeemedAt);
+    DateTime? RedeemedAt,
+    bool IsCancelled,
+    DateTime? CancelledAt);

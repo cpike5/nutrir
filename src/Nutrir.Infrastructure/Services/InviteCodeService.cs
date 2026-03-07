@@ -68,7 +68,9 @@ public class InviteCodeService : IInviteCodeService
             inviteCode.CreatedAt,
             createdBy,
             RedeemedByName: null,
-            RedeemedAt: null);
+            RedeemedAt: null,
+            IsCancelled: false,
+            CancelledAt: null);
     }
 
     public async Task<InviteCodeValidationResult> ValidateAsync(string code)
@@ -85,6 +87,11 @@ public class InviteCodeService : IInviteCodeService
         if (inviteCode.IsUsed)
         {
             return new InviteCodeValidationResult(false, InviteCodeValidationStatus.AlreadyUsed);
+        }
+
+        if (inviteCode.IsCancelled)
+        {
+            return new InviteCodeValidationResult(false, InviteCodeValidationStatus.Cancelled);
         }
 
         if (inviteCode.ExpiresAt < DateTime.UtcNow)
@@ -110,6 +117,11 @@ public class InviteCodeService : IInviteCodeService
             throw new InvalidOperationException("Invite code has already been used.");
         }
 
+        if (inviteCode.IsCancelled)
+        {
+            throw new InvalidOperationException("Invite code has been cancelled.");
+        }
+
         if (inviteCode.ExpiresAt < DateTime.UtcNow)
         {
             throw new InvalidOperationException("Invite code has expired.");
@@ -133,6 +145,37 @@ public class InviteCodeService : IInviteCodeService
             inviteCode.Id, userId, inviteCode.TargetRole);
     }
 
+    public async Task CancelAsync(int inviteCodeId, string cancelledByUserId)
+    {
+        var inviteCode = await _dbContext.InviteCodes
+            .FirstOrDefaultAsync(ic => ic.Id == inviteCodeId);
+
+        if (inviteCode is null)
+            throw new InvalidOperationException("Invite code not found.");
+
+        if (inviteCode.IsUsed)
+            throw new InvalidOperationException("Cannot cancel an already redeemed invite code.");
+
+        if (inviteCode.IsCancelled)
+            throw new InvalidOperationException("Invite code is already cancelled.");
+
+        inviteCode.IsCancelled = true;
+        inviteCode.CancelledAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        await _auditLogService.LogAsync(
+            cancelledByUserId,
+            "InviteCode.Cancelled",
+            "InviteCode",
+            inviteCode.Id.ToString(),
+            $"Invite code cancelled for role '{inviteCode.TargetRole}'");
+
+        _logger.LogInformation(
+            "Invite code {InviteCodeId} cancelled by user {UserId}",
+            inviteCode.Id, cancelledByUserId);
+    }
+
     public async Task<List<InviteCodeListItemDto>> GetAllAsync()
     {
         var inviteCodes = await _dbContext.InviteCodes
@@ -148,7 +191,9 @@ public class InviteCodeService : IInviteCodeService
                 ic.CreatedAt,
                 ic.CreatedBy.DisplayName,
                 ic.RedeemedBy != null ? ic.RedeemedBy.DisplayName : null,
-                ic.RedeemedAt))
+                ic.RedeemedAt,
+                ic.IsCancelled,
+                ic.CancelledAt))
             .ToListAsync();
 
         return inviteCodes;

@@ -144,6 +144,7 @@
                         <th class="col-created">Created</th>
                         <th class="col-redeemed">Redeemed By</th>
                         <th>Expires</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -158,12 +159,52 @@
                             <td class="cell-muted col-created">@item.CreatedAt.ToString("MMM d, yyyy")</td>
                             <td class="col-redeemed">@(item.RedeemedByName ?? "—")</td>
                             <td class="cell-muted">@item.ExpiresAt.ToString("MMM d, yyyy")</td>
+                            <td class="col-actions">
+                                @if (!item.IsUsed && !item.IsCancelled && item.ExpiresAt >= DateTime.UtcNow)
+                                {
+                                    <button class="cancel-btn" @onclick="() => ConfirmCancel(item)" title="Cancel this invite code">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                                        Cancel
+                                    </button>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
             </table>
         }
     </div>
+
+    @if (_cancelTarget is not null)
+    {
+        <div class="modal-backdrop" @onclick="DismissCancel">
+            <div class="modal-dialog" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    <span>Cancel Invite Code</span>
+                </div>
+                <p class="modal-body">
+                    Are you sure you want to cancel invite code <strong>@_cancelTarget.Code</strong>?
+                    This action cannot be undone.
+                </p>
+                @if (_cancelError is not null)
+                {
+                    <div class="error-banner">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                        @_cancelError
+                    </div>
+                }
+                <div class="modal-actions">
+                    <Button Variant="ButtonVariant.Secondary" OnClick="DismissCancel" Disabled="@_isCancelling">
+                        Keep Active
+                    </Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick="ExecuteCancel" Disabled="@_isCancelling">
+                        @(_isCancelling ? "Cancelling..." : "Cancel Code")
+                    </Button>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -175,6 +216,9 @@
     private bool _isGenerating;
     private bool _copied;
     private string? _generateError;
+    private bool _isCancelling;
+    private InviteCodeListItemDto? _cancelTarget;
+    private string? _cancelError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -236,10 +280,54 @@
 
     private static (string Label, BadgeVariant Variant) GetStatus(InviteCodeListItemDto code)
     {
+        if (code.IsCancelled)
+            return ("Cancelled", BadgeVariant.Error);
         if (code.IsUsed)
             return ("Used", BadgeVariant.Secondary);
         if (code.ExpiresAt < DateTime.UtcNow)
             return ("Expired", BadgeVariant.Warning);
         return ("Active", BadgeVariant.Success);
+    }
+
+    private void ConfirmCancel(InviteCodeListItemDto code)
+    {
+        _cancelTarget = code;
+        _cancelError = null;
+    }
+
+    private void DismissCancel()
+    {
+        _cancelTarget = null;
+    }
+
+    private async Task ExecuteCancel()
+    {
+        if (_cancelTarget is null) return;
+
+        _isCancelling = true;
+        _cancelError = null;
+        try
+        {
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                _cancelError = "Unable to determine current user.";
+                return;
+            }
+
+            await InviteCodeService.CancelAsync(_cancelTarget.Id, userId);
+            _cancelTarget = null;
+            await LoadCodesAsync();
+        }
+        catch (Exception ex)
+        {
+            _cancelError = ex.Message;
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
     }
 }
