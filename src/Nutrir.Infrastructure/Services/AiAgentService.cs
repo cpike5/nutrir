@@ -200,9 +200,9 @@ public class AiAgentService : IAiAgentService
     {
         _currentMentionTags = mentionTags?.ToList(); // defensive copy
         userMessage = CleanMessageTags(userMessage);
-        using var conversationActivity = NutrirTelemetry.AiSource.StartActivity("AI Conversation");
-        conversationActivity?.SetTag("ai.user_id", _userId);
-        conversationActivity?.SetTag("ai.model", _options.Model);
+        using var txn = NutrirTelemetry.StartTransaction(NutrirTelemetry.AiSource, "AI Conversation");
+        txn.Activity?.SetTag("ai.user_id", _userId);
+        txn.Activity?.SetTag("ai.model", _options.Model);
 
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
@@ -216,7 +216,7 @@ public class AiAgentService : IAiAgentService
             var (allowed, rateLimitMessage) = _rateLimiter.CheckAndRecord(_userId);
             if (!allowed)
             {
-                conversationActivity?.SetTag("ai.rate_limited", true);
+                txn.Activity?.SetTag("ai.rate_limited", true);
                 yield return new AgentStreamEvent { Error = rateLimitMessage };
                 yield break;
             }
@@ -418,19 +418,19 @@ public class AiAgentService : IAiAgentService
             }
 
             // end_turn or max_tokens — done
-            conversationActivity?.SetTag("ai.total_input_tokens", totalInputTokens);
-            conversationActivity?.SetTag("ai.total_output_tokens", totalOutputTokens);
-            conversationActivity?.SetTag("ai.total_tool_calls", totalToolCalls);
+            txn.Activity?.SetTag("ai.total_input_tokens", totalInputTokens);
+            txn.Activity?.SetTag("ai.total_output_tokens", totalOutputTokens);
+            txn.Activity?.SetTag("ai.total_tool_calls", totalToolCalls);
 
             yield return new AgentStreamEvent { IsComplete = true };
             await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
             yield break;
         }
 
-        conversationActivity?.SetTag("ai.total_input_tokens", totalInputTokens);
-        conversationActivity?.SetTag("ai.total_output_tokens", totalOutputTokens);
-        conversationActivity?.SetTag("ai.total_tool_calls", totalToolCalls);
-        conversationActivity?.SetStatus(ActivityStatusCode.Error, "Max tool iterations reached");
+        txn.Activity?.SetTag("ai.total_input_tokens", totalInputTokens);
+        txn.Activity?.SetTag("ai.total_output_tokens", totalOutputTokens);
+        txn.Activity?.SetTag("ai.total_tool_calls", totalToolCalls);
+        txn.Activity?.SetStatus(ActivityStatusCode.Error, "Max tool iterations reached");
 
         yield return new AgentStreamEvent { Error = "Maximum tool call iterations reached. Please try a simpler question." };
         await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
