@@ -81,6 +81,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |-----|--------|-------|
 | [ADR-0001](infrastructure/adr-0001-url-structure.md) | Infrastructure | URL structure & application routing |
 | [ADR-0001](scheduling/adr-0001-calendar-component.md) | Scheduling | Calendar component selection |
+| [ADR-0002](infrastructure/adr-0002-ai-tool-role-aware-filtering.md) | Infrastructure | Role-aware filtering in AI tool handlers |
 
 ## Worklog
 
@@ -89,6 +90,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [2026-02-23 Client Table Redesign](worklog/2026-02-23-client-table-redesign.md) | Client list table styling overhaul |
 | [2026-02-23 Client Detail Redesign](worklog/2026-02-23-client-detail-redesign.md) | Client detail page redesign |
 | [2026-02-23 Appointment Pages Redesign](worklog/2026-02-23-appointment-pages-redesign.md) | Appointment pages styling overhaul |
+| [2026-03-07 AI Assistant Appointment Filtering](worklog/2026-03-07-ai-assistant-appointment-filtering.md) | Role-aware appointment filtering for AI assistant (#183, #184) |
 
 ## Conventions
 

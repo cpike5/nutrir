@@ -339,7 +339,7 @@ public class AiAgentService : IAiAgentService
                         try
                         {
                             _logger.LogInformation("Executing write tool {ToolName} (approved by user)", toolUse.Name);
-                            var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId);
+                            var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId, _userRole);
 
                             toolResults.Add(new ToolResultBlockParam(toolUse.ID)
                             {
@@ -357,7 +357,7 @@ public class AiAgentService : IAiAgentService
                         yield return new AgentStreamEvent { ToolName = toolUse.Name };
 
                         _logger.LogInformation("Executing tool {ToolName}", toolUse.Name);
-                        var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId);
+                        var toolResult = await _toolExecutor.ExecuteAsync(toolUse.Name, toolUse.Input, _userId, _userRole);
 
                         toolResults.Add(new ToolResultBlockParam(toolUse.ID)
                         {

@@ -27,6 +27,9 @@ public class AiToolExecutor
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
 
     private string? _currentUserId;
+    private string? _currentUserRole;
+
+    private bool IsAdmin => string.Equals(_currentUserRole, "Admin", StringComparison.OrdinalIgnoreCase);
 
     // --- Confirmation Tier Map ---
 
@@ -742,7 +745,7 @@ public class AiToolExecutor
         };
     }
 
-    public async Task<string> ExecuteAsync(string toolName, IReadOnlyDictionary<string, JsonElement> input, string? userId = null)
+    public async Task<string> ExecuteAsync(string toolName, IReadOnlyDictionary<string, JsonElement> input, string? userId = null, string? userRole = null)
     {
         using var activity = NutrirTelemetry.AiSource.StartActivity($"Tool: {toolName}");
         activity?.SetTag("ai.tool.name", toolName);
@@ -750,6 +753,7 @@ public class AiToolExecutor
         activity?.SetTag("ai.tool.is_write", ConfirmationTierMap.ContainsKey(toolName));
 
         _currentUserId = userId;
+        _currentUserRole = userRole;
 
         // Convert dictionary to JsonElement for handler convenience
         var jsonElement = JsonSerializer.SerializeToElement(input);
@@ -793,13 +797,14 @@ public class AiToolExecutor
                 },
                 "id"),
 
-            CreateTool("list_appointments", "List appointments with optional filters for date range, client, and status.",
+            CreateTool("list_appointments", "List appointments. Results are scoped to your own schedule by default. Admin users see all practitioners' appointments unless filtered by nutritionist_id. Use this to answer 'what's on my schedule' questions — no client_id is needed.",
                 new Dictionary<string, object>
                 {
                     ["from_date"] = new { type = "string", description = "Start date filter (ISO 8601 UTC, e.g. 2025-01-01T00:00:00Z)" },
                     ["to_date"] = new { type = "string", description = "End date filter (ISO 8601 UTC, e.g. 2025-12-31T23:59:59Z)" },
                     ["client_id"] = new { type = "integer", description = "Filter by client ID" },
-                    ["status"] = new { type = "string", description = "Filter by status: Scheduled, Confirmed, Completed, NoShow, LateCancellation, Cancelled" }
+                    ["status"] = new { type = "string", description = "Filter by status: Scheduled, Confirmed, Completed, NoShow, LateCancellation, Cancelled" },
+                    ["nutritionist_id"] = new { type = "string", description = "Filter by practitioner user ID. Admin only — non-admin users always see their own appointments." }
                 }),
 
             CreateTool("get_appointment", "Get detailed information about a specific appointment by ID.",
@@ -1327,8 +1332,13 @@ public class AiToolExecutor
         DateTime? toDate = GetOptionalDate(input, "to_date");
         int? clientId = GetOptionalInt(input, "client_id");
         AppointmentStatus? status = GetOptionalEnum<AppointmentStatus>(input, "status");
+        string? nutritionistId = GetOptionalString(input, "nutritionist_id");
 
-        var appointments = await _appointmentService.GetListAsync(fromDate, toDate, clientId, status, _currentUserId);
+        // Role-aware scoping: admins see all practitioners by default, non-admins see only their own
+        if (nutritionistId is null && !IsAdmin)
+            nutritionistId = _currentUserId;
+
+        var appointments = await _appointmentService.GetListAsync(fromDate, toDate, clientId, status, nutritionistId);
         return JsonSerializer.Serialize(new { count = appointments.Count, appointments }, SerializerOptions);
     }
 
@@ -1444,10 +1454,15 @@ public class AiToolExecutor
         // Sequential calls — EF Core DbContext is not thread-safe
         var metrics = await _dashboardService.GetMetricsAsync();
 
-        // Scope appointments to the current user's nutritionist ID
+        // Role-aware scoping: admins see all practitioners, non-admins see only their own
         List<AppointmentDto> todaysAppointments;
         int weekCount;
-        if (!string.IsNullOrEmpty(_currentUserId))
+        if (IsAdmin)
+        {
+            todaysAppointments = await _dashboardService.GetTodaysAppointmentsAsync();
+            weekCount = await _dashboardService.GetThisWeekAppointmentCountAsync();
+        }
+        else if (!string.IsNullOrEmpty(_currentUserId))
         {
             todaysAppointments = await _appointmentService.GetTodaysAppointmentsAsync(_currentUserId);
             weekCount = await _appointmentService.GetWeekCountAsync(_currentUserId);
