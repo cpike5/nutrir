@@ -54,6 +54,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AllergenWarningOverride> AllergenWarningOverrides => Set<AllergenWarningOverride>();
 
+    public DbSet<IntakeForm> IntakeForms => Set<IntakeForm>();
+
+    public DbSet<IntakeFormResponse> IntakeFormResponses => Set<IntakeFormResponse>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -433,6 +437,55 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(o => o.OverrideNote).HasColumnType("text");
             entity.Property(o => o.AcknowledgedByUserId).HasMaxLength(450);
             entity.Property(o => o.AcknowledgedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<IntakeForm>(entity =>
+        {
+            entity.HasQueryFilter(f => !f.IsDeleted);
+
+            entity.HasIndex(f => f.Token).IsUnique();
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(f => f.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Appointment>()
+                .WithMany()
+                .HasForeignKey(f => f.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(f => f.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(f => f.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(f => f.Status).HasConversion<string>();
+            entity.Property(f => f.Token).HasMaxLength(50).IsRequired();
+            entity.Property(f => f.ClientEmail).HasMaxLength(256).IsRequired();
+            entity.Property(f => f.CreatedByUserId).HasMaxLength(450);
+            entity.Property(f => f.ReviewedByUserId).HasMaxLength(450);
+            entity.Property(f => f.IsDeleted).HasDefaultValue(false);
+            entity.Property(f => f.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+
+            entity.HasMany(f => f.Responses)
+                .WithOne()
+                .HasForeignKey(r => r.IntakeFormId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<IntakeFormResponse>(entity =>
+        {
+            entity.HasIndex(r => r.IntakeFormId);
+
+            entity.Property(r => r.SectionKey).HasMaxLength(50).IsRequired();
+            entity.Property(r => r.FieldKey).HasMaxLength(50).IsRequired();
+            entity.Property(r => r.Value).HasColumnType("text").IsRequired();
         });
 
         builder.Entity<PractitionerTimeBlock>(entity =>

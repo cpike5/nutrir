@@ -13,6 +13,8 @@
 @inject IAuditLogService AuditLogService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ITimeZoneService TimeZoneService
+@inject IClientService ClientService
+@inject IIntakeFormService IntakeFormService
 @inject NavigationManager NavigationManager
 @inject RealTimeNotificationService NotificationService
 
@@ -120,6 +122,61 @@
                 </div>
             </div>
         </div>
+
+        @* ── Intake Form Section ──────────────────────────── *@
+        @if (_appointment.Type == AppointmentType.InitialConsultation)
+        {
+            <div class="table-card section-animate" style="animation-delay: 40ms;">
+                <div class="intake-section">
+                    <div class="intake-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8a2 2 0 0 1 2 2v14l-3-2-2 2-3-2-3 2V4a2 2 0 0 1 2-2Z"/><path d="M8 7h4M8 10h4M8 13h2"/></svg>
+                    </div>
+                    <div class="intake-content">
+                        <span class="intake-label">Intake Form</span>
+                        @if (_intakeForm is not null)
+                        {
+                            <div class="intake-status-row">
+                                <Badge Variant="@GetIntakeStatusVariant(_intakeForm.Status)"><span class="badge-dot"></span> @FormatIntakeStatus(_intakeForm.Status)</Badge>
+                                @if (_intakeForm.Status == IntakeFormStatus.Pending)
+                                {
+                                    <span class="intake-meta">Sent to @_intakeForm.ClientEmail</span>
+                                }
+                                else if (_intakeForm.Status == IntakeFormStatus.Submitted)
+                                {
+                                    <span class="intake-meta">Submitted @(_intakeForm.SubmittedAt.HasValue ? TimeZoneService.ToUserLocal(_intakeForm.SubmittedAt.Value).ToString("MMM d, yyyy h:mm tt") : "")</span>
+                                }
+                                else if (_intakeForm.Status == IntakeFormStatus.Reviewed)
+                                {
+                                    <span class="intake-meta">Reviewed @(_intakeForm.ReviewedAt.HasValue ? TimeZoneService.ToUserLocal(_intakeForm.ReviewedAt.Value).ToString("MMM d, yyyy h:mm tt") : "")</span>
+                                }
+                                <a href="/intake-forms/@_intakeForm.Id" class="intake-view-link">View Details</a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="intake-send-row">
+                                <span class="intake-desc">Send a health intake form to the client before their initial consultation.</span>
+                                <Button Variant="ButtonVariant.Outline" OnClick="SendIntakeFormAsync" Disabled="@_isSendingIntake">
+                                    @if (_isSendingIntake)
+                                    {
+                                        <span>Sending...</span>
+                                    }
+                                    else
+                                    {
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2 7.5 14l-2-5.5L2 7l12-5Z"/></svg>
+                                        <span>Send Intake Form</span>
+                                    }
+                                </Button>
+                                @if (_intakeFormError is not null)
+                                {
+                                    <p class="intake-error">@_intakeFormError</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
 
         @* ── Cancel Confirmation ──────────────────────────── *@
         @if (_showCancelForm)
@@ -304,6 +361,9 @@
     private bool _refreshedByRealTime;
     private string? _cancellationReason;
     private string? _errorMessage;
+    private IntakeFormListDto? _intakeForm;
+    private bool _isSendingIntake;
+    private string? _intakeFormError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -318,6 +378,12 @@
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "AppointmentViewed", "Appointment", Id.ToString(), "Viewed Appointment record");
+
+            if (_appointment.Type == AppointmentType.InitialConsultation)
+            {
+                var intakeForms = await IntakeFormService.ListFormsAsync();
+                _intakeForm = intakeForms.FirstOrDefault(f => f.AppointmentId == Id);
+            }
         }
     }
 
@@ -428,6 +494,43 @@
         }
     }
 
+    private async Task SendIntakeFormAsync()
+    {
+        if (_appointment is null || _isSendingIntake) return;
+        _isSendingIntake = true;
+        _intakeFormError = null;
+        StateHasChanged();
+
+        try
+        {
+            var client = await ClientService.GetByIdAsync(_appointment.ClientId);
+            if (client?.Email is null)
+            {
+                _intakeFormError = "Client does not have an email address on file.";
+                return;
+            }
+
+            var userId = await GetUserId();
+            var form = await IntakeFormService.CreateFormAsync(client.Email, Id, _appointment.ClientId, userId);
+
+            await AuditLogService.LogAsync(userId, "IntakeFormSent", "Appointment", Id.ToString(),
+                $"Sent intake form to {client.Email}");
+
+            // Reload the list entry so the UI shows status
+            var intakeForms = await IntakeFormService.ListFormsAsync();
+            _intakeForm = intakeForms.FirstOrDefault(f => f.AppointmentId == Id);
+        }
+        catch (Exception)
+        {
+            _intakeFormError = "Failed to send intake form. Please try again.";
+        }
+        finally
+        {
+            _isSendingIntake = false;
+            StateHasChanged();
+        }
+    }
+
     private void NavigateToList() => NavigationManager.NavigateTo("/appointments");
 
     private static string FormatType(AppointmentType type) => type switch
@@ -465,6 +568,24 @@
         AppointmentStatus.NoShow => BadgeVariant.Error,
         AppointmentStatus.LateCancellation => BadgeVariant.Warning,
         AppointmentStatus.Cancelled => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+
+    private static string FormatIntakeStatus(IntakeFormStatus status) => status switch
+    {
+        IntakeFormStatus.Pending => "Pending",
+        IntakeFormStatus.Submitted => "Submitted",
+        IntakeFormStatus.Reviewed => "Reviewed",
+        IntakeFormStatus.Expired => "Expired",
+        _ => status.ToString()
+    };
+
+    private static BadgeVariant GetIntakeStatusVariant(IntakeFormStatus status) => status switch
+    {
+        IntakeFormStatus.Pending => BadgeVariant.Warning,
+        IntakeFormStatus.Submitted => BadgeVariant.Accent,
+        IntakeFormStatus.Reviewed => BadgeVariant.Success,
+        IntakeFormStatus.Expired => BadgeVariant.Secondary,
         _ => BadgeVariant.Primary
     };
 }

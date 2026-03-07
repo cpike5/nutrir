@@ -22,6 +22,7 @@ public class AiToolExecutor
     private readonly ISearchService _searchService;
     private readonly IDashboardService _dashboardService;
     private readonly IAvailabilityService _availabilityService;
+    private readonly IIntakeFormService _intakeFormService;
     private readonly ILogger<AiToolExecutor> _logger;
 
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
@@ -77,6 +78,10 @@ public class AiToolExecutor
         ["deactivate_user"] = ConfirmationTier.Elevated,
         ["reactivate_user"] = ConfirmationTier.Elevated,
         ["reset_user_password"] = ConfirmationTier.Elevated,
+
+        // Standard tier — Intake Forms
+        ["create_intake_form"] = ConfirmationTier.Standard,
+        ["review_intake_form"] = ConfirmationTier.Standard,
     };
 
     public ConfirmationTier? GetConfirmationTier(string toolName)
@@ -135,6 +140,9 @@ public class AiToolExecutor
                 "deactivate_user" => await BuildUserContext("deactivate", input),
                 "reactivate_user" => await BuildUserContext("reactivate", input),
                 "reset_user_password" => await BuildUserContext("reset_password", input),
+
+                "create_intake_form" => BuildCreateIntakeFormContext(input),
+                "review_intake_form" => await BuildReviewIntakeFormContext(input),
 
                 _ => (toolName.Replace('_', ' '), null),
             };
@@ -648,6 +656,24 @@ public class AiToolExecutor
         return fields;
     }
 
+    private static (string Description, EntityContext? Entity) BuildCreateIntakeFormContext(JsonElement input)
+    {
+        var email = GetOptionalString(input, "client_email") ?? "?";
+        var desc = $"create intake form for {email}";
+        var fields = BuildFieldChangesFromInput(input);
+        return (desc, new EntityContext("IntakeForm", "create", null, email, fields));
+    }
+
+    private async Task<(string Description, EntityContext? Entity)> BuildReviewIntakeFormContext(JsonElement input)
+    {
+        var formId = GetOptionalInt(input, "form_id");
+        var form = formId.HasValue ? await _intakeFormService.GetByIdAsync(formId.Value) : null;
+        var desc = form is not null
+            ? $"review intake form #{formId} ({form.ClientEmail}) and create/update client record"
+            : $"review intake form #{formId?.ToString() ?? "?"}";
+        return (desc, new EntityContext("IntakeForm", "review", formId, form?.ClientEmail ?? $"#{formId}", []));
+    }
+
     public AiToolExecutor(
         IClientService clientService,
         IClientHealthProfileService healthProfileService,
@@ -659,6 +685,7 @@ public class AiToolExecutor
         ISearchService searchService,
         IDashboardService dashboardService,
         IAvailabilityService availabilityService,
+        IIntakeFormService intakeFormService,
         ILogger<AiToolExecutor> logger)
     {
         _clientService = clientService;
@@ -671,6 +698,7 @@ public class AiToolExecutor
         _searchService = searchService;
         _dashboardService = dashboardService;
         _availabilityService = availabilityService;
+        _intakeFormService = intakeFormService;
         _logger = logger;
 
         _handlers = new Dictionary<string, Func<JsonElement, Task<string>>>
@@ -742,6 +770,14 @@ public class AiToolExecutor
             ["deactivate_user"] = HandleDeactivateUser,
             ["reactivate_user"] = HandleReactivateUser,
             ["reset_user_password"] = HandleResetUserPassword,
+
+            // Read tools — Intake Forms
+            ["list_intake_forms"] = HandleListIntakeForms,
+            ["get_intake_form"] = HandleGetIntakeForm,
+
+            // Write tools — Intake Forms
+            ["create_intake_form"] = HandleCreateIntakeForm,
+            ["review_intake_form"] = HandleReviewIntakeForm,
         };
     }
 
@@ -1284,6 +1320,37 @@ public class AiToolExecutor
                     ["new_password"] = new { type = "string", description = "The new password" },
                 },
                 "user_id", "new_password"),
+
+            // --- Intake Forms ---
+
+            CreateTool("list_intake_forms", "List intake forms with optional status filter (Pending, Submitted, Reviewed, Expired).",
+                new Dictionary<string, object>
+                {
+                    ["status"] = new { type = "string", description = "Filter by status: Pending, Submitted, Reviewed, Expired" }
+                }),
+
+            CreateTool("get_intake_form", "Get detailed information about a specific intake form including all submitted responses.",
+                new Dictionary<string, object>
+                {
+                    ["form_id"] = new { type = "integer", description = "The intake form ID" }
+                },
+                "form_id"),
+
+            CreateTool("create_intake_form", "Create a new intake form and generate a token link for the client to fill out.",
+                new Dictionary<string, object>
+                {
+                    ["client_email"] = new { type = "string", description = "The client's email address to send the form to" },
+                    ["appointment_id"] = new { type = "integer", description = "Optional appointment ID to link the form to" },
+                    ["client_id"] = new { type = "integer", description = "Optional existing client ID to link the form to" }
+                },
+                "client_email"),
+
+            CreateTool("review_intake_form", "Review a submitted intake form and create or update a client record from the responses.",
+                new Dictionary<string, object>
+                {
+                    ["form_id"] = new { type = "integer", description = "The intake form ID to review" }
+                },
+                "form_id"),
         ];
     }
 
@@ -2138,5 +2205,60 @@ public class AiToolExecutor
         if (Enum.TryParse<TEnum>(str, ignoreCase: true, out var val))
             return val;
         throw new ArgumentException($"Required parameter '{property}' is not a valid {typeof(TEnum).Name}");
+    }
+
+    // =====================================================
+    // Intake Form Tool Handlers
+    // =====================================================
+
+    private async Task<string> HandleListIntakeForms(JsonElement input)
+    {
+        var statusFilter = GetOptionalEnum<IntakeFormStatus>(input, "status");
+        var forms = await _intakeFormService.ListFormsAsync(statusFilter);
+        return JsonSerializer.Serialize(new { count = forms.Count, forms }, SerializerOptions);
+    }
+
+    private async Task<string> HandleGetIntakeForm(JsonElement input)
+    {
+        var formId = GetRequiredInt(input, "form_id");
+        var form = await _intakeFormService.GetByIdAsync(formId);
+        if (form is null)
+            return JsonSerializer.Serialize(new { error = $"Intake form #{formId} not found" });
+        return JsonSerializer.Serialize(new { form }, SerializerOptions);
+    }
+
+    private async Task<string> HandleCreateIntakeForm(JsonElement input)
+    {
+        var clientEmail = GetRequiredString(input, "client_email");
+        var appointmentId = GetOptionalInt(input, "appointment_id");
+        var clientId = GetOptionalInt(input, "client_id");
+
+        var form = await _intakeFormService.CreateFormAsync(clientEmail, appointmentId, clientId, _currentUserId!);
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            form_id = form.Id,
+            token = form.Token,
+            intake_url = $"/intake/{form.Token}",
+            expires_at = form.ExpiresAt,
+            message = $"Intake form created for {clientEmail}. Share this link with the client: /intake/{form.Token}"
+        }, SerializerOptions);
+    }
+
+    private async Task<string> HandleReviewIntakeForm(JsonElement input)
+    {
+        var formId = GetRequiredInt(input, "form_id");
+        var (success, clientId, error) = await _intakeFormService.ReviewFormAsync(formId, _currentUserId!);
+
+        if (!success)
+            return JsonSerializer.Serialize(new { error });
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            form_id = formId,
+            client_id = clientId,
+            message = $"Intake form #{formId} reviewed. Client record #{clientId} has been created/updated."
+        }, SerializerOptions);
     }
 }
