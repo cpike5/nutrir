@@ -58,6 +58,9 @@
 .rail-brand-logo {
   width: 28px;
   height: 28px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 3px;
 }
 
 .rail-nav {

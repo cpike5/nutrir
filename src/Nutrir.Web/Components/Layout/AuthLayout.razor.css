@@ -16,6 +16,7 @@
 .auth-logo {
     width: 160px;
     height: auto;
+    max-height: 80px;
 }
 
 /* ── Auth Card ───────────────────────────────────────── */
