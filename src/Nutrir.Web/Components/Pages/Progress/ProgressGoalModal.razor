@@ -24,7 +24,8 @@
                     <FormInput Id="goalTitle"
                                Value="@_model.Title"
                                ValueChanged="@(v => _model.Title = v)"
-                               Placeholder="e.g. Reach 75 kg" />
+                               Placeholder="e.g. Reach 75 kg"
+                               DebounceMs="300" />
                 </FormGroup>
 
                 <FormGroup Label="Goal Type" Id="goalType">
@@ -49,7 +50,8 @@
                         <FormInput Id="targetUnit"
                                    Value="@_model.TargetUnit"
                                    ValueChanged="@(v => _model.TargetUnit = v)"
-                                   Placeholder="e.g. kg, %" />
+                                   Placeholder="e.g. kg, %"
+                                   DebounceMs="300" />
                     </FormGroup>
                 </div>
 

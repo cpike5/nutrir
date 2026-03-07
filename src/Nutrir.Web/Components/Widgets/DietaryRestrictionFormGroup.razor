@@ -28,7 +28,8 @@
                     <FormInput Id="@($"dr-notes-{index}")"
                                Value="@entry.Notes"
                                ValueChanged="@(v => entry.Notes = v)"
-                               Placeholder="Additional details" />
+                               Placeholder="Additional details"
+                               DebounceMs="300" />
                 </FormGroup>
             </div>
             <button class="health-form-remove" type="button" @onclick="@(() => Remove(index))" title="Remove">

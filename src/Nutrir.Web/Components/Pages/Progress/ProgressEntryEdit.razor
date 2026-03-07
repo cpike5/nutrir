@@ -72,7 +72,8 @@
                                     <FormGroup Label="Custom Name" Id="@($"custom-{idx}")">
                                         <FormInput Id="@($"custom-{idx}")"
                                                    Value="@_model.Measurements[idx].CustomMetricName"
-                                                   ValueChanged="@(v => _model.Measurements[idx].CustomMetricName = v)" />
+                                                   ValueChanged="@(v => _model.Measurements[idx].CustomMetricName = v)"
+                                                   DebounceMs="300" />
                                     </FormGroup>
                                 }
                                 <div class="form-grid">
@@ -84,7 +85,8 @@
                                     <FormGroup Label="Unit" Id="@($"unit-{idx}")">
                                         <FormInput Id="@($"unit-{idx}")"
                                                    Value="@_model.Measurements[idx].Unit"
-                                                   ValueChanged="@(v => _model.Measurements[idx].Unit = v)" />
+                                                   ValueChanged="@(v => _model.Measurements[idx].Unit = v)"
+                                                   DebounceMs="300" />
                                     </FormGroup>
                                 </div>
                             </div>

@@ -17,13 +17,15 @@
                     <FormInput Id="@($"cond-name-{index}")"
                                Value="@entry.Name"
                                ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Type 2 Diabetes" />
+                               Placeholder="e.g. Type 2 Diabetes"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Code" Id="@($"cond-code-{index}")">
                     <FormInput Id="@($"cond-code-{index}")"
                                Value="@entry.Code"
                                ValueChanged="@(v => entry.Code = v)"
-                               Placeholder="e.g. E11" />
+                               Placeholder="e.g. E11"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Diagnosis Date" Id="@($"cond-date-{index}")">
                     <FormInput Id="@($"cond-date-{index}")"

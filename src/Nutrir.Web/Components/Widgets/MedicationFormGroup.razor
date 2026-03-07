@@ -16,25 +16,29 @@
                     <FormInput Id="@($"med-name-{index}")"
                                Value="@entry.Name"
                                ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Metformin" />
+                               Placeholder="e.g. Metformin"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Dosage" Id="@($"med-dosage-{index}")">
                     <FormInput Id="@($"med-dosage-{index}")"
                                Value="@entry.Dosage"
                                ValueChanged="@(v => entry.Dosage = v)"
-                               Placeholder="e.g. 500mg" />
+                               Placeholder="e.g. 500mg"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Frequency" Id="@($"med-freq-{index}")">
                     <FormInput Id="@($"med-freq-{index}")"
                                Value="@entry.Frequency"
                                ValueChanged="@(v => entry.Frequency = v)"
-                               Placeholder="e.g. Twice daily" />
+                               Placeholder="e.g. Twice daily"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Prescribed For" Id="@($"med-for-{index}")">
                     <FormInput Id="@($"med-for-{index}")"
                                Value="@entry.PrescribedFor"
                                ValueChanged="@(v => entry.PrescribedFor = v)"
-                               Placeholder="e.g. Type 2 Diabetes" />
+                               Placeholder="e.g. Type 2 Diabetes"
+                               DebounceMs="300" />
                 </FormGroup>
             </div>
             <button class="health-form-remove" type="button" @onclick="@(() => Remove(index))" title="Remove">

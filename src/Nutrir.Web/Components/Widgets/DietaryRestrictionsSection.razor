@@ -47,7 +47,8 @@
                                     <FormInput Id="edit-dr-notes"
                                                Value="@_editNotes"
                                                ValueChanged="@(v => _editNotes = v)"
-                                               Placeholder="Additional details" />
+                                               Placeholder="Additional details"
+                                               DebounceMs="300" />
                                 </FormGroup>
                             </div>
                             @if (!string.IsNullOrEmpty(_formError))
@@ -115,7 +116,8 @@
                             <FormInput Id="add-dr-notes"
                                        Value="@_addNotes"
                                        ValueChanged="@(v => _addNotes = v)"
-                                       Placeholder="Additional details" />
+                                       Placeholder="Additional details"
+                                       DebounceMs="300" />
                         </FormGroup>
                     </div>
                     @if (!string.IsNullOrEmpty(_formError))

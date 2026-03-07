@@ -17,7 +17,8 @@
                     <FormInput Id="@($"allergy-name-{index}")"
                                Value="@entry.Name"
                                ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Peanuts" />
+                               Placeholder="e.g. Peanuts"
+                               DebounceMs="300" />
                 </FormGroup>
                 <FormGroup Label="Severity" Id="@($"allergy-severity-{index}")">
                     <FormSelect Id="@($"allergy-severity-{index}")"

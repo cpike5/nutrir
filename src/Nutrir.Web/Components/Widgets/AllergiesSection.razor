@@ -37,7 +37,8 @@
                                     <FormInput Id="edit-allergy-name"
                                                Value="@_editName"
                                                ValueChanged="@(v => _editName = v)"
-                                               Placeholder="Allergy name" />
+                                               Placeholder="Allergy name"
+                                               DebounceMs="300" />
                                 </FormGroup>
                                 <FormGroup Label="Severity" Id="edit-allergy-severity">
                                     <FormSelect Id="edit-allergy-severity"
@@ -115,7 +116,8 @@
                             <FormInput Id="add-allergy-name"
                                        Value="@_addName"
                                        ValueChanged="@(v => _addName = v)"
-                                       Placeholder="Allergy name" />
+                                       Placeholder="Allergy name"
+                                       DebounceMs="300" />
                         </FormGroup>
                         <FormGroup Label="Severity" Id="add-allergy-severity">
                             <FormSelect Id="add-allergy-severity"

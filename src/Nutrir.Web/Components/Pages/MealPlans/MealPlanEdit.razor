@@ -160,7 +160,8 @@
                                 <FormInput Id="@($"food-{slot.GetHashCode()}")"
                                            Placeholder="Food name"
                                            Value="@_newItem.FoodName"
-                                           ValueChanged="@(v => _newItem.FoodName = v)" />
+                                           ValueChanged="@(v => _newItem.FoodName = v)"
+                                           DebounceMs="300" />
                                 <FormInput Id="@($"qty-{slot.GetHashCode()}")"
                                            Type="number"
                                            Placeholder="Qty"
