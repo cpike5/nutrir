@@ -36,6 +36,7 @@ public class DatabaseSeeder
         await SeedRolesAsync();
         await SeedAdminUserAsync();
         await SeedNutritionistUserAsync();
+        await SeedAllergensAsync();
 
         if (isDevelopment)
         {
@@ -177,6 +178,43 @@ public class DatabaseSeeder
             _logger.LogError("Failed to assign Nutritionist role to user {Email}: {Errors}", email,
                 string.Join(", ", roleResult.Errors.Select(e => e.Description)));
         }
+    }
+
+    private async Task SeedAllergensAsync()
+    {
+        if (await _dbContext.Allergens.AnyAsync())
+        {
+            _logger.LogInformation("Allergens already seeded, skipping");
+            return;
+        }
+
+        var allergens = new List<Allergen>
+        {
+            // Food allergens
+            new() { Name = "Peanuts", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Tree Nuts", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Milk", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Eggs", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Wheat", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Soy", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Fish", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Shellfish", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Sesame", Category = "Food", CreatedAt = DateTime.UtcNow },
+            // Drug allergens
+            new() { Name = "Penicillin", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Sulfa Drugs", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "NSAIDs", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Aspirin", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            // Environmental allergens
+            new() { Name = "Pollen", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Dust Mites", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Mold", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Pet Dander", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+        };
+
+        _dbContext.Allergens.AddRange(allergens);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Seeded {Count} common allergens", allergens.Count);
     }
 
     private async Task SeedDashboardDataAsync()
