@@ -200,12 +200,15 @@ public class AiAgentService : IAiAgentService
     {
         _currentMentionTags = mentionTags?.ToList(); // defensive copy
         userMessage = CleanMessageTags(userMessage);
-        using var txn = NutrirTelemetry.StartTransaction(NutrirTelemetry.AiSource, "AI Conversation");
+        using var txn = NutrirTelemetry.StartTransaction(NutrirTelemetry.AiSource, "AI Conversation", "ai");
         txn.Activity?.SetTag("ai.user_id", _userId);
         txn.Activity?.SetTag("ai.model", _options.Model);
 
+        _logger.LogInformation("AI conversation started for user {UserId} with model {Model}", _userId, _options.Model);
+
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
+            _logger.LogWarning("AI conversation aborted: API key not configured");
             yield return new AgentStreamEvent { Error = "Anthropic API key is not configured. Please set the API key in user secrets or environment variables." };
             yield break;
         }
@@ -216,6 +219,7 @@ public class AiAgentService : IAiAgentService
             var (allowed, rateLimitMessage) = _rateLimiter.CheckAndRecord(_userId);
             if (!allowed)
             {
+                _logger.LogWarning("AI conversation rate limited for user {UserId}: {Message}", _userId, rateLimitMessage);
                 txn.Activity?.SetTag("ai.rate_limited", true);
                 yield return new AgentStreamEvent { Error = rateLimitMessage };
                 yield break;
@@ -293,6 +297,7 @@ public class AiAgentService : IAiAgentService
 
             if (result.Error is not null)
             {
+                _logger.LogError("Anthropic API error on iteration {Iteration}: {Error}", iteration, result.Error);
                 yield return new AgentStreamEvent { Error = result.Error };
                 await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
                 yield break;
@@ -422,6 +427,10 @@ public class AiAgentService : IAiAgentService
             txn.Activity?.SetTag("ai.total_output_tokens", totalOutputTokens);
             txn.Activity?.SetTag("ai.total_tool_calls", totalToolCalls);
 
+            _logger.LogInformation(
+                "AI conversation completed for user {UserId} in {ElapsedMs}ms — {InputTokens} input tokens, {OutputTokens} output tokens, {ToolCalls} tool calls",
+                _userId, overallStopwatch.ElapsedMilliseconds, totalInputTokens, totalOutputTokens, totalToolCalls);
+
             yield return new AgentStreamEvent { IsComplete = true };
             await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);
             yield break;
@@ -431,6 +440,10 @@ public class AiAgentService : IAiAgentService
         txn.Activity?.SetTag("ai.total_output_tokens", totalOutputTokens);
         txn.Activity?.SetTag("ai.total_tool_calls", totalToolCalls);
         txn.Activity?.SetStatus(ActivityStatusCode.Error, "Max tool iterations reached");
+
+        _logger.LogWarning(
+            "AI conversation hit max tool iterations for user {UserId} after {ElapsedMs}ms — {ToolCalls} tool calls, {InputTokens} input tokens",
+            _userId, overallStopwatch.ElapsedMilliseconds, totalToolCalls, totalInputTokens);
 
         yield return new AgentStreamEvent { Error = "Maximum tool call iterations reached. Please try a simpler question." };
         await SaveAndLogAsync(newMessages, displayTexts, totalInputTokens, totalOutputTokens, totalToolCalls, overallStopwatch);

@@ -25,9 +25,9 @@ public static class NutrirTelemetry
     /// Useful for business-important operations (AI conversations, reports) that need
     /// their own entry in APM Transactions, independent of the transport layer.
     /// </summary>
-    public static TransactionScope StartTransaction(ActivitySource source, string name)
+    public static TransactionScope StartTransaction(ActivitySource source, string name, string? type = null)
     {
-        return new TransactionScope(source, name);
+        return new TransactionScope(source, name, type);
     }
 
     /// <summary>
@@ -39,13 +39,30 @@ public static class NutrirTelemetry
 
         public Activity? Activity { get; }
 
-        internal TransactionScope(ActivitySource source, string name)
+        internal TransactionScope(ActivitySource source, string name, string? type)
         {
             _previous = System.Diagnostics.Activity.Current;
+
+            // Capture the parent trace context before detaching, so the new
+            // transaction can link back to the originating span/trace.
+            var parentContext = _previous?.Context;
+
             System.Diagnostics.Activity.Current = null;
-            Activity = source.StartActivity(name, ActivityKind.Server);
+
+            var links = parentContext.HasValue
+                ? new[] { new ActivityLink(parentContext.Value) }
+                : Array.Empty<ActivityLink>();
+
+            Activity = source.StartActivity(
+                name,
+                ActivityKind.Server,
+                parentContext: default,
+                links: links);
+
             if (Activity == null)
                 System.Diagnostics.Activity.Current = _previous;
+            else if (type is not null)
+                Activity.SetTag("type", type);
         }
 
         public void Dispose()
