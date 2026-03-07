@@ -4,6 +4,7 @@
 @using System.Security.Claims
 
 @inject IClientHealthProfileService HealthProfileService
+@inject IMedicationService MedicationService
 
 <div class="table-card health-section">
     <div class="section-header" @onclick="ToggleCollapsed" role="button" tabindex="0">
@@ -33,11 +34,14 @@
                         <div class="inline-form">
                             <div class="inline-form-grid">
                                 <FormGroup Label="Name" Id="edit-med-name">
-                                    <FormInput Id="edit-med-name"
-                                               Value="@_editName"
-                                               ValueChanged="@(v => _editName = v)"
-                                               Placeholder="Medication name"
-                                               DebounceMs="300" />
+                                    <Autocomplete Id="edit-med-name"
+                                                  Options="_medicationOptions"
+                                                  Value="@_editName"
+                                                  ValueChanged="@(v => _editName = v)"
+                                                  DisplayText="@_editName"
+                                                  DisplayTextChanged="@(v => _editName = v)"
+                                                  AllowFreeText
+                                                  Placeholder="Medication name" />
                                 </FormGroup>
                                 <FormGroup Label="Dosage" Id="edit-med-dosage">
                                     <FormInput Id="edit-med-dosage"
@@ -127,11 +131,14 @@
                 <div class="inline-form">
                     <div class="inline-form-grid">
                         <FormGroup Label="Name" Id="add-med-name">
-                            <FormInput Id="add-med-name"
-                                       Value="@_addName"
-                                       ValueChanged="@(v => _addName = v)"
-                                       Placeholder="Medication name"
-                                       DebounceMs="300" />
+                            <Autocomplete Id="add-med-name"
+                                          Options="_medicationOptions"
+                                          Value="@_addName"
+                                          ValueChanged="@(v => _addName = v)"
+                                          DisplayText="@_addName"
+                                          DisplayTextChanged="@(v => _addName = v)"
+                                          AllowFreeText
+                                          Placeholder="Medication name" />
                         </FormGroup>
                         <FormGroup Label="Dosage" Id="add-med-dosage">
                             <FormInput Id="add-med-dosage"
@@ -183,6 +190,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private List<ClientMedicationDto> _medications = new();
+    private List<Autocomplete.AutocompleteOption> _medicationOptions = [];
     private bool _collapsed;
     private bool _showAddForm;
     private bool _isSaving;
@@ -203,6 +211,19 @@
 
     // Delete state
     private int? _deletingId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMedicationOptions();
+    }
+
+    private async Task LoadMedicationOptions()
+    {
+        var medications = await MedicationService.SearchAsync("", 500);
+        _medicationOptions = medications
+            .Select(m => new Autocomplete.AutocompleteOption(m, m))
+            .ToList();
+    }
 
     protected override void OnParametersSet()
     {
@@ -256,6 +277,11 @@
                 NullIfEmpty(_addDosage), NullIfEmpty(_addFrequency), NullIfEmpty(_addPrescribedFor));
             var created = await HealthProfileService.CreateMedicationAsync(dto, userId);
             _medications.Add(created);
+
+            // Add to medication lookup table
+            await MedicationService.GetOrCreateAsync(_addName.Trim(), userId);
+            await LoadMedicationOptions();
+
             _showAddForm = false;
         }
         catch
@@ -311,6 +337,11 @@
                     var idx = _medications.FindIndex(m => m.Id == _editingId.Value);
                     if (idx >= 0) _medications[idx] = updated;
                 }
+
+                // Add to medication lookup table
+                await MedicationService.GetOrCreateAsync(_editName.Trim(), userId);
+                await LoadMedicationOptions();
+
                 _editingId = null;
             }
             else

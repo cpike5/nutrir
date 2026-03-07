@@ -350,6 +350,9 @@
             // Save health profile entries
             await SaveHealthProfileAsync(created.Id, userId);
 
+            // Ensure medications are in the lookup table for future auto-complete
+            await _medicationFormGroup.EnsureMedicationsInLookupAsync(userId);
+
             // Record consent form based on method
             if (isDigital)
             {
