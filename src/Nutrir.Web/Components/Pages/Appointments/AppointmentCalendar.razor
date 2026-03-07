@@ -157,10 +157,10 @@
 
         args.Attributes["style"] = args.Data.Type switch
         {
-            AppointmentType.InitialConsultation => $"background: var(--color-primary); color: var(--color-text-on-primary);{cancelledStyle}",
-            AppointmentType.FollowUp => $"background: var(--color-secondary); color: var(--color-text-on-primary);{cancelledStyle}",
-            AppointmentType.CheckIn => $"background: var(--color-info); color: var(--color-text-on-primary);{cancelledStyle}",
-            _ => $"background: var(--color-primary); color: var(--color-text-on-primary);{cancelledStyle}"
+            AppointmentType.InitialConsultation => $"background: color-mix(in srgb, var(--color-primary) 12%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}",
+            AppointmentType.FollowUp => $"background: color-mix(in srgb, var(--color-secondary) 12%, transparent); border-left: 3px solid var(--color-secondary); color: var(--color-text);{cancelledStyle}",
+            AppointmentType.CheckIn => $"background: color-mix(in srgb, var(--color-info) 12%, transparent); border-left: 3px solid var(--color-info); color: var(--color-text);{cancelledStyle}",
+            _ => $"background: color-mix(in srgb, var(--color-primary) 12%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}"
         };
     }
 
