@@ -760,20 +760,26 @@ public class AiToolExecutor
 
         if (_handlers.TryGetValue(toolName, out var handler))
         {
+            _logger.LogInformation("Executing AI tool {ToolName} for user {UserId}", toolName, userId);
+            var sw = Stopwatch.StartNew();
             try
             {
                 var result = await handler(jsonElement);
+                sw.Stop();
                 activity?.SetStatus(ActivityStatusCode.Ok);
+                _logger.LogInformation("AI tool {ToolName} completed in {ElapsedMs}ms", toolName, sw.ElapsedMilliseconds);
                 return result;
             }
             catch (Exception ex)
             {
+                sw.Stop();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 _logger.LogError(ex, "Error executing tool {ToolName}", toolName);
                 return JsonSerializer.Serialize(new { error = $"Error executing {toolName}: {ex.Message}" });
             }
         }
 
+        _logger.LogWarning("Unknown AI tool requested: {ToolName}", toolName);
         activity?.SetStatus(ActivityStatusCode.Error, "Unknown tool");
         return JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" });
     }
