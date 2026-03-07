@@ -8,7 +8,10 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject IClientService ClientService
+@inject IUserManagementService UserManagementService
 @using Nutrir.Core.Interfaces
+@using Nutrir.Core.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
@@ -210,18 +213,37 @@
                 }
             </div>
         }
+        @if (_showMentionDropdown && _mentionResults.Any())
+        {
+            <div class="cc-ai-mention-dropdown" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
+                @for (var i = 0; i < _mentionResults.Count; i++)
+                {
+                    var index = i;
+                    var result = _mentionResults[i];
+                    <div class="cc-ai-mention-item @(index == _mentionSelectedIndex ? "active" : "")"
+                         @onclick="() => SelectMention(index)">
+                        <span class="cc-ai-mention-icon">@(_mentionTrigger == "@" ? "@" : "#")</span>
+                        <span class="cc-ai-mention-name">@result.DisplayName</span>
+                    </div>
+                }
+            </div>
+        }
+        else if (_showMentionDropdown && !_mentionResults.Any())
+        {
+            <div class="cc-ai-mention-dropdown" style="bottom: @(_mentionDropdownBottom)px; left: @(_mentionDropdownLeft)px;">
+                <div class="cc-ai-mention-item no-results">No results</div>
+            </div>
+        }
         <div class="cc-ai-input-row">
-            <input id="ai-input"
-                   type="text"
-                   placeholder="Ask about clients, appointments, meal plans..."
-                   autocomplete="off"
-                   @onfocusout="OnInputFocusOut"
-                   role="combobox"
-                   aria-autocomplete="list"
-                   aria-expanded="@(_showSuggestions && _filteredSuggestions.Count > 0)"
-                   aria-controls="ai-suggestions"
-                   aria-activedescendant="@(_selectedSuggestionIndex >= 0 ? $"ai-suggestion-{_selectedSuggestionIndex}" : null)"
-                   disabled="@_isStreaming" />
+            <div id="ai-input"
+                 class="cc-ai-input"
+                 contenteditable="true"
+                 role="textbox"
+                 aria-label="Ask about clients, appointments, meal plans..."
+                 data-placeholder="Ask about clients, appointments, meal plans..."
+                 @onfocusin="OnInputFocusIn"
+                 @onfocusout="OnInputFocusOut">
+            </div>
             <button class="cc-ai-send-btn" @onclick="SendMessage" disabled="@(_isStreaming || string.IsNullOrWhiteSpace(_inputText))">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -249,6 +271,17 @@
     private bool _showSuggestions;
     private Timer? _debounceTimer;
     private DotNetObjectReference<AiAssistantPanel>? _dotNetRef;
+
+    // Mention/tagging state
+    private string? _mentionTrigger;
+    private string _mentionQuery = "";
+    private List<MentionTag> _mentionResults = new();
+    private int _mentionSelectedIndex;
+    private bool _showMentionDropdown;
+    private double _mentionDropdownBottom;
+    private double _mentionDropdownLeft;
+    private List<MentionTag> _currentMessageTags = new();
+    private Timer? _mentionDebounceTimer;
 
     protected override void OnInitialized()
     {
@@ -428,17 +461,156 @@
         }
     }
 
+    private void OnInputFocusIn()
+    {
+        // Placeholder handled via CSS :empty::before
+    }
+
     private async Task OnInputFocusOut()
     {
-        // Small delay to allow click on suggestion to register before hiding
+        // Small delay to allow click on suggestion/mention to register before hiding
         await Task.Delay(200);
         HideSuggestions();
+        if (_showMentionDropdown)
+            OnMentionDismiss();
         await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public Task OnMentionTrigger(string triggerType, string query)
+    {
+        _mentionTrigger = triggerType;
+        _mentionQuery = query;
+
+        // Debounce the search
+        _mentionDebounceTimer?.Dispose();
+        _mentionDebounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SearchMentions();
+                StateHasChanged();
+            });
+        }, null, 200, Timeout.Infinite);
+
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public void OnMentionDismiss()
+    {
+        _showMentionDropdown = false;
+        _mentionTrigger = null;
+        _mentionQuery = "";
+        _mentionResults.Clear();
+        _mentionSelectedIndex = 0;
+        StateHasChanged();
+    }
+
+    private async Task SearchMentions()
+    {
+        if (string.IsNullOrEmpty(_mentionTrigger)) return;
+
+        try
+        {
+            if (_mentionTrigger == "@")
+            {
+                var users = await UserManagementService.GetUsersAsync(
+                    searchTerm: string.IsNullOrEmpty(_mentionQuery) ? null : _mentionQuery,
+                    roleFilter: null,
+                    isActiveFilter: true);
+                _mentionResults = users
+                    .Take(8)
+                    .Select(u => new MentionTag("user", u.Id, $"{u.FirstName} {u.LastName}".Trim()))
+                    .ToList();
+            }
+            else if (_mentionTrigger == "#")
+            {
+                var clients = await ClientService.GetListAsync(
+                    searchTerm: string.IsNullOrEmpty(_mentionQuery) ? null : _mentionQuery);
+                _mentionResults = clients
+                    .Take(8)
+                    .Select(c => new MentionTag("client", c.Id.ToString(), $"{c.FirstName} {c.LastName}".Trim()))
+                    .ToList();
+            }
+
+            _showMentionDropdown = true;
+            _mentionSelectedIndex = 0;
+
+            // Get dropdown position from JS
+            try
+            {
+                var pos = await JS.InvokeAsync<MentionPosition>("aiPanel.getMentionDropdownPosition");
+                if (pos != null)
+                {
+                    _mentionDropdownBottom = pos.Bottom;
+                    _mentionDropdownLeft = pos.Left;
+                }
+            }
+            catch { /* fallback to default position */ }
+        }
+        catch
+        {
+            _mentionResults.Clear();
+            _showMentionDropdown = false;
+        }
+    }
+
+    private record MentionPosition(double Bottom, double Left);
+
+    private async Task SelectMention(int index)
+    {
+        if (index < 0 || index >= _mentionResults.Count) return;
+
+        var selected = _mentionResults[index];
+        _currentMessageTags.Add(selected);
+
+        // Insert tag pill into contenteditable via JS
+        await JS.InvokeVoidAsync("aiPanel.insertMentionTag",
+            selected.EntityType, selected.EntityId, selected.DisplayName, _mentionTrigger);
+
+        // Reset mention state
+        _showMentionDropdown = false;
+        _mentionTrigger = null;
+        _mentionQuery = "";
+        _mentionResults.Clear();
+        _mentionSelectedIndex = 0;
+
+        StateHasChanged();
     }
 
     [JSInvokable]
     public async Task OnInputKeyAction(string key)
     {
+        // Mention dropdown takes priority when visible
+        if (_showMentionDropdown)
+        {
+            switch (key)
+            {
+                case "ArrowDown":
+                    if (_mentionResults.Count > 0)
+                        _mentionSelectedIndex = (_mentionSelectedIndex + 1) % _mentionResults.Count;
+                    StateHasChanged();
+                    return;
+                case "ArrowUp":
+                    if (_mentionResults.Count > 0)
+                        _mentionSelectedIndex = _mentionSelectedIndex <= 0
+                            ? _mentionResults.Count - 1
+                            : _mentionSelectedIndex - 1;
+                    StateHasChanged();
+                    return;
+                case "Tab":
+                case "Enter":
+                    if (_mentionResults.Count > 0)
+                        await SelectMention(_mentionSelectedIndex);
+                    StateHasChanged();
+                    return;
+                case "Escape":
+                    OnMentionDismiss();
+                    return;
+            }
+        }
+
         if (_showSuggestions && _filteredSuggestions.Count > 0)
         {
             switch (key)
@@ -509,23 +681,45 @@
         if (_isStreaming || string.IsNullOrWhiteSpace(_inputText))
             return;
 
-        var userText = _inputText.Trim();
+        // Extract plain text with tag markers from contenteditable
+        string userText;
+        try
+        {
+            userText = await JS.InvokeAsync<string>("aiPanel.getPlainTextWithTags");
+            if (string.IsNullOrWhiteSpace(userText))
+                userText = _inputText.Trim();
+            else
+                userText = userText.Trim();
+        }
+        catch (JSException)
+        {
+            userText = _inputText.Trim();
+        }
+
+        // Build display text (plain text without tag markers)
+        var displayText = _inputText.Trim();
+
+        // Capture tags for this message and reset
+        var messageTags = _currentMessageTags.Count > 0 ? _currentMessageTags.ToList() : null;
+        _currentMessageTags.Clear();
+
         _inputText = "";
         HideSuggestions();
-        try { await JS.InvokeVoidAsync("aiPanel.setInputValue", ""); }
+        OnMentionDismiss();
+        try { await JS.InvokeVoidAsync("aiPanel.clearInput"); }
         catch (JSException) { }
         _isStreaming = true;
         _justCompletedTool = false;
         _streamCts = new CancellationTokenSource();
 
-        _messages.Add(new ChatMessage { Role = "user", Text = userText });
+        _messages.Add(new ChatMessage { Role = "user", Text = displayText });
         var assistantMsg = new ChatMessage { Role = "assistant", Text = "" };
         _messages.Add(assistantMsg);
         StateHasChanged();
 
         try
         {
-            await foreach (var evt in AiAgent.SendMessageAsync(userText, _streamCts.Token))
+            await foreach (var evt in AiAgent.SendMessageAsync(userText, _streamCts.Token, messageTags))
             {
                 if (evt.ConfirmationRequest is not null)
                 {
@@ -656,6 +850,7 @@
         PanelState.OnChange -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
         _debounceTimer?.Dispose();
+        _mentionDebounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
         _dotNetRef?.Dispose();
@@ -666,6 +861,7 @@
         PanelState.OnChange -= OnPanelToggle;
         Navigation.LocationChanged -= OnLocationChanged;
         _debounceTimer?.Dispose();
+        _mentionDebounceTimer?.Dispose();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
         try { await JS.InvokeVoidAsync("aiPanel.disposeInputHandler"); }

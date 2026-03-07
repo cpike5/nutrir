@@ -402,6 +402,7 @@
 
 /* Input area */
 .cc-ai-input-area {
+    position: relative;
     padding: var(--space-3) var(--space-4);
     border-top: 1px solid var(--color-border);
     flex-shrink: 0;
@@ -413,6 +414,130 @@
     align-items: center;
 }
 
+/* Contenteditable input */
+.cc-ai-input {
+    flex: 1;
+    min-height: 34px;
+    max-height: 120px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    outline: none;
+    overflow-y: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    transition: border-color var(--duration-fast);
+    line-height: var(--leading-normal);
+}
+
+.cc-ai-input:focus {
+    border-color: var(--color-primary);
+}
+
+.cc-ai-input:empty::before {
+    content: attr(data-placeholder);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.cc-ai-input[contenteditable="false"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Mention tag pills inside contenteditable */
+::deep .cc-mention-tag {
+    display: inline-block;
+    padding: 0 6px;
+    margin: 0 1px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    line-height: 1.6;
+    vertical-align: baseline;
+    white-space: nowrap;
+    user-select: all;
+    cursor: default;
+}
+
+::deep .cc-mention-tag[data-entity-type="user"] {
+    background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+    color: var(--color-primary);
+}
+
+::deep .cc-mention-tag[data-entity-type="client"] {
+    background: color-mix(in srgb, var(--color-success, #22863a) 14%, transparent);
+    color: var(--color-success, #22863a);
+}
+
+/* Mention dropdown */
+.cc-ai-mention-dropdown {
+    position: absolute;
+    z-index: 510;
+    min-width: 200px;
+    max-width: 320px;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-md);
+}
+
+.cc-ai-mention-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.cc-ai-mention-item:hover,
+.cc-ai-mention-item.active {
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+}
+
+.cc-ai-mention-item.no-results {
+    color: var(--color-text-muted);
+    font-style: italic;
+    cursor: default;
+}
+
+.cc-ai-mention-item.no-results:hover {
+    background: transparent;
+    color: var(--color-text-muted);
+}
+
+.cc-ai-mention-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-alt);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.cc-ai-mention-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Legacy input styling kept for backwards compat */
 .cc-ai-input-row input {
     flex: 1;
     padding: var(--space-2) var(--space-3);

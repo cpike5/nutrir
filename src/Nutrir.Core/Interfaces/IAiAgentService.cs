@@ -1,3 +1,5 @@
+using Nutrir.Core.Models;
+
 namespace Nutrir.Core.Interfaces;
 
 public enum ConfirmationTier { Standard, Elevated }
@@ -32,7 +34,7 @@ public record AgentStreamEvent
 
 public interface IAiAgentService
 {
-    IAsyncEnumerable<AgentStreamEvent> SendMessageAsync(string userMessage, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<AgentStreamEvent> SendMessageAsync(string userMessage, CancellationToken cancellationToken, List<MentionTag>? mentionTags = null);
     Task<List<ChatDisplayMessage>?> LoadHistoryAsync();
     Task ClearHistoryAsync();
     void SetUserContext(string userName, string userRole);

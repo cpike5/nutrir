@@ -6,8 +6,10 @@ using Anthropic;
 using Anthropic.Models.Messages;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
+using Nutrir.Core.Models;
 using Nutrir.Infrastructure.Configuration;
 using Nutrir.Infrastructure.Diagnostics;
 
@@ -32,6 +34,7 @@ public class AiAgentService : IAiAgentService
     private string? _pageEntityType;
     private string? _pageEntityId;
     private bool _historyLoaded;
+    private List<MentionTag>? _currentMentionTags;
 
     private const int MaxToolLoopIterations = 10;
 
@@ -121,6 +124,7 @@ public class AiAgentService : IAiAgentService
         Do NOT use for goals or progress entries (no standalone detail pages).
         In tables, use selectively for the most relevant entities — not every row.
         {BuildPageContextPrompt()}
+        {BuildMentionContextPrompt()}
         """;
 
     private string BuildPageContextPrompt()
@@ -135,6 +139,38 @@ public class AiAgentService : IAiAgentService
         When they say "this client", "this appointment", etc., they mean {_pageEntityType} #{_pageEntityId}.
         Use this ID directly without searching — but confirm with the user if ambiguous.
         """;
+    }
+
+    private string BuildMentionContextPrompt()
+    {
+        if (_currentMentionTags == null || _currentMentionTags.Count == 0)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("\n## Referenced Entities");
+        sb.AppendLine("The user has tagged the following entities in their message. Use the provided IDs directly — do not search for these entities.");
+
+        foreach (var tag in _currentMentionTags)
+        {
+            var typeLabel = tag.EntityType switch
+            {
+                "client" => "Client",
+                "user" => "User",
+                _ => tag.EntityType
+            };
+            sb.AppendLine($"- {typeLabel}: \"{tag.DisplayName}\" (ID: {tag.EntityId})");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string CleanMessageTags(string message)
+    {
+        // Replace {{entityType:entityId:displayName}} with just the display name
+        return System.Text.RegularExpressions.Regex.Replace(
+            message,
+            @"\{\{(?:client|user):\w+:([^}]+)\}\}",
+            m => m.Groups[1].Value);
     }
 
     public AiAgentService(
@@ -159,8 +195,11 @@ public class AiAgentService : IAiAgentService
 
     public async IAsyncEnumerable<AgentStreamEvent> SendMessageAsync(
         string userMessage,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        List<MentionTag>? mentionTags = null)
     {
+        _currentMentionTags = mentionTags;
+        userMessage = CleanMessageTags(userMessage);
         using var conversationActivity = NutrirTelemetry.AiSource.StartActivity("AI Conversation");
         conversationActivity?.SetTag("ai.user_id", _userId);
         conversationActivity?.SetTag("ai.model", _options.Model);
