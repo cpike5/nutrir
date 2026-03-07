@@ -13,7 +13,7 @@
     <ChildContent>
         @if (_loading)
         {
-            <div class="meal-plan-loading">Loading...</div>
+            <LoadingSpinner />
         }
         else if (_activePlan is not null)
         {

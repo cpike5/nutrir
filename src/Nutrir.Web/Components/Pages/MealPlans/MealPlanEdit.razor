@@ -19,7 +19,7 @@
 <div class="mp-edit-page">
     @if (_isLoading)
     {
-        <p class="mp-loading">Loading meal plan...</p>
+        <LoadingSpinner Message="Loading meal plan..." />
     }
     else if (_plan is null)
     {
