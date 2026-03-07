@@ -52,7 +52,7 @@ window.aiPanel = {
     },
 
     _getInputElement: function () {
-        return document.getElementById('aiInput');
+        return document.getElementById('ai-input');
     },
 
     _getPlainText: function () {
@@ -358,7 +358,7 @@ window.aiPanel = {
     getMentionDropdownPosition: function () {
         var sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) {
-            return { top: 0, left: 0 };
+            return { bottom: 0, left: 0 };
         }
 
         var range = sel.getRangeAt(0).cloneRange();
@@ -376,12 +376,16 @@ window.aiPanel = {
         var panel = this._getInputElement();
         var panelRect = panel ? panel.closest('.cc-ai-panel, .cc-ai-chat-panel')?.getBoundingClientRect() : null;
 
-        var top = rect.top;
+        var inputArea = panel ? panel.closest('.cc-ai-input-area') : null;
+        var inputAreaRect = inputArea ? inputArea.getBoundingClientRect() : null;
+
+        // Calculate bottom-relative position (dropdown appears above the cursor)
+        var bottom = 0;
         var left = rect.left;
 
-        if (panelRect) {
-            top = rect.top - panelRect.top;
-            left = rect.left - panelRect.left;
+        if (inputAreaRect) {
+            bottom = inputAreaRect.bottom - rect.top + 4; // 4px gap above cursor
+            left = rect.left - inputAreaRect.left;
         }
 
         // Clean up the marker
@@ -392,7 +396,7 @@ window.aiPanel = {
             panel.normalize();
         }
 
-        return { top: top, left: left };
+        return { bottom: bottom, left: left };
     },
 
     disposeInputHandler: function () {

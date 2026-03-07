@@ -437,6 +437,7 @@
 
 .cc-ai-input:focus {
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-muted);
 }
 
 .cc-ai-input:empty::before {
@@ -458,8 +459,8 @@
     border-radius: var(--radius-sm);
     font-size: var(--text-xs);
     font-weight: 500;
-    line-height: 1.6;
-    vertical-align: baseline;
+    line-height: var(--leading-normal);
+    vertical-align: text-bottom;
     white-space: nowrap;
     user-select: all;
     cursor: default;
@@ -537,28 +538,6 @@
     white-space: nowrap;
 }
 
-/* Legacy input styling kept for backwards compat */
-.cc-ai-input-row input {
-    flex: 1;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-size: var(--text-sm);
-    font-family: inherit;
-    outline: none;
-    transition: border-color var(--duration-fast);
-}
-
-.cc-ai-input-row input:focus {
-    border-color: var(--color-primary);
-}
-
-.cc-ai-input-row input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
 
 .cc-ai-send-btn {
     display: flex;

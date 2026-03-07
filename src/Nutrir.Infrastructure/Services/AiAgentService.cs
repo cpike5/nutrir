@@ -169,7 +169,7 @@ public class AiAgentService : IAiAgentService
         // Replace {{entityType:entityId:displayName}} with just the display name
         return System.Text.RegularExpressions.Regex.Replace(
             message,
-            @"\{\{(?:client|user):\w+:([^}]+)\}\}",
+            @"\{\{(?:client|user):[^:]+:([^}]+)\}\}",
             m => m.Groups[1].Value);
     }
 
@@ -198,7 +198,7 @@ public class AiAgentService : IAiAgentService
         [EnumeratorCancellation] CancellationToken cancellationToken,
         List<MentionTag>? mentionTags = null)
     {
-        _currentMentionTags = mentionTags;
+        _currentMentionTags = mentionTags?.ToList(); // defensive copy
         userMessage = CleanMessageTags(userMessage);
         using var conversationActivity = NutrirTelemetry.AiSource.StartActivity("AI Conversation");
         conversationActivity?.SetTag("ai.user_id", _userId);
