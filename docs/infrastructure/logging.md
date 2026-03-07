@@ -170,6 +170,7 @@ In `appsettings.json`:
     "Environment": "Development",
     "TransactionSampleRate": 1.0,
     "CaptureBody": "off",
+    "OpenTelemetryBridgeEnabled": true,
     "SanitizeFieldNames": ["password", "token", "authorization", "secret"]
   }
 }
@@ -181,6 +182,7 @@ In `appsettings.json`:
 | `Environment` | `Development` | Groups traces by environment |
 | `TransactionSampleRate` | `1.0` | Sample 100% of transactions (reduce in production) |
 | `CaptureBody` | `off` | Don't capture request/response bodies (privacy) |
+| `OpenTelemetryBridgeEnabled` | `true` | Bridges custom `System.Diagnostics.ActivitySource` spans to Elastic APM (required for custom spans defined in `NutrirTelemetry.cs`) |
 | `SanitizeFieldNames` | `[password, token, ...]` | Redact sensitive fields in captured data |
 
 ### Docker Environment Variables
@@ -191,6 +193,7 @@ The `app` service in `docker-compose.yml` includes:
 - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-http://host.docker.internal:8200}
 - ElasticApm__SecretToken=${ELASTIC_APM_SECRET_TOKEN:-}
 - ElasticApm__Environment=${ASPNETCORE_ENVIRONMENT:-Development}
+- ElasticApm__OpenTelemetryBridgeEnabled=true
 ```
 
 These can be overridden via `.env` or environment variables.
@@ -214,7 +217,7 @@ If no APM Server is reachable, the agent logs a warning at startup but **does no
 ## Future Considerations
 
 - **Elasticsearch sink**: Add `Serilog.Sinks.Elasticsearch` for production, configured to an external Elastic cluster
-- **Custom spans**: Add manual instrumentation for domain operations (e.g., meal plan generation)
+- **Custom spans**: Custom `ActivitySource` spans are defined in `NutrirTelemetry.cs` (`Nutrir.AI`, `Nutrir.App`, `Nutrir.Documents`) and bridged to Elastic APM via `OpenTelemetryBridgeEnabled`
 - **Transaction sample rate**: Reduce `TransactionSampleRate` in production (e.g., `0.1` for 10%)
 - **Health checks**: Add APM health check endpoint
 - **Structured logging conventions**: Establish property naming standards (e.g., `UserId`, `ClientId`, `Action`)

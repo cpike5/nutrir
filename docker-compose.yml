@@ -18,6 +18,7 @@ services:
       - ElasticApm__ServerUrl=${ELASTIC_APM_SERVER_URL:-}
       - ElasticApm__ApiKey=${ELASTIC_APM_API_KEY:-}
       - ElasticApm__Environment=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ElasticApm__OpenTelemetryBridgeEnabled=true
       - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
 
   db:
