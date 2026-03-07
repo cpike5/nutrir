@@ -1,6 +1,7 @@
 /* ── Page Container ───────────────────────────────────── */
 .form-page {
     max-width: 960px;
+    margin: 0 auto;
     padding: var(--space-8);
 }
 
