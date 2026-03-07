@@ -1,0 +1,32 @@
+.public-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+    padding: var(--space-8) var(--space-4);
+}
+
+.public-container {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.public-logo {
+    width: 140px;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--space-8);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mb-8 {
+    margin-bottom: var(--space-8);
+}
+
+@media (max-width: 600px) {
+    .public-page {
+        padding: var(--space-4);
+    }
+}

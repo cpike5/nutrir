@@ -1,0 +1,285 @@
+@page "/clients/intake/{FormId:int}/review"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using System.Text.Json
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IIntakeFormService IntakeFormService
+@inject IAuditLogService AuditLogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Intake Form Review — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Clients", "/clients"), new BreadcrumbItem("Intake Form Review") })" />
+
+<div class="intake-review-page">
+    @if (_isLoading)
+    {
+        <p class="intake-review-loading">Loading intake form...</p>
+    }
+    else if (_form is null)
+    {
+        <div class="table-card">
+            <div class="intake-review-not-found">
+                <p class="intake-review-not-found-title">Intake form not found</p>
+                <p class="intake-review-not-found-desc">The intake form you are looking for does not exist.</p>
+                <div class="intake-review-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="NavigateToClients">Back to Clients</Button>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_form.Status != IntakeFormStatus.Submitted && _form.Status != IntakeFormStatus.Reviewed)
+    {
+        <div class="table-card">
+            <div class="intake-review-not-found">
+                <p class="intake-review-not-found-title">Form not ready for review</p>
+                <p class="intake-review-not-found-desc">
+                    This intake form has a status of <strong>@_form.Status</strong> and cannot be reviewed yet.
+                    Only submitted forms can be reviewed.
+                </p>
+                <div class="intake-review-not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="NavigateToClients">Back to Clients</Button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* ── Status Header Card ─────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="status-header">
+                <div class="status-header-info">
+                    <h1 class="status-header-title">Intake Form #@_form.Id</h1>
+                    <div class="status-header-meta">
+                        <Badge Variant="@GetStatusBadgeVariant(_form.Status)">
+                            <span class="badge-dot"></span> @_form.Status
+                        </Badge>
+                        @if (_form.SubmittedAt.HasValue)
+                        {
+                            <span class="status-meta-item">Submitted @_form.SubmittedAt.Value.ToString("MMM d, yyyy 'at' h:mm tt")</span>
+                        }
+                        <span class="status-meta-item">@_form.ClientEmail</span>
+                    </div>
+                </div>
+                <div class="status-header-actions">
+                    @if (_form.Status == IntakeFormStatus.Reviewed && _form.ClientId.HasValue)
+                    {
+                        <Button Variant="ButtonVariant.Outline" OnClick="NavigateToClient">View Client Record</Button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Response Sections ──────────────────────────────── *@
+        @foreach (var sectionKey in SectionOrder)
+        {
+            var grouped = GetGroupedResponses();
+            if (!grouped.TryGetValue(sectionKey, out var responses))
+                continue;
+
+            var sectionIndex = Array.IndexOf(SectionOrder, sectionKey);
+            <div class="table-card section-animate" style="animation-delay: @((sectionIndex + 1) * 80)ms;">
+                <div class="section-header">
+                    <span class="section-header-label">@GetSectionDisplayName(sectionKey)</span>
+                </div>
+                <div class="response-grid">
+                    @foreach (var response in responses)
+                    {
+                        <div class="response-field">
+                            <span class="response-label">@FormatFieldKey(response.FieldKey)</span>
+                            <span class="response-value">@FormatFieldValue(response.Value)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ── Any remaining sections not in SectionOrder ────── *@
+        @foreach (var kvp in GetGroupedResponses().Where(g => !SectionOrder.Contains(g.Key)))
+        {
+            <div class="table-card section-animate">
+                <div class="section-header">
+                    <span class="section-header-label">@FormatFieldKey(kvp.Key)</span>
+                </div>
+                <div class="response-grid">
+                    @foreach (var response in kvp.Value)
+                    {
+                        <div class="response-field">
+                            <span class="response-label">@FormatFieldKey(response.FieldKey)</span>
+                            <span class="response-value">@FormatFieldValue(response.Value)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ── Action Section ─────────────────────────────────── *@
+        @if (_form.Status == IntakeFormStatus.Submitted)
+        {
+            <div class="table-card section-animate" style="animation-delay: @((SectionOrder.Length + 1) * 80)ms;">
+                <div class="action-section">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="action-error">@_errorMessage</p>
+                    }
+                    <Button Variant="ButtonVariant.Primary" OnClick="ReviewAndCreateClient" Disabled="@_isReviewing">
+                        @if (_isReviewing)
+                        {
+                            <span>Creating Client...</span>
+                        }
+                        else
+                        {
+                            <span>Create Client from Intake</span>
+                        }
+                    </Button>
+                </div>
+            </div>
+        }
+        else if (_form.Status == IntakeFormStatus.Reviewed)
+        {
+            <div class="meta-footer section-animate" style="animation-delay: @((SectionOrder.Length + 1) * 80)ms;">
+                <span>Reviewed @_form.ReviewedAt?.ToString("MMM d, yyyy")</span>
+                @if (_form.ClientId.HasValue)
+                {
+                    <span> · Client #@_form.ClientId.Value</span>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int FormId { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private static readonly string[] SectionOrder = ["personal_info", "medical_history", "dietary_habits", "goals", "consent"];
+
+    private IntakeFormDto? _form;
+    private bool _isLoading = true;
+    private bool _isReviewing;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _form = await IntakeFormService.GetByIdAsync(FormId);
+        _isLoading = false;
+
+        if (_form is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await AuditLogService.LogAsync(userId, "IntakeFormViewed", "IntakeForm", FormId.ToString(), "Viewed intake form for review");
+        }
+    }
+
+    private async Task ReviewAndCreateClient()
+    {
+        _isReviewing = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var (success, clientId, error) = await IntakeFormService.ReviewFormAsync(FormId, userId);
+            if (success && clientId.HasValue)
+            {
+                NavigationManager.NavigateTo($"/clients/{clientId.Value}");
+            }
+            else
+            {
+                _errorMessage = error ?? "Failed to create client from intake form.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            _isReviewing = false;
+        }
+    }
+
+    private void NavigateToClients()
+    {
+        NavigationManager.NavigateTo("/clients");
+    }
+
+    private void NavigateToClient()
+    {
+        if (_form?.ClientId.HasValue == true)
+        {
+            NavigationManager.NavigateTo($"/clients/{_form.ClientId.Value}");
+        }
+    }
+
+    private Dictionary<string, List<IntakeFormResponseDto>> GetGroupedResponses()
+    {
+        return _form!.Responses
+            .GroupBy(r => r.SectionKey)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private static string GetSectionDisplayName(string sectionKey) => sectionKey switch
+    {
+        "personal_info" => "Personal Information",
+        "medical_history" => "Medical History",
+        "dietary_habits" => "Diet & Lifestyle",
+        "goals" => "Goals & Expectations",
+        "consent" => "Consent",
+        _ => FormatFieldKey(sectionKey)
+    };
+
+    private static string FormatFieldKey(string key)
+    {
+        // Convert snake_case to Title Case
+        return string.Join(" ", key.Split('_')
+            .Where(w => w.Length > 0)
+            .Select(w => char.ToUpper(w[0]) + w[1..]));
+    }
+
+    private static string FormatFieldValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "—";
+
+        // Boolean values
+        if (bool.TryParse(value, out var boolVal))
+            return boolVal ? "Yes" : "No";
+
+        // JSON arrays
+        if (value.StartsWith('['))
+        {
+            try
+            {
+                var items = JsonSerializer.Deserialize<List<string>>(value);
+                if (items is not null && items.Count > 0)
+                    return string.Join(", ", items);
+            }
+            catch
+            {
+                // Not valid JSON, fall through
+            }
+        }
+
+        return value;
+    }
+
+    private static BadgeVariant GetStatusBadgeVariant(IntakeFormStatus status) => status switch
+    {
+        IntakeFormStatus.Pending => BadgeVariant.Warning,
+        IntakeFormStatus.Submitted => BadgeVariant.Primary,
+        IntakeFormStatus.Reviewed => BadgeVariant.Success,
+        IntakeFormStatus.Expired => BadgeVariant.Error,
+        _ => BadgeVariant.Secondary
+    };
+}

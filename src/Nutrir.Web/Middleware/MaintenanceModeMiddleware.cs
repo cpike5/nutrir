@@ -62,6 +62,13 @@ public class MaintenanceModeMiddleware
             return;
         }
 
+        // Allow public intake forms
+        if (path.StartsWith("/intake/", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         // Allow authenticated admin/nutritionist users through
         if (context.User.Identity?.IsAuthenticated == true)
         {
