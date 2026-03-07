@@ -7,6 +7,7 @@ using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Configuration;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -37,6 +38,11 @@ public class ConsentFormService : IConsentFormService
 
     public async Task<byte[]> GeneratePdfAsync(int clientId, string userId)
     {
+        using var activity = NutrirTelemetry.DocSource.StartActivity("ConsentForm PDF Generation");
+        activity?.SetTag("document.type", "pdf");
+        activity?.SetTag("document.entity_type", "ConsentForm");
+        activity?.SetTag("document.client_id", clientId);
+
         var (client, practitionerName) = await GetClientAndPractitionerAsync(clientId);
         var clientName = $"{client.FirstName} {client.LastName}";
         var content = _template.Generate(clientName, practitionerName, DateTime.UtcNow);
@@ -58,6 +64,11 @@ public class ConsentFormService : IConsentFormService
 
     public async Task<byte[]> GenerateDocxAsync(int clientId, string userId)
     {
+        using var activity = NutrirTelemetry.DocSource.StartActivity("ConsentForm DOCX Generation");
+        activity?.SetTag("document.type", "docx");
+        activity?.SetTag("document.entity_type", "ConsentForm");
+        activity?.SetTag("document.client_id", clientId);
+
         var (client, practitionerName) = await GetClientAndPractitionerAsync(clientId);
         var clientName = $"{client.FirstName} {client.LastName}";
         var content = _template.Generate(clientName, practitionerName, DateTime.UtcNow);

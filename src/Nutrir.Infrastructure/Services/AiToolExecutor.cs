@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Anthropic.Models.Messages;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -742,6 +744,11 @@ public class AiToolExecutor
 
     public async Task<string> ExecuteAsync(string toolName, IReadOnlyDictionary<string, JsonElement> input, string? userId = null)
     {
+        using var activity = NutrirTelemetry.AiSource.StartActivity($"Tool: {toolName}");
+        activity?.SetTag("ai.tool.name", toolName);
+        activity?.SetTag("ai.tool.user_id", userId);
+        activity?.SetTag("ai.tool.is_write", ConfirmationTierMap.ContainsKey(toolName));
+
         _currentUserId = userId;
 
         // Convert dictionary to JsonElement for handler convenience
@@ -751,15 +758,19 @@ public class AiToolExecutor
         {
             try
             {
-                return await handler(jsonElement);
+                var result = await handler(jsonElement);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return result;
             }
             catch (Exception ex)
             {
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 _logger.LogError(ex, "Error executing tool {ToolName}", toolName);
                 return JsonSerializer.Serialize(new { error = $"Error executing {toolName}: {ex.Message}" });
             }
         }
 
+        activity?.SetStatus(ActivityStatusCode.Error, "Unknown tool");
         return JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" });
     }
 
