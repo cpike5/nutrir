@@ -36,25 +36,29 @@
                                     <FormInput Id="edit-med-name"
                                                Value="@_editName"
                                                ValueChanged="@(v => _editName = v)"
-                                               Placeholder="Medication name" />
+                                               Placeholder="Medication name"
+                                               DebounceMs="300" />
                                 </FormGroup>
                                 <FormGroup Label="Dosage" Id="edit-med-dosage">
                                     <FormInput Id="edit-med-dosage"
                                                Value="@_editDosage"
                                                ValueChanged="@(v => _editDosage = v)"
-                                               Placeholder="e.g. 500mg" />
+                                               Placeholder="e.g. 500mg"
+                                               DebounceMs="300" />
                                 </FormGroup>
                                 <FormGroup Label="Frequency" Id="edit-med-freq">
                                     <FormInput Id="edit-med-freq"
                                                Value="@_editFrequency"
                                                ValueChanged="@(v => _editFrequency = v)"
-                                               Placeholder="e.g. Twice daily" />
+                                               Placeholder="e.g. Twice daily"
+                                               DebounceMs="300" />
                                 </FormGroup>
                                 <FormGroup Label="Prescribed For" Id="edit-med-for">
                                     <FormInput Id="edit-med-for"
                                                Value="@_editPrescribedFor"
                                                ValueChanged="@(v => _editPrescribedFor = v)"
-                                               Placeholder="e.g. Hypertension" />
+                                               Placeholder="e.g. Hypertension"
+                                               DebounceMs="300" />
                                 </FormGroup>
                             </div>
                             @if (!string.IsNullOrEmpty(_formError))
@@ -126,25 +130,29 @@
                             <FormInput Id="add-med-name"
                                        Value="@_addName"
                                        ValueChanged="@(v => _addName = v)"
-                                       Placeholder="Medication name" />
+                                       Placeholder="Medication name"
+                                       DebounceMs="300" />
                         </FormGroup>
                         <FormGroup Label="Dosage" Id="add-med-dosage">
                             <FormInput Id="add-med-dosage"
                                        Value="@_addDosage"
                                        ValueChanged="@(v => _addDosage = v)"
-                                       Placeholder="e.g. 500mg" />
+                                       Placeholder="e.g. 500mg"
+                                       DebounceMs="300" />
                         </FormGroup>
                         <FormGroup Label="Frequency" Id="add-med-freq">
                             <FormInput Id="add-med-freq"
                                        Value="@_addFrequency"
                                        ValueChanged="@(v => _addFrequency = v)"
-                                       Placeholder="e.g. Twice daily" />
+                                       Placeholder="e.g. Twice daily"
+                                       DebounceMs="300" />
                         </FormGroup>
                         <FormGroup Label="Prescribed For" Id="add-med-for">
                             <FormInput Id="add-med-for"
                                        Value="@_addPrescribedFor"
                                        ValueChanged="@(v => _addPrescribedFor = v)"
-                                       Placeholder="e.g. Hypertension" />
+                                       Placeholder="e.g. Hypertension"
+                                       DebounceMs="300" />
                         </FormGroup>
                     </div>
                     @if (!string.IsNullOrEmpty(_formError))

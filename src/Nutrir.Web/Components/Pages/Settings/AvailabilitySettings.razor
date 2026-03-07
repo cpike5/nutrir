@@ -161,7 +161,8 @@
                             <FormInput Id="blockNotes"
                                        Value="@_newBlockNotes"
                                        ValueChanged="@(v => _newBlockNotes = v)"
-                                       Placeholder="Optional description..." />
+                                       Placeholder="Optional description..."
+                                       DebounceMs="300" />
                         </FormGroup>
                     </div>
                     <Button Variant="ButtonVariant.Outline" Disabled="@_isAddingBlock" OnClick="AddTimeBlock">

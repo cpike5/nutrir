@@ -164,7 +164,8 @@
                             <FormInput Id="virtualUrl" Type="url"
                                        Value="@_model.VirtualMeetingUrl"
                                        ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
-                                       Placeholder="https://meet.example.com/..." />
+                                       Placeholder="https://meet.example.com/..."
+                                       DebounceMs="300" />
                         </FormGroup>
                     }
 
@@ -174,7 +175,8 @@
                             <FormInput Id="locationNotes"
                                        Value="@_model.LocationNotes"
                                        ValueChanged="@(v => _model.LocationNotes = v)"
-                                       Placeholder="Address or room number..." />
+                                       Placeholder="Address or room number..."
+                                       DebounceMs="300" />
                         </FormGroup>
                     }
 

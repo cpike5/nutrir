@@ -61,7 +61,8 @@
                                     <FormInput Id="@($"custom-{idx}")"
                                                Value="@_model.Measurements[idx].CustomMetricName"
                                                ValueChanged="@(v => _model.Measurements[idx].CustomMetricName = v)"
-                                               Placeholder="e.g. Bicep circumference" />
+                                               Placeholder="e.g. Bicep circumference"
+                                               DebounceMs="300" />
                                 </FormGroup>
                             }
                             <div class="form-grid">
@@ -75,7 +76,8 @@
                                     <FormInput Id="@($"unit-{idx}")"
                                                Value="@_model.Measurements[idx].Unit"
                                                ValueChanged="@(v => _model.Measurements[idx].Unit = v)"
-                                               Placeholder="e.g. kg, %, cm" />
+                                               Placeholder="e.g. kg, %, cm"
+                                               DebounceMs="300" />
                                 </FormGroup>
                             </div>
                         </div>

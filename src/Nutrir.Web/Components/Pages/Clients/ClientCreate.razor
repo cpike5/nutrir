@@ -52,14 +52,16 @@
                         <FormInput Id="firstName"
                                    Value="@_model.FirstName"
                                    ValueChanged="OnFirstNameChanged"
-                                   Placeholder="Enter first name" />
+                                   Placeholder="Enter first name"
+                                   DebounceMs="300" />
                     </FormGroup>
 
                     <FormGroup Label="Last Name" Id="lastName" Error="@GetFieldError(nameof(_model.LastName))">
                         <FormInput Id="lastName"
                                    Value="@_model.LastName"
                                    ValueChanged="OnLastNameChanged"
-                                   Placeholder="Enter last name" />
+                                   Placeholder="Enter last name"
+                                   DebounceMs="300" />
                     </FormGroup>
                 </div>
 
@@ -69,7 +71,8 @@
                                    Type="email"
                                    Value="@_model.Email"
                                    ValueChanged="@(v => _model.Email = v)"
-                                   Placeholder="email@example.com" />
+                                   Placeholder="email@example.com"
+                                   DebounceMs="300" />
                     </FormGroup>
 
                     <FormGroup Label="Phone" Id="phone">
@@ -77,7 +80,8 @@
                                    Type="tel"
                                    Value="@_model.Phone"
                                    ValueChanged="OnPhoneChanged"
-                                   Placeholder="(555) 123-4567" />
+                                   Placeholder="(555) 123-4567"
+                                   DebounceMs="300" />
                     </FormGroup>
                 </div>
 
