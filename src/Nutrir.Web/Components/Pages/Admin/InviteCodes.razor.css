@@ -397,6 +397,76 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Cancel Button ───────────────────────────────────── */
+.cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-error, #dc2626);
+    background: transparent;
+    border: 1px solid var(--color-error, #dc2626);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.cancel-btn:hover {
+    background: var(--color-error, #dc2626);
+    color: #fff;
+}
+
+.col-actions {
+    width: 100px;
+    text-align: center;
+}
+
+/* ── Confirmation Modal ──────────────────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-dialog {
+    background: var(--color-surface, #fff);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--color-error, #dc2626);
+    margin-bottom: 12px;
+}
+
+.modal-body {
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 /* ── Accessibility ───────────────────────────────────── */
 .sr-only {
     position: absolute;

@@ -10,5 +10,7 @@ public interface IInviteCodeService
 
     Task RedeemAsync(string code, string userId);
 
+    Task CancelAsync(int inviteCodeId, string cancelledByUserId);
+
     Task<List<InviteCodeListItemDto>> GetAllAsync();
 }

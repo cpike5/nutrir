@@ -10,5 +10,6 @@ public enum InviteCodeValidationStatus
     Valid,
     NotFound,
     Expired,
-    AlreadyUsed
+    AlreadyUsed,
+    Cancelled
 }
