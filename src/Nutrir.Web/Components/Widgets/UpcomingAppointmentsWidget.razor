@@ -44,7 +44,7 @@
                     };
 
                     <div class="appointment-card">
-                        <div class="appointment-main">
+                        <a class="appointment-card-link" href="/appointments/@appt.Id/edit">
                             <div class="appointment-datetime">
                                 <span class="appointment-date">@localStart.ToString("ddd, MMM d")</span>
                                 <span class="appointment-time-sep">&middot;</span>
@@ -74,8 +74,12 @@
                                     }
                                 </span>
                                 <span class="appointment-duration">@appt.DurationMinutes min</span>
+                                @if (!string.IsNullOrEmpty(appt.NutritionistName))
+                                {
+                                    <span class="appointment-nutritionist">with @appt.NutritionistName</span>
+                                }
                             </div>
-                        </div>
+                        </a>
                         <div class="appointment-actions">
                             @if (_cancellingId == appt.Id)
                             {

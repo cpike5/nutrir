@@ -41,12 +41,20 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.appointment-main {
+.appointment-card-link {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     min-width: 0;
     flex: 1;
+    text-decoration: none;
+    color: inherit;
+}
+
+.appointment-card-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
 }
 
 .appointment-datetime {
@@ -104,6 +112,11 @@
 
 .appointment-duration {
     white-space: nowrap;
+}
+
+.appointment-nutritionist {
+    white-space: nowrap;
+    font-style: italic;
 }
 
 .appointment-actions {
