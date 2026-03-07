@@ -113,6 +113,17 @@ try
         await seeder.SeedAsync(app.Environment.IsDevelopment());
     }
 
+    var configuredPalette = app.Configuration["Theme:Palette"];
+    if (!string.IsNullOrWhiteSpace(configuredPalette))
+    {
+        var knownPalettes = new[] { "sage", "pink", "pink-deep", "pink-soft", "pink-mauve", "pink-lilac" };
+        if (knownPalettes.Contains(configuredPalette, StringComparer.OrdinalIgnoreCase))
+            Log.Information("Theme palette configured: {Palette}", configuredPalette);
+        else
+            Log.Warning("Unknown Theme:Palette value '{Palette}'. Known palettes: {Known}. Falling back to default.",
+                configuredPalette, string.Join(", ", knownPalettes));
+    }
+
     app.UseSerilogRequestLogging();
 
     // Configure the HTTP request pipeline.
