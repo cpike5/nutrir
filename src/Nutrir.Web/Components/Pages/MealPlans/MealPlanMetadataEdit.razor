@@ -21,10 +21,7 @@
 <div class="md-edit-page">
     @if (_isLoading)
     {
-        <div class="md-loading">
-            <div class="md-spinner"></div>
-            <span>Loading meal plan details...</span>
-        </div>
+        <LoadingSpinner Message="Loading meal plan details..." />
     }
     else if (_notFound)
     {

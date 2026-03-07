@@ -1,0 +1,11 @@
+<div class="@CssClass">
+    <div class="loading-spinner"></div>
+    <span>@Message</span>
+</div>
+
+@code {
+    [Parameter] public string Message { get; set; } = "Loading...";
+    [Parameter] public bool Centered { get; set; } = true;
+
+    private string CssClass => Centered ? "loading-container loading-centered" : "loading-container";
+}

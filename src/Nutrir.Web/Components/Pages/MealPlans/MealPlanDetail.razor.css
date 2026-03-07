@@ -33,14 +33,6 @@
     animation: sectionFadeIn 0.3s var(--ease-default) backwards;
 }
 
-/* ── Loading ─────────────────────────────────────────── */
-.mp-loading {
-    padding: var(--space-8);
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-}
-
 /* ── Not Found ───────────────────────────────────────── */
 .mp-not-found {
     padding: var(--space-16) var(--space-6);

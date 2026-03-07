@@ -31,14 +31,7 @@
     background: currentColor;
 }
 
-/* ── Loading / Not Found ─────────────────────────────── */
-.mp-loading {
-    padding: var(--space-8);
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-}
-
+/* ── Not Found ───────────────────────────────────────── */
 .table-card {
     background: var(--color-bg-card);
     border-radius: var(--radius-xl);
