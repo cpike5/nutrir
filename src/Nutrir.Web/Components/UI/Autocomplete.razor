@@ -52,6 +52,7 @@
     [Parameter] public string? DisplayText { get; set; }
     [Parameter] public EventCallback<string> DisplayTextChanged { get; set; }
     [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool AllowFreeText { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string _searchText = string.Empty;
@@ -76,6 +77,10 @@
             {
                 _searchText = match.Text;
             }
+            else if (AllowFreeText)
+            {
+                _searchText = Value;
+            }
         }
 
         // Auto-select if only one option (once only)
@@ -86,13 +91,18 @@
         }
     }
 
-    private void HandleInput(ChangeEventArgs e)
+    private async Task HandleInput(ChangeEventArgs e)
     {
         _searchText = e.Value?.ToString() ?? string.Empty;
         _isOpen = true;
         _highlightedIndex = -1;
         _preventDefaultKey = false;
         FilterOptions();
+
+        if (AllowFreeText)
+        {
+            await ValueChanged.InvokeAsync(_searchText);
+        }
     }
 
     private void HandleFocusIn()
@@ -115,6 +125,12 @@
             // Empty text on blur clears the selection
             await ValueChanged.InvokeAsync(string.Empty);
             await DisplayTextChanged.InvokeAsync(string.Empty);
+        }
+        else if (AllowFreeText)
+        {
+            // Accept whatever the user typed as the value
+            await ValueChanged.InvokeAsync(_searchText);
+            await DisplayTextChanged.InvokeAsync(_searchText);
         }
         else
         {

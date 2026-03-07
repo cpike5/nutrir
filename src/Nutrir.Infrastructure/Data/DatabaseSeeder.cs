@@ -36,6 +36,7 @@ public class DatabaseSeeder
         await SeedRolesAsync();
         await SeedAdminUserAsync();
         await SeedNutritionistUserAsync();
+        await SeedConditionsAsync();
 
         if (isDevelopment)
         {
@@ -177,6 +178,54 @@ public class DatabaseSeeder
             _logger.LogError("Failed to assign Nutritionist role to user {Email}: {Errors}", email,
                 string.Join(", ", roleResult.Errors.Select(e => e.Description)));
         }
+    }
+
+    private static readonly (string Name, string? IcdCode, string? Category)[] SeedConditions =
+    [
+        ("Type 2 Diabetes", "E11", "Metabolic"),
+        ("Type 1 Diabetes", "E10", "Metabolic"),
+        ("Celiac Disease", "K90.0", "Gastrointestinal"),
+        ("Crohn's Disease", "K50", "Gastrointestinal"),
+        ("Ulcerative Colitis", "K51", "Gastrointestinal"),
+        ("Irritable Bowel Syndrome", "K58", "Gastrointestinal"),
+        ("Gastroesophageal Reflux Disease", "K21", "Gastrointestinal"),
+        ("Hypertension", "I10", "Cardiovascular"),
+        ("Hyperlipidemia", "E78.5", "Metabolic"),
+        ("Polycystic Ovary Syndrome", "E28.2", "Metabolic"),
+        ("Hypothyroidism", "E03.9", "Metabolic"),
+        ("Hyperthyroidism", "E05.9", "Metabolic"),
+        ("Chronic Kidney Disease", "N18", "Renal"),
+        ("Heart Failure", "I50", "Cardiovascular"),
+        ("Obesity", "E66", "Metabolic"),
+        ("Iron Deficiency Anemia", "D50", "Hematologic"),
+        ("Osteoporosis", "M81", "Musculoskeletal"),
+        ("Anorexia Nervosa", "F50.0", "Eating Disorder"),
+        ("Bulimia Nervosa", "F50.2", "Eating Disorder"),
+        ("Lactose Intolerance", "E73", "Gastrointestinal"),
+        ("Fructose Intolerance", "E74.1", "Metabolic"),
+    ];
+
+    private async Task SeedConditionsAsync()
+    {
+        // Idempotency check — skip if conditions already exist (include soft-deleted)
+        if (await _dbContext.Conditions.IgnoreQueryFilters().AnyAsync())
+        {
+            _logger.LogInformation("Condition lookup data already exists, skipping");
+            return;
+        }
+
+        var conditions = SeedConditions.Select(c => new Condition
+        {
+            Name = c.Name,
+            IcdCode = c.IcdCode,
+            Category = c.Category,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        _dbContext.Conditions.AddRange(conditions);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Seeded {Count} conditions to lookup table", conditions.Count);
     }
 
     private async Task SeedDashboardDataAsync()

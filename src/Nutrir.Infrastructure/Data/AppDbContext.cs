@@ -48,6 +48,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ClientDietaryRestriction> ClientDietaryRestrictions => Set<ClientDietaryRestriction>();
 
+    public DbSet<Condition> Conditions => Set<Condition>();
+
     public DbSet<PractitionerSchedule> PractitionerSchedules => Set<PractitionerSchedule>();
 
     public DbSet<PractitionerTimeBlock> PractitionerTimeBlocks => Set<PractitionerTimeBlock>();
@@ -402,6 +404,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(dr => dr.Notes).HasColumnType("text");
             entity.Property(dr => dr.IsDeleted).HasDefaultValue(false);
             entity.Property(dr => dr.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<Condition>(entity =>
+        {
+            entity.HasQueryFilter(c => !c.IsDeleted);
+
+            entity.HasIndex(c => c.Name).IsUnique();
+
+            entity.Property(c => c.Name).HasMaxLength(200);
+            entity.Property(c => c.IcdCode).HasMaxLength(20);
+            entity.Property(c => c.Category).HasMaxLength(100);
+            entity.Property(c => c.IsDeleted).HasDefaultValue(false);
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<PractitionerSchedule>(entity =>
