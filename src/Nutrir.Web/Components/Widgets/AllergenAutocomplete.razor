@@ -1,0 +1,192 @@
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using Microsoft.AspNetCore.Components.Web
+
+@implements IDisposable
+
+@inject IAllergenService AllergenService
+
+<div class="autocomplete-wrapper" @onfocusout="HandleFocusOut">
+    <input id="@Id"
+           type="text"
+           class="form-input"
+           value="@_searchText"
+           placeholder="@Placeholder"
+           autocomplete="off"
+           role="combobox"
+           aria-expanded="@_isOpen.ToString().ToLower()"
+           aria-autocomplete="list"
+           aria-controls="@($"{Id}-listbox")"
+           @oninput="HandleInput"
+           @onfocusin="HandleFocusIn"
+           @onkeydown="HandleKeyDown"
+           @onkeydown:preventDefault="@_preventDefaultKey" />
+
+    @if (_isOpen && _suggestions.Count > 0)
+    {
+        <ul class="autocomplete-dropdown" id="@($"{Id}-listbox")" role="listbox" aria-label="@Placeholder">
+            @for (var i = 0; i < _suggestions.Count; i++)
+            {
+                var suggestion = _suggestions[i];
+                var index = i;
+                var isFocused = index == _highlightedIndex;
+                <li class="autocomplete-option @(isFocused ? "focused" : "")"
+                    role="option"
+                    aria-selected="@(isFocused ? "true" : "false")"
+                    @onmousedown="() => SelectSuggestion(suggestion)"
+                    @onmousedown:preventDefault>
+                    <span>@suggestion.Name</span>
+                    @if (!string.IsNullOrEmpty(suggestion.Category))
+                    {
+                        <span class="autocomplete-category">@suggestion.Category</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    else if (_isOpen && !string.IsNullOrWhiteSpace(_searchText) && _searchText.Length >= 2 && !_isSearching)
+    {
+        <div class="autocomplete-dropdown autocomplete-empty">
+            No matching allergens — will be added on save
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+
+    private string _searchText = string.Empty;
+    private bool _isOpen;
+    private bool _isSearching;
+    private bool _preventDefaultKey;
+    private int _highlightedIndex = -1;
+    private List<AllergenDto> _suggestions = [];
+    private CancellationTokenSource? _cts;
+
+    protected override void OnParametersSet()
+    {
+        if (!_isOpen && !string.IsNullOrEmpty(Value))
+        {
+            _searchText = Value;
+        }
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? string.Empty;
+        _highlightedIndex = -1;
+        _preventDefaultKey = false;
+        await ValueChanged.InvokeAsync(_searchText);
+
+        _cts?.Cancel();
+        _cts?.Dispose();
+
+        if (_searchText.Length < 2)
+        {
+            _suggestions = [];
+            _isOpen = false;
+            return;
+        }
+
+        _isSearching = true;
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            if (token.IsCancellationRequested) return;
+
+            _suggestions = await AllergenService.SearchAsync(_searchText, 10);
+            _isOpen = true;
+        }
+        catch (TaskCanceledException)
+        {
+            // Debounce cancelled — expected
+        }
+        catch
+        {
+            _suggestions = [];
+        }
+        finally
+        {
+            _isSearching = false;
+        }
+    }
+
+    private void HandleFocusIn()
+    {
+        if (_suggestions.Count > 0)
+            _isOpen = true;
+    }
+
+    private async Task HandleFocusOut()
+    {
+        await Task.Delay(200);
+        _isOpen = false;
+        _highlightedIndex = -1;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!_isOpen && e.Key is "ArrowDown" or "ArrowUp")
+        {
+            if (_suggestions.Count > 0)
+                _isOpen = true;
+            _preventDefaultKey = false;
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (_suggestions.Count > 0)
+                    _highlightedIndex = (_highlightedIndex + 1) % _suggestions.Count;
+                _preventDefaultKey = true;
+                break;
+            case "ArrowUp":
+                if (_suggestions.Count > 0)
+                    _highlightedIndex = _highlightedIndex <= 0 ? _suggestions.Count - 1 : _highlightedIndex - 1;
+                _preventDefaultKey = true;
+                break;
+            case "Enter":
+                if (_isOpen && _highlightedIndex >= 0 && _highlightedIndex < _suggestions.Count)
+                    await SelectSuggestion(_suggestions[_highlightedIndex]);
+                _preventDefaultKey = _isOpen;
+                break;
+            case "Tab":
+                if (_isOpen && _suggestions.Count > 0)
+                {
+                    var tabIndex = _highlightedIndex >= 0 ? _highlightedIndex : 0;
+                    await SelectSuggestion(_suggestions[tabIndex]);
+                }
+                _preventDefaultKey = false;
+                break;
+            case "Escape":
+                _isOpen = false;
+                _highlightedIndex = -1;
+                _preventDefaultKey = false;
+                break;
+            default:
+                _preventDefaultKey = false;
+                break;
+        }
+    }
+
+    private async Task SelectSuggestion(AllergenDto allergen)
+    {
+        _searchText = allergen.Name;
+        _isOpen = false;
+        _highlightedIndex = -1;
+        await ValueChanged.InvokeAsync(allergen.Name);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

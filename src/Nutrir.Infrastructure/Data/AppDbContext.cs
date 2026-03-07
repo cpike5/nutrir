@@ -52,6 +52,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<PractitionerTimeBlock> PractitionerTimeBlocks => Set<PractitionerTimeBlock>();
 
+    public DbSet<Allergen> Allergens => Set<Allergen>();
+
     public DbSet<AllergenWarningOverride> AllergenWarningOverrides => Set<AllergenWarningOverride>();
 
     public DbSet<Medication> Medications => Set<Medication>();
@@ -420,6 +422,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(s => s.DayOfWeek).HasConversion<string>();
             entity.Property(s => s.IsDeleted).HasDefaultValue(false);
             entity.Property(s => s.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<Allergen>(entity =>
+        {
+            entity.HasQueryFilter(a => !a.IsDeleted);
+            entity.Property(a => a.Name).HasMaxLength(200);
+            entity.Property(a => a.Category).HasMaxLength(50);
+            entity.HasIndex(a => a.Name).IsUnique();
+            entity.Property(a => a.IsDeleted).HasDefaultValue(false);
+            entity.Property(a => a.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<AllergenWarningOverride>(entity =>

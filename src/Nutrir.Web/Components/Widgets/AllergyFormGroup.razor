@@ -14,11 +14,10 @@
         <div class="health-form-entry">
             <div class="form-grid">
                 <FormGroup Label="Allergy Name" Id="@($"allergy-name-{index}")">
-                    <FormInput Id="@($"allergy-name-{index}")"
-                               Value="@entry.Name"
-                               ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Peanuts"
-                               DebounceMs="300" />
+                    <AllergenAutocomplete Id="@($"allergy-name-{index}")"
+                                          Value="@entry.Name"
+                                          ValueChanged="@(v => entry.Name = v)"
+                                          Placeholder="e.g. Peanuts" />
                 </FormGroup>
                 <FormGroup Label="Severity" Id="@($"allergy-severity-{index}")">
                     <FormSelect Id="@($"allergy-severity-{index}")"
