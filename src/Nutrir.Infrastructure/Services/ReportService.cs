@@ -4,6 +4,7 @@ using Nutrir.Core.DTOs;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -20,6 +21,11 @@ public class ReportService : IReportService
 
     public async Task<PracticeSummaryDto> GetPracticeSummaryAsync(DateTime startDate, DateTime endDate)
     {
+        using var activity = NutrirTelemetry.AppSource.StartActivity("Report PracticeSummary");
+        activity?.SetTag("report.start_date", startDate.ToString("O"));
+        activity?.SetTag("report.end_date", endDate.ToString("O"));
+        activity?.SetTag("report.range_days", (endDate - startDate).TotalDays);
+
         await using var db = await _dbContextFactory.CreateDbContextAsync();
 
         var appointments = await db.Appointments

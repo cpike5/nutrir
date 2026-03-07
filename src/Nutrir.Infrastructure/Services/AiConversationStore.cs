@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -23,6 +24,9 @@ public class AiConversationStore : IAiConversationStore
 
     public async Task<ConversationSnapshot?> LoadActiveSessionAsync(string userId)
     {
+        using var activity = NutrirTelemetry.AiSource.StartActivity("AI LoadConversation");
+        activity?.SetTag("ai.user_id", userId);
+
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var cutoff = DateTime.UtcNow - SessionExpiry;
 
@@ -67,6 +71,10 @@ public class AiConversationStore : IAiConversationStore
     {
         if (newMessages.Count == 0)
             return;
+
+        using var activity = NutrirTelemetry.AiSource.StartActivity("AI SaveMessages");
+        activity?.SetTag("ai.user_id", userId);
+        activity?.SetTag("ai.message_count", newMessages.Count);
 
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var cutoff = DateTime.UtcNow - SessionExpiry;

@@ -4,6 +4,7 @@ using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -20,6 +21,7 @@ public class DashboardService : IDashboardService
 
     public async Task<DashboardMetricsDto> GetMetricsAsync()
     {
+        using var activity = NutrirTelemetry.AppSource.StartActivity("Dashboard GetMetrics");
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
         var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -53,6 +55,7 @@ public class DashboardService : IDashboardService
 
     public async Task<List<AppointmentDto>> GetTodaysAppointmentsAsync()
     {
+        using var activity = NutrirTelemetry.AppSource.StartActivity("Dashboard TodaysAppointments");
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
@@ -110,6 +113,7 @@ public class DashboardService : IDashboardService
 
     public async Task<List<MealPlanSummaryDto>> GetRecentMealPlansAsync(int count = 5)
     {
+        using var activity = NutrirTelemetry.AppSource.StartActivity("Dashboard RecentMealPlans");
         await using var db = await _dbContextFactory.CreateDbContextAsync();
 
         var entities = await db.MealPlans

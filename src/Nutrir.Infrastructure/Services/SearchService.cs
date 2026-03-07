@@ -3,6 +3,7 @@ using Nutrir.Core.DTOs;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Diagnostics;
 
 namespace Nutrir.Infrastructure.Services;
 
@@ -12,6 +13,9 @@ public class SearchService(AppDbContext dbContext) : ISearchService
     {
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             return new SearchResultDto([], 0);
+
+        using var activity = NutrirTelemetry.AppSource.StartActivity("Search");
+        activity?.SetTag("search.term_count", query.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
 
         var terms = query.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var groups = new List<SearchResultGroup>();
@@ -32,6 +36,8 @@ public class SearchService(AppDbContext dbContext) : ISearchService
             groups.Add(mealPlanGroup);
 
         var totalCount = groups.Sum(g => g.TotalInGroup);
+        activity?.SetTag("search.result_count", totalCount);
+        activity?.SetTag("search.group_count", groups.Count);
         return new SearchResultDto(groups, totalCount);
     }
 
