@@ -1,0 +1,564 @@
+@page "/intake/{Token}"
+@rendermode InteractiveServer
+@layout Layout.PublicLayout
+@using System.Text.Json
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IIntakeFormService IntakeFormService
+
+@if (_view == ViewState.Loading)
+{
+    <div class="intake-loading">
+        <p>Loading intake form...</p>
+    </div>
+}
+else if (_view == ViewState.NotFound)
+{
+    <div class="card intake-status-card sectionFadeIn">
+        <div class="intake-status-icon intake-status-error">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="28"/><path d="M22 22l20 20M42 22L22 42"/></svg>
+        </div>
+        <h2 class="intake-status-title">Form Not Found</h2>
+        <p class="intake-status-text">This intake form link is not valid. Please check the URL or contact your nutritionist.</p>
+    </div>
+}
+else if (_view == ViewState.Expired)
+{
+    <div class="card intake-status-card sectionFadeIn">
+        <div class="intake-status-icon intake-status-warning">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="28"/><path d="M32 20v16M32 44h.01"/></svg>
+        </div>
+        <h2 class="intake-status-title">Form Expired</h2>
+        <p class="intake-status-text">This intake form link has expired. Please contact your nutritionist for a new link.</p>
+    </div>
+}
+else if (_view == ViewState.AlreadySubmitted)
+{
+    <div class="card intake-status-card sectionFadeIn">
+        <div class="intake-status-icon intake-status-info">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="28"/><path d="M32 20h.01M32 28v16"/></svg>
+        </div>
+        <h2 class="intake-status-title">Already Submitted</h2>
+        <p class="intake-status-text">This intake form has already been completed. If you need to make changes, please contact your nutritionist.</p>
+    </div>
+}
+else if (_view == ViewState.ThankYou)
+{
+    <div class="card intake-status-card sectionFadeIn">
+        <div class="intake-status-icon intake-status-success">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="28"/><path d="M20 32l8 8 16-16"/></svg>
+        </div>
+        <h2 class="intake-status-title">Thank You</h2>
+        <p class="intake-status-text">Your intake form has been submitted successfully. Your nutritionist will review your information before your appointment.</p>
+    </div>
+}
+else if (_view == ViewState.Form)
+{
+    @* ── Progress Indicator ──────────────────────── *@
+    <div class="intake-progress">
+        @for (var i = 1; i <= 5; i++)
+        {
+            var step = i;
+            <div class="intake-step @(step < _currentStep ? "completed" : "") @(step == _currentStep ? "active" : "")">
+                <div class="intake-step-number">
+                    @if (step < _currentStep)
+                    {
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 6-7"/></svg>
+                    }
+                    else
+                    {
+                        @step
+                    }
+                </div>
+                <span class="intake-step-label">@GetStepLabel(step)</span>
+            </div>
+        }
+    </div>
+
+    <div class="card intake-card sectionFadeIn">
+        @* ── Step 1: Personal Info ──────────────────── *@
+        @if (_currentStep == 1)
+        {
+            <h2 class="intake-section-title">Personal Information</h2>
+            <p class="intake-section-desc">Please provide your basic contact and personal details.</p>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="First Name" Id="firstName" Error="@GetError("first_name")">
+                    <FormInput Id="firstName" Value="@_firstName" ValueChanged="v => _firstName = v" Placeholder="First name" />
+                </FormGroup>
+                <FormGroup Label="Last Name" Id="lastName" Error="@GetError("last_name")">
+                    <FormInput Id="lastName" Value="@_lastName" ValueChanged="v => _lastName = v" Placeholder="Last name" />
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Email" Id="email" Error="@GetError("email")">
+                    <FormInput Id="email" Type="email" Value="@_email" ValueChanged="v => _email = v" Placeholder="email@example.com" />
+                </FormGroup>
+                <FormGroup Label="Phone" Id="phone">
+                    <FormInput Id="phone" Type="tel" Value="@_phone" ValueChanged="v => _phone = v" Placeholder="(555) 123-4567" />
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Date of Birth" Id="dob">
+                    <FormInput Id="dob" Type="date" Value="@_dateOfBirth" ValueChanged="v => _dateOfBirth = v" />
+                </FormGroup>
+                <FormGroup Label="Sex" Id="sex">
+                    <FormSelect Id="sex" Value="@_sex" ValueChanged="v => _sex = v">
+                        <option value="">Select...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                    </FormSelect>
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Height (cm)" Id="height">
+                    <FormInput Id="height" Type="number" Value="@_heightCm" ValueChanged="v => _heightCm = v" Placeholder="170" />
+                </FormGroup>
+                <FormGroup Label="Weight (kg)" Id="weight">
+                    <FormInput Id="weight" Type="number" Value="@_weightKg" ValueChanged="v => _weightKg = v" Placeholder="70" />
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Emergency Contact Name" Id="emergName">
+                    <FormInput Id="emergName" Value="@_emergencyContactName" ValueChanged="v => _emergencyContactName = v" Placeholder="Full name" />
+                </FormGroup>
+                <FormGroup Label="Emergency Contact Phone" Id="emergPhone">
+                    <FormInput Id="emergPhone" Type="tel" Value="@_emergencyContactPhone" ValueChanged="v => _emergencyContactPhone = v" Placeholder="(555) 123-4567" />
+                </FormGroup>
+            </div>
+        }
+
+        @* ── Step 2: Medical History ──────────────────── *@
+        @if (_currentStep == 2)
+        {
+            <h2 class="intake-section-title">Medical History</h2>
+            <p class="intake-section-desc">Please list any relevant medical information. Separate multiple items with commas.</p>
+
+            <FormGroup Label="Medical Conditions" Id="conditions" Hint="e.g. Type 2 Diabetes, Hypertension">
+                <textarea id="conditions" class="form-input form-textarea" @bind="_conditions" placeholder="List conditions separated by commas"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Current Medications" Id="medications" Hint="e.g. Metformin 500mg, Lisinopril 10mg">
+                <textarea id="medications" class="form-input form-textarea" @bind="_medications" placeholder="List medications separated by commas"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Allergies" Id="allergies" Hint="e.g. Peanuts, Shellfish, Penicillin">
+                <textarea id="allergies" class="form-input form-textarea" @bind="_allergies" placeholder="List allergies separated by commas"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Previous Surgeries" Id="surgeries">
+                <textarea id="surgeries" class="form-input form-textarea" @bind="_surgeries" placeholder="List any previous surgeries"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Family Medical History" Id="familyHistory">
+                <textarea id="familyHistory" class="form-input form-textarea" @bind="_familyHistory" placeholder="Relevant family medical conditions"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Additional Notes" Id="medNotes">
+                <textarea id="medNotes" class="form-input form-textarea" @bind="_additionalMedNotes" placeholder="Any other medical information"></textarea>
+            </FormGroup>
+        }
+
+        @* ── Step 3: Diet & Lifestyle ──────────────────── *@
+        @if (_currentStep == 3)
+        {
+            <h2 class="intake-section-title">Diet & Lifestyle</h2>
+            <p class="intake-section-desc">Tell us about your current eating habits and dietary preferences.</p>
+
+            <FormGroup Label="Dietary Restrictions">
+                <div class="intake-checkbox-group">
+                    @foreach (var option in _dietaryRestrictionOptions)
+                    {
+                        var opt = option;
+                        <FormCheckbox Label="@opt" Value="@_selectedDietaryRestrictions.Contains(opt)" ValueChanged="v => ToggleOption(_selectedDietaryRestrictions, opt, v)" />
+                    }
+                </div>
+            </FormGroup>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Typical Breakfast" Id="breakfast">
+                    <textarea id="breakfast" class="form-input form-textarea" @bind="_typicalBreakfast" placeholder="Describe a typical breakfast"></textarea>
+                </FormGroup>
+                <FormGroup Label="Typical Lunch" Id="lunch">
+                    <textarea id="lunch" class="form-input form-textarea" @bind="_typicalLunch" placeholder="Describe a typical lunch"></textarea>
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Typical Dinner" Id="dinner">
+                    <textarea id="dinner" class="form-input form-textarea" @bind="_typicalDinner" placeholder="Describe a typical dinner"></textarea>
+                </FormGroup>
+                <FormGroup Label="Snacking Habits" Id="snacks">
+                    <textarea id="snacks" class="form-input form-textarea" @bind="_snackingHabits" placeholder="What do you typically snack on?"></textarea>
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Daily Water Intake" Id="water">
+                    <FormInput Id="water" Value="@_waterIntake" ValueChanged="v => _waterIntake = v" Placeholder="e.g. 8 glasses" />
+                </FormGroup>
+                <FormGroup Label="Alcohol Frequency" Id="alcohol">
+                    <FormSelect Id="alcohol" Value="@_alcoholFrequency" ValueChanged="v => _alcoholFrequency = v">
+                        <option value="">Select...</option>
+                        <option value="Never">Never</option>
+                        <option value="Rarely">Rarely</option>
+                        <option value="Occasionally">Occasionally</option>
+                        <option value="Frequently">Frequently</option>
+                        <option value="Daily">Daily</option>
+                    </FormSelect>
+                </FormGroup>
+            </div>
+
+            <div class="intake-form-grid">
+                <FormGroup Label="Caffeine Intake" Id="caffeine">
+                    <FormInput Id="caffeine" Value="@_caffeineIntake" ValueChanged="v => _caffeineIntake = v" Placeholder="e.g. 2 cups of coffee" />
+                </FormGroup>
+                <FormGroup Label="Supplements" Id="supplements">
+                    <textarea id="supplements" class="form-input form-textarea" @bind="_supplements" placeholder="List any supplements"></textarea>
+                </FormGroup>
+            </div>
+        }
+
+        @* ── Step 4: Goals ──────────────────── *@
+        @if (_currentStep == 4)
+        {
+            <h2 class="intake-section-title">Goals & Expectations</h2>
+            <p class="intake-section-desc">Help us understand what you hope to achieve with nutrition counseling.</p>
+
+            <FormGroup Label="Primary Goals">
+                <div class="intake-checkbox-group">
+                    @foreach (var option in _goalOptions)
+                    {
+                        var opt = option;
+                        <FormCheckbox Label="@opt" Value="@_selectedGoals.Contains(opt)" ValueChanged="v => ToggleOption(_selectedGoals, opt, v)" />
+                    }
+                </div>
+            </FormGroup>
+
+            <FormGroup Label="Specific Concerns" Id="concerns">
+                <textarea id="concerns" class="form-input form-textarea" @bind="_specificConcerns" placeholder="Describe any specific health or nutrition concerns"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="Timeline Expectations" Id="timeline">
+                <FormInput Id="timeline" Value="@_timelineExpectations" ValueChanged="v => _timelineExpectations = v" Placeholder="e.g. 3 months, 6 months" />
+            </FormGroup>
+
+            <FormGroup Label="Previous Nutrition Counseling" Id="prevCounseling">
+                <FormSelect Id="prevCounseling" Value="@_previousCounseling" ValueChanged="v => _previousCounseling = v">
+                    <option value="">Select...</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </FormSelect>
+            </FormGroup>
+
+            <FormGroup Label="What Worked Before" Id="worked">
+                <textarea id="worked" class="form-input form-textarea" @bind="_whatWorked" placeholder="What approaches have worked for you?"></textarea>
+            </FormGroup>
+
+            <FormGroup Label="What Didn't Work" Id="didntWork">
+                <textarea id="didntWork" class="form-input form-textarea" @bind="_whatDidntWork" placeholder="What approaches didn't work?"></textarea>
+            </FormGroup>
+        }
+
+        @* ── Step 5: Consent ──────────────────── *@
+        @if (_currentStep == 5)
+        {
+            <h2 class="intake-section-title">Consent</h2>
+            <p class="intake-section-desc">Please review and acknowledge the following before submitting your form.</p>
+
+            <div class="consent-text">
+                <p>By submitting this intake form, you consent to having your health information collected, stored, and used by your nutritionist for the purpose of providing nutritional care and guidance.</p>
+                <p>Your information will be handled in accordance with applicable privacy regulations and will only be shared with your assigned healthcare providers as necessary for your care.</p>
+                <p>You may request access to, correction of, or deletion of your personal information at any time by contacting your nutritionist directly.</p>
+            </div>
+
+            <div class="consent-checkboxes">
+                <FormCheckbox Label="I consent to having my health information collected and stored for the purpose of nutritional care" Value="@_consentGiven" ValueChanged="v => _consentGiven = v" />
+                @if (_errors.ContainsKey("consent_given"))
+                {
+                    <span class="form-error">@_errors["consent_given"]</span>
+                }
+
+                <FormCheckbox Label="I understand that my information will be shared with my assigned nutritionist" Value="@_dataSharingAcknowledged" ValueChanged="v => _dataSharingAcknowledged = v" />
+                @if (_errors.ContainsKey("data_sharing"))
+                {
+                    <span class="form-error">@_errors["data_sharing"]</span>
+                }
+            </div>
+        }
+
+        @* ── Navigation ──────────────────── *@
+        <div class="intake-nav">
+            <div>
+                @if (_currentStep > 1)
+                {
+                    <Button Variant="ButtonVariant.Outline" OnClick="PreviousStep">Previous</Button>
+                }
+            </div>
+            <div>
+                @if (_currentStep < 5)
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="NextStep">Next</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="SubmitFormAsync" Disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Submitting..." : "Submit")
+                    </Button>
+                }
+            </div>
+        </div>
+
+        @if (_submitError is not null)
+        {
+            <div class="intake-error-banner">@_submitError</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Token { get; set; }
+
+    private enum ViewState { Loading, Form, ThankYou, Expired, AlreadySubmitted, NotFound }
+
+    private ViewState _view = ViewState.Loading;
+    private int _currentStep = 1;
+    private bool _isSubmitting;
+    private string? _submitError;
+    private Dictionary<string, string> _errors = new();
+
+    // Step 1 fields
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _email = "";
+    private string _phone = "";
+    private string _dateOfBirth = "";
+    private string _sex = "";
+    private string _heightCm = "";
+    private string _weightKg = "";
+    private string _emergencyContactName = "";
+    private string _emergencyContactPhone = "";
+
+    // Step 2 fields
+    private string _conditions = "";
+    private string _medications = "";
+    private string _allergies = "";
+    private string _surgeries = "";
+    private string _familyHistory = "";
+    private string _additionalMedNotes = "";
+
+    // Step 3 fields
+    private HashSet<string> _selectedDietaryRestrictions = new();
+    private string _typicalBreakfast = "";
+    private string _typicalLunch = "";
+    private string _typicalDinner = "";
+    private string _snackingHabits = "";
+    private string _waterIntake = "";
+    private string _alcoholFrequency = "";
+    private string _caffeineIntake = "";
+    private string _supplements = "";
+
+    // Step 4 fields
+    private HashSet<string> _selectedGoals = new();
+    private string _specificConcerns = "";
+    private string _timelineExpectations = "";
+    private string _previousCounseling = "";
+    private string _whatWorked = "";
+    private string _whatDidntWork = "";
+
+    // Step 5 fields
+    private bool _consentGiven;
+    private bool _dataSharingAcknowledged;
+
+    private static readonly string[] _dietaryRestrictionOptions =
+        ["Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Kosher", "Halal", "Low Sodium", "Ketogenic", "Nut-Free", "Other"];
+
+    private static readonly string[] _goalOptions =
+        ["Weight Loss", "Weight Gain", "Muscle Building", "Better Energy", "Manage Condition", "Improve Digestion", "General Health", "Other"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            _view = ViewState.NotFound;
+            return;
+        }
+
+        var form = await IntakeFormService.GetByTokenAsync(Token);
+        if (form is null)
+        {
+            _view = ViewState.NotFound;
+            return;
+        }
+
+        if (form.Status == IntakeFormStatus.Submitted || form.Status == IntakeFormStatus.Reviewed)
+        {
+            _view = ViewState.AlreadySubmitted;
+            return;
+        }
+
+        if (form.Status == IntakeFormStatus.Expired || form.ExpiresAt <= DateTime.UtcNow)
+        {
+            _view = ViewState.Expired;
+            return;
+        }
+
+        // Pre-fill email from the form's client email
+        _email = form.ClientEmail;
+        _view = ViewState.Form;
+    }
+
+    private void NextStep()
+    {
+        _errors.Clear();
+
+        if (_currentStep == 1)
+        {
+            if (string.IsNullOrWhiteSpace(_firstName))
+                _errors["first_name"] = "First name is required.";
+            if (string.IsNullOrWhiteSpace(_lastName))
+                _errors["last_name"] = "Last name is required.";
+            if (string.IsNullOrWhiteSpace(_email))
+                _errors["email"] = "Email is required.";
+        }
+
+        if (_errors.Count == 0)
+            _currentStep++;
+    }
+
+    private void PreviousStep()
+    {
+        _errors.Clear();
+        if (_currentStep > 1) _currentStep--;
+    }
+
+    private async Task SubmitFormAsync()
+    {
+        _errors.Clear();
+        _submitError = null;
+
+        if (!_consentGiven)
+            _errors["consent_given"] = "You must provide consent to submit this form.";
+        if (!_dataSharingAcknowledged)
+            _errors["data_sharing"] = "You must acknowledge data sharing to submit this form.";
+
+        if (_errors.Count > 0) return;
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var responses = BuildResponses();
+            var (success, error) = await IntakeFormService.SubmitFormAsync(Token!, responses);
+
+            if (success)
+                _view = ViewState.ThankYou;
+            else
+                _submitError = error;
+        }
+        catch (Exception ex)
+        {
+            _submitError = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private List<IntakeFormResponseDto> BuildResponses()
+    {
+        var responses = new List<IntakeFormResponseDto>();
+
+        // Personal info
+        Add(responses, "personal_info", "first_name", _firstName);
+        Add(responses, "personal_info", "last_name", _lastName);
+        Add(responses, "personal_info", "email", _email);
+        Add(responses, "personal_info", "phone", _phone);
+        Add(responses, "personal_info", "date_of_birth", _dateOfBirth);
+        Add(responses, "personal_info", "sex", _sex);
+        Add(responses, "personal_info", "height_cm", _heightCm);
+        Add(responses, "personal_info", "weight_kg", _weightKg);
+        Add(responses, "personal_info", "emergency_contact_name", _emergencyContactName);
+        Add(responses, "personal_info", "emergency_contact_phone", _emergencyContactPhone);
+
+        // Medical history (comma-separated → JSON array)
+        AddCsvAsJson(responses, "medical_history", "conditions", _conditions);
+        AddCsvAsJson(responses, "medical_history", "medications", _medications);
+        AddCsvAsJson(responses, "medical_history", "allergies", _allergies);
+        Add(responses, "medical_history", "surgeries", _surgeries);
+        Add(responses, "medical_history", "family_history", _familyHistory);
+        Add(responses, "medical_history", "additional_notes", _additionalMedNotes);
+
+        // Dietary habits
+        if (_selectedDietaryRestrictions.Count > 0)
+            responses.Add(new("dietary_habits", "dietary_restrictions", JsonSerializer.Serialize(_selectedDietaryRestrictions.ToList())));
+        Add(responses, "dietary_habits", "typical_breakfast", _typicalBreakfast);
+        Add(responses, "dietary_habits", "typical_lunch", _typicalLunch);
+        Add(responses, "dietary_habits", "typical_dinner", _typicalDinner);
+        Add(responses, "dietary_habits", "snacking_habits", _snackingHabits);
+        Add(responses, "dietary_habits", "water_intake", _waterIntake);
+        Add(responses, "dietary_habits", "alcohol_frequency", _alcoholFrequency);
+        Add(responses, "dietary_habits", "caffeine_intake", _caffeineIntake);
+        Add(responses, "dietary_habits", "supplements", _supplements);
+
+        // Goals
+        if (_selectedGoals.Count > 0)
+            responses.Add(new("goals", "primary_goals", JsonSerializer.Serialize(_selectedGoals.ToList())));
+        Add(responses, "goals", "specific_concerns", _specificConcerns);
+        Add(responses, "goals", "timeline_expectations", _timelineExpectations);
+        Add(responses, "goals", "previous_nutrition_counseling", _previousCounseling);
+        Add(responses, "goals", "what_worked_before", _whatWorked);
+        Add(responses, "goals", "what_didnt_work", _whatDidntWork);
+
+        // Consent
+        responses.Add(new("consent", "consent_given", _consentGiven.ToString()));
+        responses.Add(new("consent", "data_sharing_acknowledged", _dataSharingAcknowledged.ToString()));
+        responses.Add(new("consent", "consent_policy_version", "1.0"));
+        responses.Add(new("consent", "consent_timestamp", DateTime.UtcNow.ToString("O")));
+
+        return responses;
+    }
+
+    private static void Add(List<IntakeFormResponseDto> list, string section, string field, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            list.Add(new(section, field, value.Trim()));
+    }
+
+    private static void AddCsvAsJson(List<IntakeFormResponseDto> list, string section, string field, string? csvValue)
+    {
+        if (string.IsNullOrWhiteSpace(csvValue)) return;
+        var items = csvValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        if (items.Count > 0)
+            list.Add(new(section, field, JsonSerializer.Serialize(items)));
+    }
+
+    private void ToggleOption(HashSet<string> set, string option, bool selected)
+    {
+        if (selected) set.Add(option);
+        else set.Remove(option);
+    }
+
+    private string? GetError(string field) => _errors.TryGetValue(field, out var error) ? error : null;
+
+    private static string GetStepLabel(int step) => step switch
+    {
+        1 => "Personal",
+        2 => "Medical",
+        3 => "Diet",
+        4 => "Goals",
+        5 => "Consent",
+        _ => ""
+    };
+}

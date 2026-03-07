@@ -39,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IReportService, ReportService>();
+        services.Configure<IntakeFormOptions>(configuration.GetSection(IntakeFormOptions.SectionName));
+        services.AddScoped<IIntakeFormService, IntakeFormService>();
         services.AddScoped<ITimeZoneService, TimeZoneService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();

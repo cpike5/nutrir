@@ -46,6 +46,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | Document | Description |
 |----------|-------------|
 | [Health Profile](clients/health-profile.md) | Client health profile data model — allergies, medications, conditions, dietary restrictions (ERD, enums, design decisions) |
+| [Intake Form Design](clients/intake-form-design.md) | Pre-appointment digital intake form — entities, workflow, token strategy, field mapping, edge cases |
 
 ## Meal Plans Documents
 

@@ -1,0 +1,239 @@
+/* ── Loading ──────────────────────────────────────── */
+.intake-loading {
+    text-align: center;
+    padding: var(--space-16);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+/* ── Status Cards ────────────────────────────────── */
+.intake-status-card {
+    text-align: center;
+    padding: var(--space-12) var(--space-8);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.intake-status-icon {
+    margin-bottom: var(--space-6);
+}
+
+.intake-status-icon svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    display: block;
+}
+
+.intake-status-success svg { color: var(--color-success); }
+.intake-status-warning svg { color: var(--color-warning); }
+.intake-status-error svg   { color: var(--color-error); }
+.intake-status-info svg    { color: var(--color-info); }
+
+.intake-status-title {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.intake-status-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: var(--leading-relaxed);
+    margin: 0;
+}
+
+/* ── Progress Indicator ──────────────────────────── */
+.intake-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+    position: relative;
+    padding: 0 var(--space-2);
+}
+
+.intake-progress::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(10% + 18px);
+    right: calc(10% + 18px);
+    height: 2px;
+    background: var(--color-border);
+}
+
+.intake-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+
+.intake-step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-border);
+    background: var(--color-bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    transition: all var(--duration-normal) ease;
+}
+
+.intake-step.active .intake-step-number {
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-color: var(--color-primary);
+}
+
+.intake-step.completed .intake-step-number {
+    background: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
+}
+
+.intake-step-label {
+    font-size: var(--text-xs);
+    margin-top: var(--space-2);
+    color: var(--color-text-muted);
+    text-align: center;
+    font-weight: 500;
+}
+
+.intake-step.active .intake-step-label {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* ── Form Card ───────────────────────────────────── */
+.intake-card {
+    padding: var(--space-8);
+}
+
+.intake-section-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.intake-section-desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-6) 0;
+    line-height: var(--leading-relaxed);
+}
+
+/* ── Form Grid ───────────────────────────────────── */
+.intake-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+    margin-bottom: var(--space-1);
+}
+
+/* ── Textarea ────────────────────────────────────── */
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+    font-family: var(--font-sans);
+}
+
+/* ── Checkbox Group ──────────────────────────────── */
+.intake-checkbox-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+/* ── Consent ─────────────────────────────────────── */
+.consent-text {
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-muted);
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: var(--space-6);
+    border: 1px solid var(--color-border);
+}
+
+.consent-text p {
+    margin: 0 0 var(--space-4) 0;
+}
+
+.consent-text p:last-child {
+    margin-bottom: 0;
+}
+
+.consent-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* ── Navigation ──────────────────────────────────── */
+.intake-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ── Error Banner ────────────────────────────────── */
+.intake-error-banner {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    background: color-mix(in srgb, var(--color-error) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-error) 20%, transparent);
+    border-radius: var(--radius-md);
+}
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes sectionFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sectionFadeIn {
+    animation: sectionFadeIn 0.35s ease backwards;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 600px) {
+    .intake-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .intake-checkbox-group {
+        grid-template-columns: 1fr;
+    }
+
+    .intake-card {
+        padding: var(--space-6);
+    }
+
+    .intake-step-label {
+        font-size: 0.65rem;
+    }
+
+    .intake-step-number {
+        width: 32px;
+        height: 32px;
+        font-size: var(--text-xs);
+    }
+}
