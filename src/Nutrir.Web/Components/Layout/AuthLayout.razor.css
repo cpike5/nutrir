@@ -13,10 +13,9 @@
     padding: var(--space-6);
 }
 
-.auth-logo {
-    width: 160px;
-    height: auto;
-    max-height: 80px;
+::deep .auth-logo {
+    width: 150px;
+    height: 150px;
 }
 
 /* ── Auth Card ───────────────────────────────────────── */
