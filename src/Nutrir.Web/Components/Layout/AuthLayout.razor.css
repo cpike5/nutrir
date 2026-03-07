@@ -4,7 +4,27 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: var(--color-bg);
+    background:
+        repeating-radial-gradient(
+            ellipse at 30% 60%,
+            transparent 0px,
+            transparent 39px,
+            rgba(var(--rgb-primary), 0.05) 39px,
+            rgba(var(--rgb-primary), 0.05) 41px
+        ),
+        repeating-radial-gradient(
+            ellipse at 70% 35%,
+            transparent 0px,
+            transparent 54px,
+            rgba(var(--rgb-accent), 0.08) 54px,
+            rgba(var(--rgb-accent), 0.08) 56px
+        ),
+        radial-gradient(
+            ellipse at 50% 50%,
+            rgba(var(--rgb-primary), 0.06) 0%,
+            transparent 60%
+        ),
+        var(--color-bg);
 }
 
 .auth-container {
