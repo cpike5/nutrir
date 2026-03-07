@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IClientService, ClientService>();
         services.AddScoped<IClientHealthProfileService, ClientHealthProfileService>();
         services.AddScoped<IMedicationService, MedicationService>();
+        services.AddScoped<IConditionService, ConditionService>();
         services.AddScoped<IConsentService, ConsentService>();
         services.Configure<ConsentFormOptions>(configuration.GetSection(ConsentFormOptions.SectionName));
         services.AddScoped<IConsentFormTemplate, DefaultConsentFormTemplate>();

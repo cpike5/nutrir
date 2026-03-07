@@ -18,6 +18,7 @@
 @inject IConsentFormTemplate ConsentFormTemplate
 @inject IUserManagementService UserManagementService
 @inject IClientHealthProfileService HealthProfileService
+@inject IConditionService ConditionService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Client — Nutrir</PageTitle>
@@ -496,6 +497,7 @@
         }
         foreach (var (name, code, diagnosisDate, status) in _conditionFormGroup.GetValidEntries())
         {
+            await ConditionService.GetOrCreateAsync(name, code);
             await HealthProfileService.CreateConditionAsync(
                 new CreateClientConditionDto(Id, name, code, diagnosisDate, status, null), userId);
         }
