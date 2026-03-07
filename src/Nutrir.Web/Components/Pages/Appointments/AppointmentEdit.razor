@@ -20,45 +20,70 @@
 
 <Breadcrumb Items="@(new[] { new BreadcrumbItem("Appointments", "/appointments"), new BreadcrumbItem(_appointment is not null ? $"{_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment", $"/appointments/{Id}"), new BreadcrumbItem("Edit") })" />
 
-<div class="client-form-page">
-    <div class="client-form-header">
-        <h1 class="client-form-title">Edit Appointment</h1>
-    </div>
-
+<div class="form-page">
     @if (_isLoading)
     {
-        <p class="client-detail-loading">Loading appointment...</p>
+        <div class="table-card">
+            <div class="loading-container">
+                <LoadingSpinner Message="Loading appointment..." Centered="true" />
+            </div>
+        </div>
     }
     else if (_appointment is null)
     {
-        <Card>
-            <div class="client-detail-not-found">
-                <p class="client-detail-not-found-title">Appointment not found</p>
-                <div class="client-detail-not-found-action">
+        <div class="table-card">
+            <div class="not-found">
+                <p class="not-found-title">Appointment not found</p>
+                <div class="not-found-action">
                     <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo("/appointments"))">Back to Appointments</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else if (!IsEditable())
     {
-        <Card>
-            <div class="client-detail-not-found">
-                <p class="client-detail-not-found-title">Appointment cannot be edited</p>
-                <p class="client-detail-not-found-desc">This appointment has been @_appointment.Status.ToString().ToLower() and can no longer be modified.</p>
-                <div class="client-detail-not-found-action">
+        <div class="table-card">
+            <div class="not-found">
+                <p class="not-found-title">Appointment cannot be edited</p>
+                <p class="not-found-desc">This appointment has been @_appointment.Status.ToString().ToLower() and can no longer be modified.</p>
+                <div class="not-found-action">
                     <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}"))">Back to Appointment</Button>
                 </div>
             </div>
-        </Card>
+        </div>
     }
     else
     {
-        <Card>
-            <div class="client-form-body">
-                <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditAppointment">
-                    <DataAnnotationsValidator />
+        <div class="page-header">
+            <a href="/appointments/@Id" class="back-link" aria-label="Back to appointment">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5l-5 5 5 5"/>
+                </svg>
+            </a>
+            <div class="page-header-text">
+                <h1 class="page-title">Edit Appointment</h1>
+                <span class="page-subtitle">@_appointment.ClientFirstName @_appointment.ClientLastName</span>
+            </div>
+        </div>
 
+        <div class="table-card">
+            <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditAppointment">
+                <DataAnnotationsValidator />
+
+                <!-- Section: Client -->
+                <div class="section-header" @onclick='() => ToggleSection("Client")'>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="8" cy="5" r="3"/>
+                        <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+                    </svg>
+                    Client
+                    <svg class="section-chevron @(_expandedSections.Contains("Client") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                </div>
+                @if (_expandedSections.Contains("Client"))
+                {
+                <div class="form-body">
                     <FormGroup Label="Client" Id="clientId">
                         <FormSelect Id="clientId"
                                     Value="@_model.ClientId"
@@ -70,7 +95,7 @@
                         </FormSelect>
                     </FormGroup>
 
-                    <FormGroup Label="Type" Id="type">
+                    <FormGroup Label="Appointment Type" Id="type">
                         <FormSelect Id="type"
                                     Value="@_model.Type"
                                     ValueChanged="@(v => _model.Type = v)">
@@ -79,8 +104,24 @@
                             <option value="CheckIn">Check-In</option>
                         </FormSelect>
                     </FormGroup>
+                </div>
+                }
 
-                    <div class="client-form-grid">
+                <!-- Section: Schedule -->
+                <div class="section-header" @onclick='() => ToggleSection("Schedule")'>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                        <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                    </svg>
+                    Schedule
+                    <svg class="section-chevron @(_expandedSections.Contains("Schedule") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                </div>
+                @if (_expandedSections.Contains("Schedule"))
+                {
+                <div class="form-body">
+                    <div class="form-grid">
                         <FormGroup Label="Date" Id="date" Error="@GetFieldError(nameof(_model.Date))">
                             <FormInput Id="date" Type="date"
                                        Value="@_model.Date"
@@ -94,30 +135,18 @@
                         </FormGroup>
                     </div>
 
-                    <div class="client-form-grid">
-                        <FormGroup Label="Duration" Id="duration">
-                            <FormSelect Id="duration"
-                                        Value="@_model.Duration"
-                                        ValueChanged="OnDurationChanged">
-                                <option value="15">15 minutes</option>
-                                <option value="30">30 minutes</option>
-                                <option value="45">45 minutes</option>
-                                <option value="60">60 minutes</option>
-                                <option value="75">75 minutes</option>
-                                <option value="90">90 minutes</option>
-                            </FormSelect>
-                        </FormGroup>
-
-                        <FormGroup Label="Location" Id="location">
-                            <FormSelect Id="location"
-                                        Value="@_model.Location"
-                                        ValueChanged="OnLocationChanged">
-                                <option value="InPerson">In-Person</option>
-                                <option value="Virtual">Virtual</option>
-                                <option value="Phone">Phone</option>
-                            </FormSelect>
-                        </FormGroup>
-                    </div>
+                    <FormGroup Label="Duration" Id="duration">
+                        <FormSelect Id="duration"
+                                    Value="@_model.Duration"
+                                    ValueChanged="OnDurationChanged">
+                            <option value="15">15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="75">75 minutes</option>
+                            <option value="90">90 minutes</option>
+                        </FormSelect>
+                    </FormGroup>
 
                     @if (_availableSlots.Count > 0)
                     {
@@ -157,17 +186,32 @@
                             @_availabilityWarning
                         </div>
                     }
+                </div>
+                }
 
-                    @if (_model.Location == "Virtual")
-                    {
-                        <FormGroup Label="Virtual Meeting URL" Id="virtualUrl">
-                            <FormInput Id="virtualUrl" Type="url"
-                                       Value="@_model.VirtualMeetingUrl"
-                                       ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
-                                       Placeholder="https://meet.example.com/..."
-                                       DebounceMs="300" />
-                        </FormGroup>
-                    }
+                <!-- Section: Location -->
+                <div class="section-header" @onclick='() => ToggleSection("Location")'>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3.5-4.5 8.5-4.5 8.5S3.5 9.5 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
+                        <circle cx="8" cy="6" r="1.5"/>
+                    </svg>
+                    Location
+                    <svg class="section-chevron @(_expandedSections.Contains("Location") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                </div>
+                @if (_expandedSections.Contains("Location"))
+                {
+                <div class="form-body">
+                    <FormGroup Label="Location" Id="location">
+                        <FormSelect Id="location"
+                                    Value="@_model.Location"
+                                    ValueChanged="OnLocationChanged">
+                            <option value="InPerson">In-Person</option>
+                            <option value="Virtual">Virtual</option>
+                            <option value="Phone">Phone</option>
+                        </FormSelect>
+                    </FormGroup>
 
                     @if (_model.Location == "InPerson")
                     {
@@ -180,28 +224,73 @@
                         </FormGroup>
                     }
 
-                    <FormGroup Label="Notes" Id="notes">
+                    @if (_model.Location == "Virtual")
+                    {
+                        <FormGroup Label="Virtual Meeting URL" Id="virtualUrl">
+                            <FormInput Id="virtualUrl" Type="url"
+                                       Value="@_model.VirtualMeetingUrl"
+                                       ValueChanged="@(v => _model.VirtualMeetingUrl = v)"
+                                       Placeholder="https://meet.example.com/..."
+                                       DebounceMs="300" />
+                        </FormGroup>
+                    }
+                </div>
+                }
+
+                <!-- Section: Notes -->
+                <div class="section-header" @onclick='() => ToggleSection("Notes")'>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/>
+                        <path d="M5 6h6M5 9h4"/>
+                    </svg>
+                    Notes
+                    <svg class="section-chevron @(_expandedSections.Contains("Notes") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                </div>
+                @if (_expandedSections.Contains("Notes"))
+                {
+                <div class="form-body">
+                    <FormGroup Label="Appointment Notes" Id="notes">
                         <textarea id="notes"
                                   class="form-input"
                                   rows="3"
                                   @bind="_model.Notes"
                                   placeholder="Appointment notes..."></textarea>
                     </FormGroup>
+                </div>
+                }
 
-                    @if (!string.IsNullOrEmpty(_errorMessage))
-                    {
-                        <p class="client-form-error">@_errorMessage</p>
-                    }
-
-                    <div class="client-form-actions">
-                        <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
-                            @(_isSubmitting ? "Saving..." : "Save Changes")
-                        </Button>
-                        <a href="/appointments/@Id" class="client-form-cancel-link">Cancel</a>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="error-banner">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 1l7 13H1L8 1Z"/>
+                            <path d="M8 6v3M8 11.5v.5"/>
+                        </svg>
+                        @_errorMessage
                     </div>
-                </EditForm>
-            </div>
-        </Card>
+                }
+
+                <div class="form-actions">
+                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="2" y="2.5" width="12" height="12" rx="2"/>
+                                <path d="M5 1v3M11 1v3M2 6.5h12"/>
+                            </svg>
+                            <span>Save Changes</span>
+                        }
+                    </Button>
+                    <a href="/appointments/@Id" class="cancel-link">Cancel</a>
+                </div>
+            </EditForm>
+        </div>
     }
 </div>
 
@@ -217,12 +306,19 @@
     private bool _isSubmitting;
     private string? _errorMessage;
     private string _userId = string.Empty;
+    private HashSet<string> _expandedSections = ["Client", "Schedule", "Location", "Notes"];
 
     // Availability slots
     private List<AvailableSlotDto> _availableSlots = [];
     private bool _isLoadingSlots;
     private bool _slotsLoaded;
     private string? _availabilityWarning;
+
+    private void ToggleSection(string section)
+    {
+        if (!_expandedSections.Remove(section))
+            _expandedSections.Add(section);
+    }
 
     protected override async Task OnInitializedAsync()
     {
