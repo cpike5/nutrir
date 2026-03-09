@@ -428,6 +428,8 @@ else if (_view == ViewState.Form)
                 _errors["last_name"] = "Last name is required.";
             if (string.IsNullOrWhiteSpace(_email))
                 _errors["email"] = "Email is required.";
+            else if (!_email.Contains('@') || !_email.Contains('.'))
+                _errors["email"] = "Please enter a valid email address.";
         }
 
         if (_errors.Count == 0)
@@ -524,8 +526,6 @@ else if (_view == ViewState.Form)
         // Consent
         responses.Add(new("consent", "consent_given", _consentGiven.ToString()));
         responses.Add(new("consent", "data_sharing_acknowledged", _dataSharingAcknowledged.ToString()));
-        responses.Add(new("consent", "consent_policy_version", "1.0"));
-        responses.Add(new("consent", "consent_timestamp", DateTime.UtcNow.ToString("O")));
 
         return responses;
     }

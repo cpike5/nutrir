@@ -14,7 +14,6 @@ namespace Nutrir.Infrastructure.Services;
 
 public class IntakeFormService : IIntakeFormService
 {
-    private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly IConsentService _consentService;
@@ -23,7 +22,6 @@ public class IntakeFormService : IIntakeFormService
     private readonly ILogger<IntakeFormService> _logger;
 
     public IntakeFormService(
-        AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         IConsentService consentService,
@@ -31,7 +29,6 @@ public class IntakeFormService : IIntakeFormService
         IOptions<IntakeFormOptions> options,
         ILogger<IntakeFormService> logger)
     {
-        _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _consentService = consentService;
@@ -42,6 +39,8 @@ public class IntakeFormService : IIntakeFormService
 
     public async Task<IntakeFormDto> CreateFormAsync(string clientEmail, int? appointmentId, int? clientId, string createdByUserId)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
         var token = GenerateToken();
 
         var entity = new IntakeForm
@@ -56,8 +55,8 @@ public class IntakeFormService : IIntakeFormService
             CreatedAt = DateTime.UtcNow
         };
 
-        _dbContext.IntakeForms.Add(entity);
-        await _dbContext.SaveChangesAsync();
+        db.IntakeForms.Add(entity);
+        await db.SaveChangesAsync();
 
         _logger.LogInformation(
             "Intake form created: {FormId} for {Email} by {UserId}",
@@ -77,7 +76,9 @@ public class IntakeFormService : IIntakeFormService
 
     public async Task<IntakeFormDto?> GetByTokenAsync(string token)
     {
-        var entity = await _dbContext.IntakeForms
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entity = await db.IntakeForms
             .Include(f => f.Responses)
             .FirstOrDefaultAsync(f => f.Token == token);
 
@@ -86,11 +87,44 @@ public class IntakeFormService : IIntakeFormService
 
     public async Task<IntakeFormDto?> GetByIdAsync(int formId)
     {
-        var entity = await _dbContext.IntakeForms
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entity = await db.IntakeForms
             .Include(f => f.Responses)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         return entity is null ? null : MapToDto(entity);
+    }
+
+    public async Task<IntakeFormListDto?> GetByAppointmentIdAsync(int appointmentId)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entity = await db.IntakeForms
+            .FirstOrDefaultAsync(f => f.AppointmentId == appointmentId);
+
+        if (entity is null) return null;
+
+        string? clientName = null;
+        if (entity.ClientId.HasValue)
+        {
+            clientName = await db.Clients
+                .Where(c => c.Id == entity.ClientId.Value)
+                .Select(c => c.FirstName + " " + c.LastName)
+                .FirstOrDefaultAsync();
+        }
+
+        return new IntakeFormListDto(
+            entity.Id,
+            entity.ClientId,
+            clientName,
+            entity.AppointmentId,
+            entity.Status,
+            entity.ClientEmail,
+            entity.ExpiresAt,
+            entity.SubmittedAt,
+            entity.ReviewedAt,
+            entity.CreatedAt);
     }
 
     public async Task<List<IntakeFormListDto>> ListFormsAsync(IntakeFormStatus? statusFilter = null)
@@ -130,7 +164,9 @@ public class IntakeFormService : IIntakeFormService
 
     public async Task<(bool Success, string? Error)> SubmitFormAsync(string token, List<IntakeFormResponseDto> responses)
     {
-        var entity = await _dbContext.IntakeForms
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entity = await db.IntakeForms
             .Include(f => f.Responses)
             .FirstOrDefaultAsync(f => f.Token == token);
 
@@ -144,7 +180,7 @@ public class IntakeFormService : IIntakeFormService
         {
             entity.Status = IntakeFormStatus.Expired;
             entity.UpdatedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
+            await db.SaveChangesAsync();
             return (false, "This intake form link has expired. Please contact your nutritionist for a new link.");
         }
 
@@ -162,7 +198,7 @@ public class IntakeFormService : IIntakeFormService
         entity.Status = IntakeFormStatus.Submitted;
         entity.SubmittedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         _logger.LogInformation("Intake form submitted: {FormId}", entity.Id);
 
@@ -180,7 +216,9 @@ public class IntakeFormService : IIntakeFormService
 
     public async Task<(bool Success, int? ClientId, string? Error)> ReviewFormAsync(int formId, string reviewedByUserId)
     {
-        var entity = await _dbContext.IntakeForms
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var entity = await db.IntakeForms
             .Include(f => f.Responses)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
@@ -193,14 +231,14 @@ public class IntakeFormService : IIntakeFormService
         var responses = entity.Responses
             .ToDictionary(r => $"{r.SectionKey}.{r.FieldKey}", r => r.Value);
 
-        var clientId = await MapResponsesToClientAsync(entity, responses, reviewedByUserId);
+        var clientId = await MapResponsesToClientAsync(db, entity, responses, reviewedByUserId);
 
         entity.Status = IntakeFormStatus.Reviewed;
         entity.ReviewedAt = DateTime.UtcNow;
         entity.ReviewedByUserId = reviewedByUserId;
         entity.ClientId = clientId;
         entity.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         _logger.LogInformation(
             "Intake form reviewed: {FormId} → Client {ClientId} by {UserId}",
@@ -218,14 +256,14 @@ public class IntakeFormService : IIntakeFormService
         return (true, clientId, null);
     }
 
-    private async Task<int> MapResponsesToClientAsync(IntakeForm form, Dictionary<string, string> responses, string userId)
+    private async Task<int> MapResponsesToClientAsync(AppDbContext db, IntakeForm form, Dictionary<string, string> responses, string userId)
     {
         Client client;
         var isNewClient = !form.ClientId.HasValue;
 
         if (form.ClientId.HasValue)
         {
-            client = await _dbContext.Clients.FindAsync(form.ClientId.Value)
+            client = await db.Clients.FindAsync(form.ClientId.Value)
                      ?? throw new InvalidOperationException($"Client {form.ClientId.Value} not found.");
         }
         else
@@ -235,7 +273,7 @@ public class IntakeFormService : IIntakeFormService
                 PrimaryNutritionistId = userId,
                 CreatedAt = DateTime.UtcNow
             };
-            _dbContext.Clients.Add(client);
+            db.Clients.Add(client);
         }
 
         // Map personal info
@@ -276,13 +314,13 @@ public class IntakeFormService : IIntakeFormService
             client.Notes = string.Join("\n\n", notes);
 
         client.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         // Map health profile sub-entities
-        await MapAllergiesToClientAsync(client.Id, responses);
-        await MapMedicationsToClientAsync(client.Id, responses);
-        await MapConditionsToClientAsync(client.Id, responses);
-        await MapDietaryRestrictionsToClientAsync(client.Id, responses);
+        await MapAllergiesToClientAsync(db, client.Id, responses);
+        await MapMedicationsToClientAsync(db, client.Id, responses);
+        await MapConditionsToClientAsync(db, client.Id, responses);
+        await MapDietaryRestrictionsToClientAsync(db, client.Id, responses);
 
         if (isNewClient && consentGiven)
         {
@@ -296,7 +334,7 @@ public class IntakeFormService : IIntakeFormService
         return client.Id;
     }
 
-    private async Task MapAllergiesToClientAsync(int clientId, Dictionary<string, string> responses)
+    private async Task MapAllergiesToClientAsync(AppDbContext db, int clientId, Dictionary<string, string> responses)
     {
         if (!responses.TryGetValue("medical_history.allergies", out var allergiesJson))
             return;
@@ -308,7 +346,7 @@ public class IntakeFormService : IIntakeFormService
 
             foreach (var allergyName in allergies.Where(a => !string.IsNullOrWhiteSpace(a)))
             {
-                _dbContext.ClientAllergies.Add(new ClientAllergy
+                db.ClientAllergies.Add(new ClientAllergy
                 {
                     ClientId = clientId,
                     Name = allergyName.Trim(),
@@ -318,7 +356,7 @@ public class IntakeFormService : IIntakeFormService
                 });
             }
 
-            await _dbContext.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
         catch (JsonException ex)
         {
@@ -326,7 +364,7 @@ public class IntakeFormService : IIntakeFormService
         }
     }
 
-    private async Task MapMedicationsToClientAsync(int clientId, Dictionary<string, string> responses)
+    private async Task MapMedicationsToClientAsync(AppDbContext db, int clientId, Dictionary<string, string> responses)
     {
         if (!responses.TryGetValue("medical_history.medications", out var medsJson))
             return;
@@ -338,7 +376,7 @@ public class IntakeFormService : IIntakeFormService
 
             foreach (var medName in medications.Where(m => !string.IsNullOrWhiteSpace(m)))
             {
-                _dbContext.ClientMedications.Add(new ClientMedication
+                db.ClientMedications.Add(new ClientMedication
                 {
                     ClientId = clientId,
                     Name = medName.Trim(),
@@ -346,7 +384,7 @@ public class IntakeFormService : IIntakeFormService
                 });
             }
 
-            await _dbContext.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
         catch (JsonException ex)
         {
@@ -354,7 +392,7 @@ public class IntakeFormService : IIntakeFormService
         }
     }
 
-    private async Task MapConditionsToClientAsync(int clientId, Dictionary<string, string> responses)
+    private async Task MapConditionsToClientAsync(AppDbContext db, int clientId, Dictionary<string, string> responses)
     {
         if (!responses.TryGetValue("medical_history.conditions", out var conditionsJson))
             return;
@@ -366,7 +404,7 @@ public class IntakeFormService : IIntakeFormService
 
             foreach (var conditionName in conditions.Where(c => !string.IsNullOrWhiteSpace(c)))
             {
-                _dbContext.ClientConditions.Add(new ClientCondition
+                db.ClientConditions.Add(new ClientCondition
                 {
                     ClientId = clientId,
                     Name = conditionName.Trim(),
@@ -375,7 +413,7 @@ public class IntakeFormService : IIntakeFormService
                 });
             }
 
-            await _dbContext.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
         catch (JsonException ex)
         {
@@ -383,7 +421,7 @@ public class IntakeFormService : IIntakeFormService
         }
     }
 
-    private async Task MapDietaryRestrictionsToClientAsync(int clientId, Dictionary<string, string> responses)
+    private async Task MapDietaryRestrictionsToClientAsync(AppDbContext db, int clientId, Dictionary<string, string> responses)
     {
         if (!responses.TryGetValue("dietary_habits.dietary_restrictions", out var restrictionsJson))
             return;
@@ -399,7 +437,7 @@ public class IntakeFormService : IIntakeFormService
                     ? parsed
                     : DietaryRestrictionType.Other;
 
-                _dbContext.ClientDietaryRestrictions.Add(new ClientDietaryRestriction
+                db.ClientDietaryRestrictions.Add(new ClientDietaryRestriction
                 {
                     ClientId = clientId,
                     RestrictionType = restrictionType,
@@ -408,7 +446,7 @@ public class IntakeFormService : IIntakeFormService
                 });
             }
 
-            await _dbContext.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
         catch (JsonException ex)
         {

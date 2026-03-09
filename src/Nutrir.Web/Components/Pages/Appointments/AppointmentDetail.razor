@@ -149,7 +149,7 @@
                                 {
                                     <span class="intake-meta">Reviewed @(_intakeForm.ReviewedAt.HasValue ? TimeZoneService.ToUserLocal(_intakeForm.ReviewedAt.Value).ToString("MMM d, yyyy h:mm tt") : "")</span>
                                 }
-                                <a href="/intake-forms/@_intakeForm.Id" class="intake-view-link">View Details</a>
+                                <a href="/clients/intake/@_intakeForm.Id/review" class="intake-view-link">View Details</a>
                             </div>
                         }
                         else
@@ -381,8 +381,7 @@
 
             if (_appointment.Type == AppointmentType.InitialConsultation)
             {
-                var intakeForms = await IntakeFormService.ListFormsAsync();
-                _intakeForm = intakeForms.FirstOrDefault(f => f.AppointmentId == Id);
+                _intakeForm = await IntakeFormService.GetByAppointmentIdAsync(Id);
             }
         }
     }
@@ -516,9 +515,8 @@
             await AuditLogService.LogAsync(userId, "IntakeFormSent", "Appointment", Id.ToString(),
                 $"Sent intake form to {client.Email}");
 
-            // Reload the list entry so the UI shows status
-            var intakeForms = await IntakeFormService.ListFormsAsync();
-            _intakeForm = intakeForms.FirstOrDefault(f => f.AppointmentId == Id);
+            // Reload the form entry so the UI shows status
+            _intakeForm = await IntakeFormService.GetByAppointmentIdAsync(Id);
         }
         catch (Exception)
         {

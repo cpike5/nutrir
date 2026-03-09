@@ -11,6 +11,8 @@ public interface IIntakeFormService
 
     Task<IntakeFormDto?> GetByIdAsync(int formId);
 
+    Task<IntakeFormListDto?> GetByAppointmentIdAsync(int appointmentId);
+
     Task<List<IntakeFormListDto>> ListFormsAsync(IntakeFormStatus? statusFilter = null);
 
     Task<(bool Success, string? Error)> SubmitFormAsync(string token, List<IntakeFormResponseDto> responses);

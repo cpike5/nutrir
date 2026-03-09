@@ -79,8 +79,7 @@
         @* ── Response Sections ──────────────────────────────── *@
         @foreach (var sectionKey in SectionOrder)
         {
-            var grouped = GetGroupedResponses();
-            if (!grouped.TryGetValue(sectionKey, out var responses))
+            if (_groupedResponses is null || !_groupedResponses.TryGetValue(sectionKey, out var responses))
                 continue;
 
             var sectionIndex = Array.IndexOf(SectionOrder, sectionKey);
@@ -101,7 +100,7 @@
         }
 
         @* ── Any remaining sections not in SectionOrder ────── *@
-        @foreach (var kvp in GetGroupedResponses().Where(g => !SectionOrder.Contains(g.Key)))
+        @foreach (var kvp in _groupedResponses?.Where(g => !SectionOrder.Contains(g.Key)) ?? [])
         {
             <div class="table-card section-animate">
                 <div class="section-header">
@@ -165,6 +164,7 @@
     private bool _isLoading = true;
     private bool _isReviewing;
     private string? _errorMessage;
+    private Dictionary<string, List<IntakeFormResponseDto>>? _groupedResponses;
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,6 +173,10 @@
 
         if (_form is not null)
         {
+            _groupedResponses = _form.Responses
+                .GroupBy(r => r.SectionKey)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "IntakeFormViewed", "IntakeForm", FormId.ToString(), "Viewed intake form for review");
@@ -220,13 +224,6 @@
         {
             NavigationManager.NavigateTo($"/clients/{_form.ClientId.Value}");
         }
-    }
-
-    private Dictionary<string, List<IntakeFormResponseDto>> GetGroupedResponses()
-    {
-        return _form!.Responses
-            .GroupBy(r => r.SectionKey)
-            .ToDictionary(g => g.Key, g => g.ToList());
     }
 
     private static string GetSectionDisplayName(string sectionKey) => sectionKey switch
