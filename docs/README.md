@@ -78,6 +78,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Practice Reports Spec](reports/practice-reports-spec.md) | Monthly practice reports — metrics, trend data, period options, UI layout |
 
+## Product Documents
+
+| Document | Description |
+|----------|-------------|
+| [Feature Discovery Roundtable](product/2026-03-09-roundtable-feature-discovery.md) | Simulated stakeholder roundtable — pain points, quick wins, major enhancements, workflow gaps |
+
 ## Architecture Decision Records
 
 | ADR | Domain | Title |
