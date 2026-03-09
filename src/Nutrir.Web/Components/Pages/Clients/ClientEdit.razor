@@ -18,6 +18,7 @@
 @inject IConsentFormTemplate ConsentFormTemplate
 @inject IUserManagementService UserManagementService
 @inject IClientHealthProfileService HealthProfileService
+@inject IConditionService ConditionService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Client — Nutrir</PageTitle>
@@ -448,6 +449,10 @@
             {
                 // Save health profile changes (delete all existing, re-create from form)
                 await SaveHealthProfileChangesAsync(userId);
+
+                // Ensure medications are in the lookup table for future auto-complete
+                await _medicationFormGroup.EnsureMedicationsInLookupAsync(userId);
+
                 NavigationManager.NavigateTo($"/clients/{Id}");
             }
             else
@@ -492,6 +497,7 @@
         }
         foreach (var (name, code, diagnosisDate, status) in _conditionFormGroup.GetValidEntries())
         {
+            await ConditionService.GetOrCreateAsync(name, code);
             await HealthProfileService.CreateConditionAsync(
                 new CreateClientConditionDto(Id, name, code, diagnosisDate, status, null), userId);
         }

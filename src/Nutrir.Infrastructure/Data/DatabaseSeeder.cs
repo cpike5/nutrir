@@ -36,6 +36,8 @@ public class DatabaseSeeder
         await SeedRolesAsync();
         await SeedAdminUserAsync();
         await SeedNutritionistUserAsync();
+        await SeedAllergensAsync();
+        await SeedConditionsAsync();
 
         if (isDevelopment)
         {
@@ -179,6 +181,91 @@ public class DatabaseSeeder
         }
     }
 
+    private async Task SeedAllergensAsync()
+    {
+        if (await _dbContext.Allergens.AnyAsync())
+        {
+            _logger.LogInformation("Allergens already seeded, skipping");
+            return;
+        }
+
+        var allergens = new List<Allergen>
+        {
+            // Food allergens
+            new() { Name = "Peanuts", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Tree Nuts", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Milk", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Eggs", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Wheat", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Soy", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Fish", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Shellfish", Category = "Food", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Sesame", Category = "Food", CreatedAt = DateTime.UtcNow },
+            // Drug allergens
+            new() { Name = "Penicillin", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Sulfa Drugs", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "NSAIDs", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Aspirin", Category = "Drug", CreatedAt = DateTime.UtcNow },
+            // Environmental allergens
+            new() { Name = "Pollen", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Dust Mites", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Mold", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+            new() { Name = "Pet Dander", Category = "Environmental", CreatedAt = DateTime.UtcNow },
+        };
+
+        _dbContext.Allergens.AddRange(allergens);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Seeded {Count} common allergens", allergens.Count);
+    }
+
+    private static readonly (string Name, string? IcdCode, string? Category)[] SeedConditions =
+    [
+        ("Type 2 Diabetes", "E11", "Metabolic"),
+        ("Type 1 Diabetes", "E10", "Metabolic"),
+        ("Celiac Disease", "K90.0", "Gastrointestinal"),
+        ("Crohn's Disease", "K50", "Gastrointestinal"),
+        ("Ulcerative Colitis", "K51", "Gastrointestinal"),
+        ("Irritable Bowel Syndrome", "K58", "Gastrointestinal"),
+        ("Gastroesophageal Reflux Disease", "K21", "Gastrointestinal"),
+        ("Hypertension", "I10", "Cardiovascular"),
+        ("Hyperlipidemia", "E78.5", "Metabolic"),
+        ("Polycystic Ovary Syndrome", "E28.2", "Metabolic"),
+        ("Hypothyroidism", "E03.9", "Metabolic"),
+        ("Hyperthyroidism", "E05.9", "Metabolic"),
+        ("Chronic Kidney Disease", "N18", "Renal"),
+        ("Heart Failure", "I50", "Cardiovascular"),
+        ("Obesity", "E66", "Metabolic"),
+        ("Iron Deficiency Anemia", "D50", "Hematologic"),
+        ("Osteoporosis", "M81", "Musculoskeletal"),
+        ("Anorexia Nervosa", "F50.0", "Eating Disorder"),
+        ("Bulimia Nervosa", "F50.2", "Eating Disorder"),
+        ("Lactose Intolerance", "E73", "Gastrointestinal"),
+        ("Fructose Intolerance", "E74.1", "Metabolic"),
+    ];
+
+    private async Task SeedConditionsAsync()
+    {
+        // Idempotency check — skip if conditions already exist (include soft-deleted)
+        if (await _dbContext.Conditions.IgnoreQueryFilters().AnyAsync())
+        {
+            _logger.LogInformation("Condition lookup data already exists, skipping");
+            return;
+        }
+
+        var conditions = SeedConditions.Select(c => new Condition
+        {
+            Name = c.Name,
+            IcdCode = c.IcdCode,
+            Category = c.Category,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        _dbContext.Conditions.AddRange(conditions);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Seeded {Count} conditions to lookup table", conditions.Count);
+    }
+
     private async Task SeedDashboardDataAsync()
     {
         // Idempotency check — skip if clients already exist
@@ -227,6 +314,47 @@ public class DatabaseSeeder
         await _dbContext.SaveChangesAsync();
         _logger.LogInformation("Seeded {AppointmentCount} appointments, {MealPlanCount} meal plans, {GoalCount} goals, {EntryCount} progress entries, {AllergyCount} allergies, {MedicationCount} medications, {ConditionCount} conditions, {RestrictionCount} dietary restrictions",
             appointments.Count, mealPlans.Count, goals.Count, entries.Count, allergies.Count, medications.Count, conditions.Count, dietaryRestrictions.Count);
+
+        // Stage 2b: Seed Medication lookup table from seeded client medications
+        var distinctMedicationNames = medications
+            .Select(m => m.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var commonMedications = new[]
+        {
+            "Metformin", "Lisinopril", "Atorvastatin", "Amlodipine", "Omeprazole", "Losartan", "Simvastatin", "Levothyroxine",
+            "Gabapentin", "Hydrochlorothiazide", "Sertraline", "Metoprolol", "Pantoprazole", "Montelukast", "Furosemide",
+            "Escitalopram", "Rosuvastatin", "Bupropion", "Trazodone", "Duloxetine", "Fluoxetine", "Prednisone", "Tamsulosin",
+            "Meloxicam", "Carvedilol", "Clopidogrel", "Venlafaxine", "Albuterol", "Ibuprofen", "Acetaminophen", "Aspirin",
+            "Amoxicillin", "Azithromycin", "Ciprofloxacin", "Doxycycline", "Cephalexin", "Clindamycin", "Fluticasone",
+            "Cetirizine", "Loratadine", "Diphenhydramine", "Famotidine", "Ranitidine", "Ondansetron", "Diazepam",
+            "Alprazolam", "Clonazepam", "Zolpidem", "Cyclobenzaprine", "Naproxen", "Tramadol", "Oxycodone", "Morphine",
+            "Warfarin", "Apixaban", "Rivaroxaban", "Citalopram", "Paroxetine", "Mirtazapine", "Quetiapine", "Aripiprazole",
+            "Lamotrigine", "Topiramate", "Pregabalin", "Amitriptyline", "Nortriptyline", "Spironolactone", "Finasteride",
+            "Sildenafil", "Tadalafil", "Insulin Lispro", "Insulin Aspart", "Empagliflozin", "Sitagliptin", "Glipizide",
+            "Pioglitazone", "Liraglutide", "Semaglutide", "Dapagliflozin", "Canagliflozin", "Valsartan", "Irbesartan",
+            "Diltiazem", "Nifedipine", "Propranolol", "Bisoprolol", "Atenolol", "Digoxin", "Nitroglycerin", "Hydralazine",
+            "Doxazosin", "Prazosin", "Potassium Chloride", "Magnesium Oxide", "Calcium Carbonate", "Ferrous Sulfate",
+            "Cholecalciferol", "Cyanocobalamin", "Folic Acid", "Biotin"
+        };
+
+        var allMedicationNames = distinctMedicationNames
+            .Concat(commonMedications)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var medicationLookups = allMedicationNames
+            .Select(name => new Medication
+            {
+                Name = name,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToList();
+
+        _dbContext.Medications.AddRange(medicationLookups);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Seeded {Count} medication lookup entries", medicationLookups.Count);
 
         // Stage 3: Generate audit logs (now all entities have real IDs) and persist
         var auditLogs = generator.GenerateAuditLogs(ids);

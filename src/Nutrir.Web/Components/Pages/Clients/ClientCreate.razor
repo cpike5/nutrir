@@ -20,6 +20,7 @@
 @inject IOptions<ConsentFormOptions> ConsentFormOptionsAccessor
 @inject IUserManagementService UserManagementService
 @inject IClientHealthProfileService HealthProfileService
+@inject IConditionService ConditionService
 @inject NavigationManager NavigationManager
 
 <PageTitle>New Client — Nutrir</PageTitle>
@@ -350,6 +351,9 @@
             // Save health profile entries
             await SaveHealthProfileAsync(created.Id, userId);
 
+            // Ensure medications are in the lookup table for future auto-complete
+            await _medicationFormGroup.EnsureMedicationsInLookupAsync(userId);
+
             // Record consent form based on method
             if (isDigital)
             {
@@ -382,6 +386,7 @@
         }
         foreach (var (name, code, diagnosisDate, status) in _conditionFormGroup.GetValidEntries())
         {
+            await ConditionService.GetOrCreateAsync(name, code);
             await HealthProfileService.CreateConditionAsync(
                 new CreateClientConditionDto(clientId, name, code, diagnosisDate, status, null), userId);
         }

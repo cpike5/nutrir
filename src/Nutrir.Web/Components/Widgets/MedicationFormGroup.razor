@@ -1,3 +1,7 @@
+@using Nutrir.Core.Interfaces
+
+@inject IMedicationService MedicationService
+
 <div class="health-form-section">
     <div class="health-form-label">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -13,11 +17,14 @@
         <div class="health-form-entry">
             <div class="form-grid">
                 <FormGroup Label="Medication Name" Id="@($"med-name-{index}")">
-                    <FormInput Id="@($"med-name-{index}")"
-                               Value="@entry.Name"
-                               ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Metformin"
-                               DebounceMs="300" />
+                    <Autocomplete Id="@($"med-name-{index}")"
+                                  Options="_medicationOptions"
+                                  Value="@entry.Name"
+                                  ValueChanged="@(v => entry.Name = v)"
+                                  DisplayText="@entry.Name"
+                                  DisplayTextChanged="@(v => entry.Name = v)"
+                                  AllowFreeText
+                                  Placeholder="e.g. Metformin" />
                 </FormGroup>
                 <FormGroup Label="Dosage" Id="@($"med-dosage-{index}")">
                     <FormInput Id="@($"med-dosage-{index}")"
@@ -53,6 +60,21 @@
 @code {
     [Parameter] public List<MedicationEntry> Entries { get; set; } = new();
 
+    private List<Autocomplete.AutocompleteOption> _medicationOptions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMedicationOptions();
+    }
+
+    private async Task LoadMedicationOptions()
+    {
+        var medications = await MedicationService.SearchAsync("", 500);
+        _medicationOptions = medications
+            .Select(m => new Autocomplete.AutocompleteOption(m, m))
+            .ToList();
+    }
+
     private void Add()
     {
         Entries.Add(new MedicationEntry());
@@ -70,6 +92,19 @@
             .Where(e => !string.IsNullOrWhiteSpace(e.Name))
             .Select(e => (e.Name!.Trim(), NullIfEmpty(e.Dosage), NullIfEmpty(e.Frequency), NullIfEmpty(e.PrescribedFor)))
             .ToList();
+    }
+
+    /// <summary>
+    /// Ensures all entered medications are added to the lookup table.
+    /// Call this from the parent page after successfully saving a client.
+    /// </summary>
+    public async Task EnsureMedicationsInLookupAsync(string userId)
+    {
+        var validEntries = GetValidEntries();
+        foreach (var entry in validEntries)
+        {
+            await MedicationService.GetOrCreateAsync(entry.Name, userId);
+        }
     }
 
     private static string? NullIfEmpty(string? value) =>

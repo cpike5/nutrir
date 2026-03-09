@@ -48,11 +48,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ClientDietaryRestriction> ClientDietaryRestrictions => Set<ClientDietaryRestriction>();
 
+    public DbSet<Condition> Conditions => Set<Condition>();
+
     public DbSet<PractitionerSchedule> PractitionerSchedules => Set<PractitionerSchedule>();
 
     public DbSet<PractitionerTimeBlock> PractitionerTimeBlocks => Set<PractitionerTimeBlock>();
 
+    public DbSet<Allergen> Allergens => Set<Allergen>();
+
     public DbSet<AllergenWarningOverride> AllergenWarningOverrides => Set<AllergenWarningOverride>();
+
+    public DbSet<Medication> Medications => Set<Medication>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -404,6 +410,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(dr => dr.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
+        builder.Entity<Condition>(entity =>
+        {
+            entity.HasQueryFilter(c => !c.IsDeleted);
+
+            entity.HasIndex(c => c.Name).IsUnique();
+
+            entity.Property(c => c.Name).HasMaxLength(200);
+            entity.Property(c => c.IcdCode).HasMaxLength(20);
+            entity.Property(c => c.Category).HasMaxLength(100);
+            entity.Property(c => c.IsDeleted).HasDefaultValue(false);
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
         builder.Entity<PractitionerSchedule>(entity =>
         {
             entity.HasQueryFilter(s => !s.IsDeleted);
@@ -418,6 +437,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(s => s.DayOfWeek).HasConversion<string>();
             entity.Property(s => s.IsDeleted).HasDefaultValue(false);
             entity.Property(s => s.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<Allergen>(entity =>
+        {
+            entity.HasQueryFilter(a => !a.IsDeleted);
+            entity.Property(a => a.Name).HasMaxLength(200);
+            entity.Property(a => a.Category).HasMaxLength(50);
+            entity.HasIndex(a => a.Name).IsUnique();
+            entity.Property(a => a.IsDeleted).HasDefaultValue(false);
+            entity.Property(a => a.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<AllergenWarningOverride>(entity =>
@@ -451,6 +480,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(tb => tb.Notes).HasColumnType("text");
             entity.Property(tb => tb.IsDeleted).HasDefaultValue(false);
             entity.Property(tb => tb.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<Medication>(entity =>
+        {
+            entity.HasQueryFilter(m => !m.IsDeleted);
+            entity.HasIndex(m => m.Name);
+            entity.Property(m => m.Name).HasMaxLength(200);
+            entity.Property(m => m.GenericName).HasMaxLength(200);
+            entity.Property(m => m.IsDeleted).HasDefaultValue(false);
+            entity.Property(m => m.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 

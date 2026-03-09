@@ -13,6 +13,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
     private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
+    private readonly IAllergenService _allergenService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ClientHealthProfileService> _logger;
 
@@ -20,12 +21,14 @@ public class ClientHealthProfileService : IClientHealthProfileService
         AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
+        IAllergenService allergenService,
         INotificationDispatcher notificationDispatcher,
         ILogger<ClientHealthProfileService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
+        _allergenService = allergenService;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
@@ -35,6 +38,16 @@ public class ClientHealthProfileService : IClientHealthProfileService
     public async Task<ClientAllergyDto> CreateAllergyAsync(CreateClientAllergyDto dto, string userId)
     {
         await ValidateClientExistsAsync(dto.ClientId);
+
+        // Ensure allergen exists in lookup table for future auto-complete suggestions
+        var category = dto.AllergyType switch
+        {
+            AllergyType.Food => "Food",
+            AllergyType.Drug => "Drug",
+            AllergyType.Environmental => "Environmental",
+            _ => (string?)null
+        };
+        await _allergenService.GetOrCreateAsync(dto.Name, category, userId);
 
         var entity = new ClientAllergy
         {
@@ -79,6 +92,16 @@ public class ClientHealthProfileService : IClientHealthProfileService
     {
         var entity = await _dbContext.ClientAllergies.FindAsync(id);
         if (entity is null) return false;
+
+        // Ensure allergen exists in lookup table for future auto-complete suggestions
+        var category = dto.AllergyType switch
+        {
+            AllergyType.Food => "Food",
+            AllergyType.Drug => "Drug",
+            AllergyType.Environmental => "Environmental",
+            _ => (string?)null
+        };
+        await _allergenService.GetOrCreateAsync(dto.Name, category, userId);
 
         entity.Name = dto.Name;
         entity.Severity = dto.Severity;

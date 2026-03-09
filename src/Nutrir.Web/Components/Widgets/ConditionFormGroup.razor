@@ -1,4 +1,8 @@
 @using Nutrir.Core.Enums
+@using Nutrir.Core.Entities
+@using Nutrir.Core.Interfaces
+@using static Nutrir.Web.Components.UI.Autocomplete
+@inject IConditionService ConditionService
 
 <div class="health-form-section">
     <div class="health-form-label">
@@ -14,11 +18,12 @@
         <div class="health-form-entry">
             <div class="form-grid">
                 <FormGroup Label="Condition Name" Id="@($"cond-name-{index}")">
-                    <FormInput Id="@($"cond-name-{index}")"
-                               Value="@entry.Name"
-                               ValueChanged="@(v => entry.Name = v)"
-                               Placeholder="e.g. Type 2 Diabetes"
-                               DebounceMs="300" />
+                    <Autocomplete Id="@($"cond-name-{index}")"
+                                  Options="@_conditionOptions"
+                                  Value="@entry.Name"
+                                  ValueChanged="@(v => OnConditionSelected(entry, v))"
+                                  AllowFreeText="true"
+                                  Placeholder="e.g. Type 2 Diabetes" />
                 </FormGroup>
                 <FormGroup Label="Code" Id="@($"cond-code-{index}")">
                     <FormInput Id="@($"cond-code-{index}")"
@@ -55,6 +60,30 @@
 
 @code {
     [Parameter] public List<ConditionEntry> Entries { get; set; } = new();
+
+    private IReadOnlyList<AutocompleteOption> _conditionOptions = [];
+    private List<Condition> _conditions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _conditions = await ConditionService.GetAllAsync();
+        _conditionOptions = _conditions
+            .Select(c => new AutocompleteOption(c.Name, c.Name))
+            .ToList();
+    }
+
+    private void OnConditionSelected(ConditionEntry entry, string name)
+    {
+        entry.Name = name;
+
+        var match = _conditions.FirstOrDefault(c =>
+            c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (match?.IcdCode is not null)
+        {
+            entry.Code = match.IcdCode;
+        }
+    }
 
     private void Add()
     {

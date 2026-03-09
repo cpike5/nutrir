@@ -39,7 +39,7 @@
     else if (_isOpen && _filteredOptions.Count == 0)
     {
         <div class="autocomplete-dropdown autocomplete-empty">
-            @(Options.Count == 0 ? "No options available" : "No matching results")
+            @(Options.Count == 0 ? "No options available" : (AllowFreeText ? "No matches — new entry will be created" : "No matching results"))
         </div>
     }
 </div>
@@ -52,6 +52,7 @@
     [Parameter] public string? DisplayText { get; set; }
     [Parameter] public EventCallback<string> DisplayTextChanged { get; set; }
     [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool AllowFreeText { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string _searchText = string.Empty;
@@ -76,6 +77,10 @@
             {
                 _searchText = match.Text;
             }
+            else if (AllowFreeText)
+            {
+                _searchText = Value;
+            }
         }
 
         // Auto-select if only one option (once only)
@@ -86,13 +91,18 @@
         }
     }
 
-    private void HandleInput(ChangeEventArgs e)
+    private async Task HandleInput(ChangeEventArgs e)
     {
         _searchText = e.Value?.ToString() ?? string.Empty;
         _isOpen = true;
         _highlightedIndex = -1;
         _preventDefaultKey = false;
         FilterOptions();
+
+        if (AllowFreeText)
+        {
+            await ValueChanged.InvokeAsync(_searchText);
+        }
     }
 
     private void HandleFocusIn()
@@ -116,12 +126,31 @@
             await ValueChanged.InvokeAsync(string.Empty);
             await DisplayTextChanged.InvokeAsync(string.Empty);
         }
+        else if (AllowFreeText)
+        {
+            // Accept whatever the user typed as the value
+            await ValueChanged.InvokeAsync(_searchText);
+            await DisplayTextChanged.InvokeAsync(_searchText);
+        }
         else
         {
-            // If the current text doesn't match a selected option, revert
+            // Check if the current text matches an option
             var match = Options.FirstOrDefault(o =>
                 o.Text.Equals(_searchText, StringComparison.OrdinalIgnoreCase));
-            if (match is null && !string.IsNullOrEmpty(Value))
+
+            if (match is not null)
+            {
+                // Typed text matches an option — select it
+                await ValueChanged.InvokeAsync(match.Value);
+                await DisplayTextChanged.InvokeAsync(match.Text);
+            }
+            else if (AllowFreeText)
+            {
+                // Free text mode: keep whatever was typed
+                await ValueChanged.InvokeAsync(_searchText);
+                await DisplayTextChanged.InvokeAsync(_searchText);
+            }
+            else if (!string.IsNullOrEmpty(Value))
             {
                 // Text was changed but doesn't match any option - revert to selected display
                 var selected = Options.FirstOrDefault(o => o.Value == Value);

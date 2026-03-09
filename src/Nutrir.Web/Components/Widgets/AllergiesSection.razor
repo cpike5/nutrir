@@ -34,11 +34,10 @@
                         <div class="inline-form">
                             <div class="inline-form-grid">
                                 <FormGroup Label="Name" Id="edit-allergy-name">
-                                    <FormInput Id="edit-allergy-name"
-                                               Value="@_editName"
-                                               ValueChanged="@(v => _editName = v)"
-                                               Placeholder="Allergy name"
-                                               DebounceMs="300" />
+                                    <AllergenAutocomplete Id="edit-allergy-name"
+                                                          Value="@_editName"
+                                                          ValueChanged="@(v => _editName = v)"
+                                                          Placeholder="Allergy name" />
                                 </FormGroup>
                                 <FormGroup Label="Severity" Id="edit-allergy-severity">
                                     <FormSelect Id="edit-allergy-severity"
@@ -113,11 +112,10 @@
                 <div class="inline-form">
                     <div class="inline-form-grid">
                         <FormGroup Label="Name" Id="add-allergy-name">
-                            <FormInput Id="add-allergy-name"
-                                       Value="@_addName"
-                                       ValueChanged="@(v => _addName = v)"
-                                       Placeholder="Allergy name"
-                                       DebounceMs="300" />
+                            <AllergenAutocomplete Id="add-allergy-name"
+                                                  Value="@_addName"
+                                                  ValueChanged="@(v => _addName = v)"
+                                                  Placeholder="Allergy name" />
                         </FormGroup>
                         <FormGroup Label="Severity" Id="add-allergy-severity">
                             <FormSelect Id="add-allergy-severity"
