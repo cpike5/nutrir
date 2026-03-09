@@ -62,6 +62,9 @@ public class ReminderService : IReminderService
         if (string.IsNullOrEmpty(client.Email))
             throw new InvalidOperationException("Client does not have an email address.");
 
+        if (!client.ConsentGiven || !client.EmailRemindersEnabled)
+            throw new InvalidOperationException("Client has not opted in to email reminders.");
+
         var (subject, htmlBody) = _emailBuilder.BuildReminderEmail(
             client.FirstName, appointment.StartTime, type);
 
@@ -81,8 +84,8 @@ public class ReminderService : IReminderService
             reminder.SentAt = DateTime.UtcNow;
 
             _logger.LogInformation(
-                "Manually resent {ReminderType} reminder for appointment {AppointmentId} by {UserId}",
-                type, appointmentId, userId);
+                "Manually resent {ReminderType} reminder for appointment {AppointmentId}, client {ClientId} by {UserId}",
+                type, appointmentId, client.Id, userId);
         }
         catch (Exception ex)
         {
@@ -90,8 +93,8 @@ public class ReminderService : IReminderService
             reminder.FailureReason = ex.Message.Length > 500 ? ex.Message[..500] : ex.Message;
 
             _logger.LogError(ex,
-                "Failed to resend {ReminderType} reminder for appointment {AppointmentId}",
-                type, appointmentId);
+                "Failed to resend {ReminderType} reminder for appointment {AppointmentId}, client {ClientId}",
+                type, appointmentId, client.Id);
         }
 
         db.AppointmentReminders.Add(reminder);
@@ -102,6 +105,6 @@ public class ReminderService : IReminderService
             reminder.Status == ReminderStatus.Sent ? "ReminderResent" : "ReminderResendFailed",
             "Appointment",
             appointmentId.ToString(),
-            $"Manual {type} reminder to {client.Email}: {reminder.Status}");
+            $"Manual {type} reminder for client {client.Id}: {reminder.Status}");
     }
 }

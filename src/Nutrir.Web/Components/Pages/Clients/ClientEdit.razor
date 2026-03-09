@@ -354,31 +354,9 @@
         _model.Phone = PhoneFormatter.Format(value);
     }
 
-    private async Task OnEmailRemindersToggled(ChangeEventArgs e)
+    private void OnEmailRemindersToggled(ChangeEventArgs e)
     {
-        var enabled = (bool)(e.Value ?? false);
-        _model.EmailRemindersEnabled = enabled;
-
-        try
-        {
-            var authState = await AuthState;
-            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-
-            var purpose = enabled
-                ? "Electronic appointment reminders"
-                : "Withdrawal of electronic appointment reminders";
-
-            await ConsentService.GrantConsentAsync(
-                Id,
-                purpose,
-                _client!.ConsentPolicyVersion ?? "1.0",
-                userId);
-        }
-        catch
-        {
-            // Revert toggle on failure
-            _model.EmailRemindersEnabled = !enabled;
-        }
+        _model.EmailRemindersEnabled = (bool)(e.Value ?? false);
     }
 
     private bool _isWithdrawing;

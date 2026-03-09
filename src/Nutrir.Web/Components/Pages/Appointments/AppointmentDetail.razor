@@ -603,7 +603,9 @@
         }
         catch (Exception ex)
         {
-            _reminderError = ex.Message;
+            _reminderError = ex is InvalidOperationException
+                ? ex.Message
+                : "Failed to send reminder. Please try again.";
         }
         finally
         {

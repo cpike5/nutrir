@@ -164,8 +164,8 @@ public class ReminderBackgroundService : BackgroundService
             reminder.SentAt = DateTime.UtcNow;
 
             _logger.LogInformation(
-                "Sent {ReminderType} reminder for appointment {AppointmentId} to {ClientEmail}",
-                reminderType, appointment.Id, client.Email);
+                "Sent {ReminderType} reminder for appointment {AppointmentId}, client {ClientId}",
+                reminderType, appointment.Id, client.Id);
         }
         catch (Exception ex)
         {
@@ -173,12 +173,23 @@ public class ReminderBackgroundService : BackgroundService
             reminder.FailureReason = ex.Message.Length > 500 ? ex.Message[..500] : ex.Message;
 
             _logger.LogError(ex,
-                "Failed to send {ReminderType} reminder for appointment {AppointmentId} to {ClientEmail}",
-                reminderType, appointment.Id, client.Email);
+                "Failed to send {ReminderType} reminder for appointment {AppointmentId}, client {ClientId}",
+                reminderType, appointment.Id, client.Id);
         }
 
         db.AppointmentReminders.Add(reminder);
-        await db.SaveChangesAsync(ct);
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to persist {ReminderType} reminder record for appointment {AppointmentId}",
+                reminderType, appointment.Id);
+            return;
+        }
 
         // Audit log every send attempt
         await auditLogService.LogAsync(
@@ -186,7 +197,7 @@ public class ReminderBackgroundService : BackgroundService
             reminder.Status == ReminderStatus.Sent ? "ReminderSent" : "ReminderFailed",
             "Appointment",
             appointment.Id.ToString(),
-            $"{reminderType} reminder to {client.Email}: {reminder.Status}"
+            $"{reminderType} reminder for client {client.Id}: {reminder.Status}"
                 + (reminder.FailureReason is not null ? $" — {reminder.FailureReason}" : ""));
     }
 }
