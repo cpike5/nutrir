@@ -16,6 +16,9 @@
 @inject NavigationManager NavigationManager
 @inject IAllergenCheckService AllergenCheckService
 @inject RealTimeNotificationService NotificationService
+@inject IEmailService EmailService
+@inject IMealPlanPdfService MealPlanPdfService
+@inject IClientService ClientService
 
 <PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
 
@@ -98,6 +101,7 @@
                         <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="ActivatePlan">Activate</Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ShowEmailModal())" Disabled="@(!_hasClientEmail)">Email Plan</Button>
                         <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showDeleteConfirm = true)">Delete</Button>
                     }
@@ -106,12 +110,14 @@
                         <Button Variant="ButtonVariant.Primary" OnClick="NavigateToEditDetails">Edit Details</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="NavigateToEdit">Edit Meals</Button>
                         <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ShowEmailModal())" Disabled="@(!_hasClientEmail)">Email Plan</Button>
                         <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="ArchivePlan">Archive</Button>
                     }
                     else if (_plan.Status is MealPlanStatus.Archived)
                     {
                         <Button Variant="ButtonVariant.Outline" OnClick="DuplicatePlan">Duplicate</Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ShowEmailModal())" Disabled="@(!_hasClientEmail)">Email Plan</Button>
                         <a href="/api/meal-plans/@_plan.Id/pdf" target="_blank" class="btn btn-outline" download>Export PDF</a>
                         <Button Variant="ButtonVariant.Ghost" OnClick="ReactivatePlan">Reactivate</Button>
                     }
@@ -266,6 +272,38 @@
             </div>
         }
 
+        @if (_showEmailForm)
+        {
+            <div class="table-card section-animate">
+                <div class="section-header">
+                    <span class="section-header-label">Email Meal Plan</span>
+                </div>
+                <div class="form-body">
+                    <FormGroup Label="Recipient Email" Id="emailTo">
+                        <FormInput Id="emailTo"
+                                   Value="@_emailTo"
+                                   ValueChanged="@(v => _emailTo = v)"
+                                   Placeholder="client@example.com"
+                                   DebounceMs="300" />
+                    </FormGroup>
+                    @if (!string.IsNullOrEmpty(_emailError))
+                    {
+                        <div class="error-banner">@_emailError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_emailSuccess))
+                    {
+                        <div class="success-msg">@_emailSuccess</div>
+                    }
+                    <div class="form-actions">
+                        <Button Variant="ButtonVariant.Primary" OnClick="SendEmailAsync" Disabled="@_isSendingEmail">
+                            @(_isSendingEmail ? "Sending..." : "Send Email")
+                        </Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showEmailForm = false)">Cancel</Button>
+                    </div>
+                </div>
+            </div>
+        }
+
         @if (!string.IsNullOrEmpty(_statusError))
         {
             <div class="status-error">@_statusError</div>
@@ -357,6 +395,12 @@
     private List<AllergenWarningDto> _allergenWarnings = new();
     private string? _acknowledgingKey;
     private string _acknowledgeNote = string.Empty;
+    private bool _showEmailForm;
+    private bool _isSendingEmail;
+    private bool _hasClientEmail;
+    private string _emailTo = string.Empty;
+    private string? _emailError;
+    private string? _emailSuccess;
 
     protected override async Task OnInitializedAsync()
     {
@@ -368,6 +412,9 @@
         if (_plan is not null)
         {
             _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
+            var client = await ClientService.GetByIdAsync(_plan.ClientId);
+            _hasClientEmail = !string.IsNullOrWhiteSpace(client?.Email);
+            _emailTo = client?.Email ?? string.Empty;
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             await AuditLogService.LogAsync(userId, "MealPlanViewed", "MealPlan", Id.ToString(), "Viewed MealPlan record");
@@ -515,6 +562,56 @@
         var userId = await GetUserId();
         await AllergenCheckService.RemoveAcknowledgementAsync(Id, warning.FoodName, warning.AllergenCategory, userId);
         _allergenWarnings = await AllergenCheckService.CheckAsync(Id);
+    }
+
+    private void ShowEmailModal()
+    {
+        _showEmailForm = true;
+        _emailError = null;
+        _emailSuccess = null;
+    }
+
+    private async Task SendEmailAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_emailTo))
+        {
+            _emailError = "Email address is required.";
+            return;
+        }
+
+        _isSendingEmail = true;
+        _emailError = null;
+        _emailSuccess = null;
+
+        try
+        {
+            var userId = await GetUserId();
+            var pdfBytes = await MealPlanPdfService.GeneratePdfAsync(Id, userId);
+            var subject = $"Your Meal Plan: {_plan!.Title}";
+            var htmlBody = $"<p>Hi {_plan.ClientFirstName},</p><p>Please find your meal plan <strong>{_plan.Title}</strong> attached.</p><p>Best regards,<br/>Your Nutritionist</p>";
+
+            await EmailService.SendEmailWithAttachmentAsync(
+                _emailTo,
+                $"{_plan.ClientFirstName} {_plan.ClientLastName}",
+                subject,
+                htmlBody,
+                pdfBytes,
+                $"{_plan.Title.Replace(" ", "_")}_MealPlan.pdf",
+                "application/pdf");
+
+            await AuditLogService.LogAsync(userId, "MealPlanEmailed", "MealPlan", Id.ToString(),
+                $"Emailed meal plan to {_emailTo}");
+
+            _emailSuccess = $"Meal plan sent to {_emailTo}";
+        }
+        catch (Exception ex)
+        {
+            _emailError = $"Failed to send email: {ex.Message}";
+        }
+        finally
+        {
+            _isSendingEmail = false;
+        }
     }
 
     private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch

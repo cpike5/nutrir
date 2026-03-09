@@ -95,6 +95,8 @@ public class ProgressService : IProgressService
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
 
+        await CheckGoalAchievementsAsync(entity.ClientId, entity.Measurements, userId);
+
         return MapToEntryDetailDto(entity, client?.FirstName ?? "", client?.LastName ?? "", createdByName);
     }
 
@@ -135,6 +137,8 @@ public class ProgressService : IProgressService
             "ProgressEntry",
             id.ToString(),
             $"Updated progress entry for {entity.EntryDate}");
+
+        await CheckGoalAchievementsAsync(entity.ClientId, entity.Measurements, userId);
 
         return true;
     }
@@ -341,6 +345,75 @@ public class ProgressService : IProgressService
             .ToListAsync();
 
         return entities.Select(MapToEntrySummaryDto).ToList();
+    }
+
+    // ── Goal Achievement Detection ─────────────────────────
+
+    private async Task CheckGoalAchievementsAsync(int clientId, IEnumerable<ProgressMeasurement> measurements, string userId)
+    {
+        try
+        {
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+            var activeGoals = await db.ProgressGoals
+                .Where(g => g.ClientId == clientId && g.Status == GoalStatus.Active && g.TargetValue.HasValue)
+                .ToListAsync();
+
+            if (activeGoals.Count == 0) return;
+
+            foreach (var measurement in measurements)
+            {
+                var goalType = MapMetricToGoalType(measurement.MetricType);
+                if (goalType is null) continue;
+
+                var matchingGoals = activeGoals.Where(g => g.GoalType == goalType.Value).ToList();
+
+                foreach (var goal in matchingGoals)
+                {
+                    var isAchieved = IsGoalAchieved(measurement.MetricType, measurement.Value, goal.TargetValue!.Value);
+
+                    if (isAchieved)
+                    {
+                        _logger.LogInformation(
+                            "Goal achievement suggested: Goal {GoalId} '{GoalTitle}' for client {ClientId} — {MetricType} value {Value} meets target {Target}",
+                            goal.Id, goal.Title, clientId, measurement.MetricType, measurement.Value, goal.TargetValue);
+
+                        await _auditLogService.LogAsync(
+                            userId,
+                            "GoalAchievementSuggested",
+                            "ProgressGoal",
+                            goal.Id.ToString(),
+                            $"Measurement {measurement.MetricType} = {measurement.Value} meets target {goal.TargetValue} for goal '{goal.Title}'");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking goal achievements for client {ClientId}", clientId);
+        }
+    }
+
+    private static GoalType? MapMetricToGoalType(MetricType metricType) => metricType switch
+    {
+        MetricType.Weight => GoalType.Weight,
+        MetricType.BMI => GoalType.Weight,
+        MetricType.BodyFatPercentage => GoalType.BodyComposition,
+        MetricType.WaistCircumference => GoalType.BodyComposition,
+        MetricType.HipCircumference => GoalType.BodyComposition,
+        _ => null
+    };
+
+    private static bool IsGoalAchieved(MetricType metricType, decimal value, decimal target)
+    {
+        // Weight, body fat, waist, hip, BMI: lower is better (value <= target)
+        // All other mapped metrics also use lower-is-better
+        return metricType switch
+        {
+            MetricType.Weight or MetricType.BodyFatPercentage or MetricType.WaistCircumference
+                or MetricType.HipCircumference or MetricType.BMI => value <= target,
+            _ => value >= target
+        };
     }
 
     // ── Helpers ────────────────────────────────────────────

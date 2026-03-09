@@ -171,7 +171,8 @@ public static class AppointmentCommands
                     Location: location,
                     VirtualMeetingUrl: url,
                     LocationNotes: locationNotes,
-                    Notes: notes);
+                    Notes: notes,
+                    PrepNotes: null);
 
                 using var host = CliHostBuilder.Build(connStr);
                 using var scope = host.Services.CreateScope();

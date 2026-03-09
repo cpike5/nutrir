@@ -14,6 +14,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly IAllergenService _allergenService;
+    private readonly IAllergenCheckService _allergenCheckService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ClientHealthProfileService> _logger;
 
@@ -22,6 +23,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         IAllergenService allergenService,
+        IAllergenCheckService allergenCheckService,
         INotificationDispatcher notificationDispatcher,
         ILogger<ClientHealthProfileService> logger)
     {
@@ -29,6 +31,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _allergenService = allergenService;
+        _allergenCheckService = allergenCheckService;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
@@ -68,6 +71,8 @@ public class ClientHealthProfileService : IClientHealthProfileService
             entity.Id.ToString(), $"Created allergy '{entity.Name}' for client {entity.ClientId}");
 
         await TryDispatchAsync("ClientAllergy", entity.Id, EntityChangeType.Created, userId);
+
+        await RecheckActiveAllergenWarningsAsync(dto.ClientId, userId);
 
         return MapToDto(entity);
     }
@@ -117,6 +122,8 @@ public class ClientHealthProfileService : IClientHealthProfileService
 
         await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Updated, userId);
 
+        await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
+
         return true;
     }
 
@@ -137,6 +144,8 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Soft-deleted allergy '{entity.Name}'");
 
         await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Deleted, userId);
+
+        await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
 
         return true;
     }
@@ -444,6 +453,38 @@ public class ClientHealthProfileService : IClientHealthProfileService
     }
 
     // ========== Private Helpers ==========
+
+    private async Task RecheckActiveAllergenWarningsAsync(int clientId, string userId)
+    {
+        try
+        {
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+            var activePlanIds = await db.MealPlans
+                .Where(p => p.ClientId == clientId && p.Status == MealPlanStatus.Active)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            if (activePlanIds.Count == 0) return;
+
+            foreach (var planId in activePlanIds)
+            {
+                var warnings = await _allergenCheckService.CheckAsync(planId);
+                var unacknowledged = warnings.Where(w => w.AcknowledgedByUserId == null).ToList();
+
+                if (unacknowledged.Count > 0)
+                {
+                    _logger.LogWarning(
+                        "Allergen recheck for client {ClientId}: meal plan {PlanId} has {Count} unacknowledged warnings after health profile change",
+                        clientId, planId, unacknowledged.Count);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during allergen recheck for client {ClientId}", clientId);
+        }
+    }
 
     private async Task ValidateClientExistsAsync(int clientId)
     {

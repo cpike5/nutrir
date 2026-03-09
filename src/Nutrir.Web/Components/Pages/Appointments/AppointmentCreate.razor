@@ -221,6 +221,73 @@
                               @bind="_model.Notes"
                               placeholder="Appointment notes..."></textarea>
                 </FormGroup>
+
+                <FormGroup Label="Preparation Notes" Id="prepNotes">
+                    <textarea id="prepNotes"
+                              class="form-input"
+                              rows="3"
+                              @bind="_model.PrepNotes"
+                              placeholder="Notes to help prepare for this appointment..."></textarea>
+                </FormGroup>
+            </div>
+            }
+
+            <!-- Section: Recurrence -->
+            <div class="section-header" @onclick='() => ToggleSection("Recurrence")'>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 4v6a2 2 0 0 0 2 2h7"/>
+                    <path d="M15 12v-6a2 2 0 0 0-2-2H6"/>
+                    <path d="M11 14l2-2-2-2"/>
+                    <path d="M5 2L3 4l2 2"/>
+                </svg>
+                Recurrence
+                <svg class="section-chevron @(_expandedSections.Contains("Recurrence") ? "" : "collapsed")" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4"/>
+                </svg>
+            </div>
+            @if (_expandedSections.Contains("Recurrence"))
+            {
+            <div class="form-body">
+                <div class="form-check-row">
+                    <label class="form-check-label">
+                        <input type="checkbox" @bind="_model.IsRecurring" />
+                        Create recurring appointments
+                    </label>
+                </div>
+
+                @if (_model.IsRecurring)
+                {
+                    <div class="form-grid">
+                        <FormGroup Label="Repeat Every" Id="interval">
+                            <FormSelect Id="interval"
+                                        Value="@_model.RecurrenceInterval"
+                                        ValueChanged="@(v => _model.RecurrenceInterval = v)">
+                                <option value="7">Weekly</option>
+                                <option value="14">Biweekly</option>
+                            </FormSelect>
+                        </FormGroup>
+
+                        <FormGroup Label="Number of Appointments" Id="recurrenceCount">
+                            <FormSelect Id="recurrenceCount"
+                                        Value="@_model.RecurrenceCount"
+                                        ValueChanged="@(v => _model.RecurrenceCount = v)">
+                                @for (var i = 2; i <= 26; i++)
+                                {
+                                    <option value="@i">@i</option>
+                                }
+                            </FormSelect>
+                        </FormGroup>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_model.Date))
+                    {
+                        var count = int.TryParse(_model.RecurrenceCount, out var rc) ? rc : 4;
+                        var interval = int.TryParse(_model.RecurrenceInterval, out var ri) ? ri : 7;
+                        var startDate = DateTime.TryParse(_model.Date, out var sd) ? sd : DateTime.Today;
+                        var endDate = startDate.AddDays((count - 1) * interval);
+                        <p class="recurrence-preview">Creates @count appointments from @startDate.ToString("MMM d, yyyy") to @endDate.ToString("MMM d, yyyy")</p>
+                    }
+                }
             </div>
             }
 
@@ -269,7 +336,7 @@
     private List<ClientDto> _clients = [];
     private bool _isSubmitting;
     private string? _errorMessage;
-    private HashSet<string> _expandedSections = ["Client", "Schedule", "Location", "Notes"];
+    private HashSet<string> _expandedSections = ["Client", "Schedule", "Location", "Notes", "Recurrence"];
 
     // Availability slots
     private List<AvailableSlotDto> _availableSlots = [];
@@ -444,10 +511,31 @@
                 Location: location,
                 VirtualMeetingUrl: string.IsNullOrWhiteSpace(_model.VirtualMeetingUrl) ? null : _model.VirtualMeetingUrl,
                 LocationNotes: string.IsNullOrWhiteSpace(_model.LocationNotes) ? null : _model.LocationNotes,
-                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes);
+                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
+                PrepNotes: string.IsNullOrWhiteSpace(_model.PrepNotes) ? null : _model.PrepNotes);
 
-            var created = await AppointmentService.CreateAsync(dto, _userId);
-            NavigationManager.NavigateTo($"/appointments/{created.Id}");
+            if (_model.IsRecurring)
+            {
+                var intervalDays = int.TryParse(_model.RecurrenceInterval, out var ri) ? ri : 7;
+                var count = int.TryParse(_model.RecurrenceCount, out var rc) ? rc : 4;
+                var recurringDto = new CreateRecurringAppointmentDto(dto, intervalDays, count);
+                var result = await AppointmentService.CreateRecurringAsync(recurringDto, _userId);
+
+                if (result.CreatedCount > 0)
+                {
+                    NavigationManager.NavigateTo($"/appointments?message=Created {result.CreatedCount} appointments" +
+                        (result.SkippedCount > 0 ? $", {result.SkippedCount} skipped due to conflicts" : ""));
+                }
+                else
+                {
+                    _errorMessage = "All appointments were skipped due to scheduling conflicts.";
+                }
+            }
+            else
+            {
+                var created = await AppointmentService.CreateAsync(dto, _userId);
+                NavigationManager.NavigateTo($"/appointments/{created.Id}");
+            }
         }
         catch (SchedulingConflictException ex)
         {
@@ -492,5 +580,13 @@
         public string? LocationNotes { get; set; }
 
         public string? Notes { get; set; }
+
+        public string? PrepNotes { get; set; }
+
+        public bool IsRecurring { get; set; }
+
+        public string RecurrenceInterval { get; set; } = "7";
+
+        public string RecurrenceCount { get; set; } = "4";
     }
 }

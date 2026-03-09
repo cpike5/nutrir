@@ -1,0 +1,444 @@
+@page "/appointments/{Id:int}/prep"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject IAppointmentService AppointmentService
+@inject IClientService ClientService
+@inject IClientHealthProfileService HealthProfileService
+@inject IMealPlanService MealPlanService
+@inject IProgressService ProgressService
+@inject IAuditLogService AuditLogService
+@inject ITimeZoneService TimeZoneService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_appointment is not null ? $"Prep — {_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment Prep") — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Appointments", "/appointments"), new BreadcrumbItem(_appointment is not null ? $"{_appointment.ClientFirstName} {_appointment.ClientLastName}" : "Appointment"), new BreadcrumbItem("Prep") })" />
+
+<div class="prep-page">
+    @if (_isLoading)
+    {
+        <LoadingSpinner Message="Loading appointment details..." />
+    }
+    else if (_appointment is null)
+    {
+        <div class="table-card">
+            <div class="cc-empty-state">
+                <svg class="not-found-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="10" y="12" width="44" height="44" rx="6"/>
+                    <path d="M22 6v12M42 6v12"/>
+                    <path d="M10 24h44"/>
+                    <path d="M28 36h8M32 32v8" stroke-opacity="0.5"/>
+                </svg>
+                <p class="not-found-title">Appointment not found</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* ── Hero Section ──────────────────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 0ms;">
+            <div class="hero">
+                <div class="hero-identity">
+                    <div class="hero-avatar" aria-hidden="true">@GetInitials()</div>
+                    <div class="hero-info">
+                        <div class="hero-title-row">
+                            <h1 class="hero-name">@FormatType(_appointment.Type)</h1>
+                            <Badge Variant="@GetStatusVariant(_appointment.Status)"><span class="badge-dot"></span> @FormatStatus(_appointment.Status)</Badge>
+                        </div>
+                        <div class="hero-meta-rows">
+                            <div class="hero-meta-row">
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4"/></svg>
+                                    <a href="/clients/@_appointment.ClientId" class="client-link">@_appointment.ClientFirstName @_appointment.ClientLastName</a>
+                                </span>
+                            </div>
+                            <div class="hero-meta-row">
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
+                                    @TimeZoneService.ToUserLocal(_appointment.StartTime).ToString("dddd, MMMM d, yyyy")
+                                </span>
+                                <span class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l3 2"/></svg>
+                                    @TimeZoneService.ToUserLocal(_appointment.StartTime).ToString("h:mm") — @TimeZoneService.ToUserLocal(_appointment.EndTime).ToString("h:mm tt")
+                                    <span class="duration-label">(@_appointment.DurationMinutes min)</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Prep Notes ───────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_appointment.PrepNotes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 40ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Preparation Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_appointment.PrepNotes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Health Profile Section ───────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 80ms;">
+            <div class="section-header">
+                <span class="section-header-label">Health Profile</span>
+            </div>
+
+            @* Allergies *@
+            <div class="detail-section">
+                <div class="detail-subsection-title">Allergies</div>
+                @if (_healthProfile?.Allergies is not null && _healthProfile.Allergies.Count > 0)
+                {
+                    <div class="prep-section-grid">
+                        @foreach (var allergy in _healthProfile.Allergies)
+                        {
+                            <div class="prep-item">
+                                <div class="prep-item-name">
+                                    @allergy.Name
+                                    <Badge Variant="@GetAllergySeverityVariant(allergy.Severity)">@FormatAllergySeverity(allergy.Severity)</Badge>
+                                </div>
+                                <div class="prep-item-meta">@FormatAllergyType(allergy.AllergyType)</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="cc-empty-state" style="padding: 1rem 0;">No allergies recorded</p>
+                }
+            </div>
+
+            @* Medications *@
+            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+                <div class="detail-subsection-title">Medications</div>
+                @if (_healthProfile?.Medications is not null && _healthProfile.Medications.Count > 0)
+                {
+                    <div class="prep-section-grid">
+                        @foreach (var med in _healthProfile.Medications)
+                        {
+                            <div class="prep-item">
+                                <div class="prep-item-name">@med.Name</div>
+                                @if (!string.IsNullOrEmpty(med.Dosage))
+                                {
+                                    <div class="prep-item-meta">Dosage: @med.Dosage</div>
+                                }
+                                @if (!string.IsNullOrEmpty(med.Frequency))
+                                {
+                                    <div class="prep-item-meta">Frequency: @med.Frequency</div>
+                                }
+                                @if (!string.IsNullOrEmpty(med.PrescribedFor))
+                                {
+                                    <div class="prep-item-meta">For: @med.PrescribedFor</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="cc-empty-state" style="padding: 1rem 0;">No medications recorded</p>
+                }
+            </div>
+
+            @* Conditions *@
+            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+                <div class="detail-subsection-title">Medical Conditions</div>
+                @if (_healthProfile?.Conditions is not null && _healthProfile.Conditions.Count > 0)
+                {
+                    <div class="prep-section-grid">
+                        @foreach (var condition in _healthProfile.Conditions)
+                        {
+                            <div class="prep-item">
+                                <div class="prep-item-name">
+                                    @condition.Name
+                                    <Badge Variant="@GetConditionStatusVariant(condition.Status)">@FormatConditionStatus(condition.Status)</Badge>
+                                </div>
+                                @if (condition.DiagnosisDate.HasValue)
+                                {
+                                    <div class="prep-item-meta">Diagnosed: @condition.DiagnosisDate.Value.ToString("MMM d, yyyy")</div>
+                                }
+                                @if (!string.IsNullOrEmpty(condition.Notes))
+                                {
+                                    <div class="prep-item-meta">@condition.Notes</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="cc-empty-state" style="padding: 1rem 0;">No conditions recorded</p>
+                }
+            </div>
+
+            @* Dietary Restrictions *@
+            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+                <div class="detail-subsection-title">Dietary Restrictions</div>
+                @if (_healthProfile?.DietaryRestrictions is not null && _healthProfile.DietaryRestrictions.Count > 0)
+                {
+                    <div class="prep-section-grid">
+                        @foreach (var restriction in _healthProfile.DietaryRestrictions)
+                        {
+                            <div class="prep-item">
+                                <div class="prep-item-name">@FormatDietaryRestrictionType(restriction.RestrictionType)</div>
+                                @if (!string.IsNullOrEmpty(restriction.Notes))
+                                {
+                                    <div class="prep-item-meta">@restriction.Notes</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="cc-empty-state" style="padding: 1rem 0;">No dietary restrictions recorded</p>
+                }
+            </div>
+        </div>
+
+        @* ── Active Meal Plans Section ────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 120ms;">
+            <div class="section-header">
+                <span class="section-header-label">Active Meal Plans</span>
+            </div>
+            @if (_activeMealPlans.Count > 0)
+            {
+                <div class="detail-grid">
+                    @foreach (var plan in _activeMealPlans)
+                    {
+                        <div class="detail-field">
+                            <span class="detail-label">@plan.Title</span>
+                            <span class="detail-value">
+                                <div style="margin-bottom: 0.5rem;">
+                                    @if (plan.StartDate.HasValue || plan.EndDate.HasValue)
+                                    {
+                                        <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">
+                                            @(plan.StartDate?.ToString("MMM d, yyyy") ?? "—") to @(plan.EndDate?.ToString("MMM d, yyyy") ?? "—")
+                                        </div>
+                                    }
+                                </div>
+                                @if (plan.CalorieTarget.HasValue || plan.ProteinTargetG.HasValue)
+                                {
+                                    <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">
+                                        @if (plan.CalorieTarget.HasValue) { <span>@plan.CalorieTarget.Value.ToString("N0") kcal</span> }
+                                        @if (plan.ProteinTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.ProteinTargetG.Value.ToString("N0")g P</span> }
+                                        @if (plan.CarbsTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.CarbsTargetG.Value.ToString("N0")g C</span> }
+                                        @if (plan.FatTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.FatTargetG.Value.ToString("N0")g F</span> }
+                                    </div>
+                                }
+                                <a href="/meal-plans/@plan.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Plan</a>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="cc-empty-state">No active meal plans</p>
+            }
+        </div>
+
+        @* ── Recent Progress Section ───────────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 160ms;">
+            <div class="section-header">
+                <span class="section-header-label">Recent Progress</span>
+            </div>
+            @if (_recentProgress.Count > 0)
+            {
+                <div class="detail-grid">
+                    @foreach (var entry in _recentProgress)
+                    {
+                        <div class="detail-field">
+                            <span class="detail-label">@entry.EntryDate.ToString("dddd, MMM d")</span>
+                            <span class="detail-value">
+                                <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280); margin-bottom: 0.25rem;">
+                                    @entry.MeasurementCount measurement@(entry.MeasurementCount == 1 ? "" : "s")
+                                </div>
+                                @if (!string.IsNullOrEmpty(entry.NotePreview))
+                                {
+                                    <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">@entry.NotePreview</div>
+                                }
+                                <a href="/progress/@entry.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Entry</a>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="cc-empty-state">No progress entries recorded</p>
+            }
+        </div>
+
+        @* ── Upcoming Appointments Section ────────────── *@
+        <div class="table-card section-animate" style="animation-delay: 200ms;">
+            <div class="section-header">
+                <span class="section-header-label">Upcoming Appointments</span>
+            </div>
+            @if (_upcomingAppointments.Count > 0)
+            {
+                <div class="detail-grid">
+                    @foreach (var appt in _upcomingAppointments)
+                    {
+                        <div class="detail-field">
+                            <span class="detail-label">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("dddd, MMM d")</span>
+                            <span class="detail-value">
+                                <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280); margin-bottom: 0.25rem;">
+                                    @TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm tt") — @FormatType(appt.Type)
+                                </div>
+                                <Badge Variant="@GetStatusVariant(appt.Status)">@FormatStatus(appt.Status)</Badge>
+                                <a href="/appointments/@appt.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Appointment</a>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="cc-empty-state">No upcoming appointments</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private AppointmentDto? _appointment;
+    private ClientDto? _client;
+    private ClientHealthProfileSummaryDto? _healthProfile;
+    private List<MealPlanSummaryDto> _activeMealPlans = [];
+    private List<ProgressEntrySummaryDto> _recentProgress = [];
+    private List<AppointmentDto> _upcomingAppointments = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+        _appointment = await AppointmentService.GetByIdAsync(Id);
+
+        if (_appointment is not null)
+        {
+            var clientId = _appointment.ClientId;
+            _client = await ClientService.GetByIdAsync(clientId);
+            _healthProfile = await HealthProfileService.GetHealthProfileSummaryAsync(clientId);
+            _activeMealPlans = await MealPlanService.GetByClientAsync(clientId, 5);
+            _recentProgress = await ProgressService.GetRecentByClientAsync(clientId, 5);
+            _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(clientId, 3);
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            await AuditLogService.LogAsync(userId, "AppointmentPrepViewed", "Appointment", Id.ToString(),
+                $"Viewed prep view for appointment {Id}");
+        }
+
+        _isLoading = false;
+    }
+
+    private string GetInitials()
+    {
+        if (_appointment is null) return "??";
+        var first = _appointment.ClientFirstName.Length > 0 ? _appointment.ClientFirstName[0] : '?';
+        var last = _appointment.ClientLastName.Length > 0 ? _appointment.ClientLastName[0] : '?';
+        return $"{char.ToUpper(first)}{char.ToUpper(last)}";
+    }
+
+    private static string FormatType(AppointmentType type) => type switch
+    {
+        AppointmentType.InitialConsultation => "Initial Consultation",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.CheckIn => "Check-In",
+        _ => type.ToString()
+    };
+
+    private static string FormatStatus(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => "Scheduled",
+        AppointmentStatus.Confirmed => "Confirmed",
+        AppointmentStatus.Completed => "Completed",
+        AppointmentStatus.NoShow => "No-Show",
+        AppointmentStatus.LateCancellation => "Late Cancel",
+        AppointmentStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+
+    private static BadgeVariant GetStatusVariant(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => BadgeVariant.Primary,
+        AppointmentStatus.Confirmed => BadgeVariant.Accent,
+        AppointmentStatus.Completed => BadgeVariant.Success,
+        AppointmentStatus.NoShow => BadgeVariant.Error,
+        AppointmentStatus.LateCancellation => BadgeVariant.Warning,
+        AppointmentStatus.Cancelled => BadgeVariant.Secondary,
+        _ => BadgeVariant.Primary
+    };
+
+    private static string FormatAllergySeverity(AllergySeverity severity) => severity switch
+    {
+        AllergySeverity.Mild => "Mild",
+        AllergySeverity.Moderate => "Moderate",
+        AllergySeverity.Severe => "Severe",
+        _ => severity.ToString()
+    };
+
+    private static BadgeVariant GetAllergySeverityVariant(AllergySeverity severity) => severity switch
+    {
+        AllergySeverity.Mild => BadgeVariant.Success,
+        AllergySeverity.Moderate => BadgeVariant.Warning,
+        AllergySeverity.Severe => BadgeVariant.Error,
+        _ => BadgeVariant.Primary
+    };
+
+    private static string FormatAllergyType(AllergyType type) => type switch
+    {
+        AllergyType.Food => "Food Allergy",
+        AllergyType.Environmental => "Environmental Allergy",
+        AllergyType.Drug => "Drug Allergy",
+        AllergyType.Other => "Other Allergy",
+        _ => type.ToString()
+    };
+
+    private static string FormatConditionStatus(ConditionStatus status) => status switch
+    {
+        ConditionStatus.Active => "Active",
+        ConditionStatus.Managed => "Managed",
+        ConditionStatus.Resolved => "Resolved",
+        _ => status.ToString()
+    };
+
+    private static BadgeVariant GetConditionStatusVariant(ConditionStatus status) => status switch
+    {
+        ConditionStatus.Active => BadgeVariant.Error,
+        ConditionStatus.Managed => BadgeVariant.Warning,
+        ConditionStatus.Resolved => BadgeVariant.Success,
+        _ => BadgeVariant.Primary
+    };
+
+    private static string FormatDietaryRestrictionType(DietaryRestrictionType type) => type switch
+    {
+        DietaryRestrictionType.Vegetarian => "Vegetarian",
+        DietaryRestrictionType.Vegan => "Vegan",
+        DietaryRestrictionType.GlutenFree => "Gluten-Free",
+        DietaryRestrictionType.DairyFree => "Dairy-Free",
+        DietaryRestrictionType.Kosher => "Kosher",
+        DietaryRestrictionType.Halal => "Halal",
+        DietaryRestrictionType.LowSodium => "Low Sodium",
+        DietaryRestrictionType.Ketogenic => "Ketogenic",
+        DietaryRestrictionType.NutFree => "Nut-Free",
+        DietaryRestrictionType.Other => "Other",
+        _ => type.ToString()
+    };
+}

@@ -980,6 +980,7 @@ public class AiToolExecutor
                     ["virtual_meeting_url"] = new { type = "string", description = "URL for virtual meetings" },
                     ["location_notes"] = new { type = "string", description = "Notes about the location" },
                     ["notes"] = new { type = "string", description = "Appointment notes" },
+                    ["prep_notes"] = new { type = "string", description = "Preparation notes for the appointment" },
                 },
                 "client_id", "type", "start_time", "duration_minutes", "location"),
 
@@ -995,6 +996,7 @@ public class AiToolExecutor
                     ["virtual_meeting_url"] = new { type = "string", description = "URL for virtual meetings" },
                     ["location_notes"] = new { type = "string", description = "Notes about the location" },
                     ["notes"] = new { type = "string", description = "Appointment notes" },
+                    ["prep_notes"] = new { type = "string", description = "Preparation notes for the appointment" },
                 },
                 "id", "type", "status", "start_time", "duration_minutes", "location"),
 
@@ -1649,7 +1651,8 @@ public class AiToolExecutor
             Location: GetRequiredEnum<AppointmentLocation>(input, "location"),
             VirtualMeetingUrl: GetOptionalString(input, "virtual_meeting_url"),
             LocationNotes: GetOptionalString(input, "location_notes"),
-            Notes: GetOptionalString(input, "notes"));
+            Notes: GetOptionalString(input, "notes"),
+            PrepNotes: GetOptionalString(input, "prep_notes"));
 
         var result = await _appointmentService.CreateAsync(dto, _currentUserId ?? "system");
         return JsonSerializer.Serialize(new { success = true, appointment = result }, SerializerOptions);
@@ -1666,7 +1669,8 @@ public class AiToolExecutor
             Location: GetRequiredEnum<AppointmentLocation>(input, "location"),
             VirtualMeetingUrl: GetOptionalString(input, "virtual_meeting_url"),
             LocationNotes: GetOptionalString(input, "location_notes"),
-            Notes: GetOptionalString(input, "notes"));
+            Notes: GetOptionalString(input, "notes"),
+            PrepNotes: GetOptionalString(input, "prep_notes"));
 
         var success = await _appointmentService.UpdateAsync(dto, _currentUserId ?? "system");
         return success
