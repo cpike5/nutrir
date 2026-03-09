@@ -11,20 +11,11 @@ Use the docker compose environment for checking logs and accessing the developme
 dotnet ef migrations add <Name> --project src/Nutrir.Infrastructure --startup-project src/Nutrir.Web
 dotnet ef database update --project src/Nutrir.Infrastructure --startup-project src/Nutrir.Web
 ```
-
-No test projects exist yet.
+**Dev ports**: App `7100`, Seq UI `7101`, Seq ingestion `7102`, PostgreSQL `7103`
 
 ## Key Conventions
 
-### Authentication & OAuth
-- OAuth providers (Google, Microsoft) must be registered **dynamically** — only add a provider if its client ID and secret are configured. Never register a provider without valid credentials or it will cause runtime errors.
-
-### Infrastructure
-- Elastic cluster is external and out of scope for Docker setup — assume it exists when configuring production logging
-- **Dev ports**: App `7100`, Seq UI `7101`, Seq ingestion `7102`, PostgreSQL `7103`
-
 ### Localization
-- v1 is English (en-CA) only
 - Structure code for future localization: use resource files, avoid hardcoded strings in UI
 - Use culture-aware formatting for dates, numbers, currency
 
