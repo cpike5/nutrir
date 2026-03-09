@@ -15,6 +15,7 @@
 @inject ITimeZoneService TimeZoneService
 @inject IClientService ClientService
 @inject IIntakeFormService IntakeFormService
+@inject IReminderService ReminderService
 @inject NavigationManager NavigationManager
 @inject RealTimeNotificationService NotificationService
 
@@ -299,6 +300,59 @@
             </div>
         </div>
 
+        @* ── Reminders ────────────────────────────────────── *@
+        @if (_reminders.Count > 0 || IsActionable())
+        {
+            <div class="table-card section-animate" style="animation-delay: 120ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Reminders</span>
+                </div>
+                @if (_reminders.Count > 0)
+                {
+                    <div class="reminder-list">
+                        @foreach (var reminder in _reminders)
+                        {
+                            <div class="reminder-row">
+                                <div class="reminder-info">
+                                    <span class="reminder-type">@FormatReminderType(reminder.ReminderType)</span>
+                                    <Badge Variant="@GetReminderStatusVariant(reminder.Status)">
+                                        <span class="badge-dot"></span> @reminder.Status
+                                    </Badge>
+                                    @if (reminder.SentAt.HasValue)
+                                    {
+                                        <span class="reminder-meta">@TimeZoneService.ToUserLocal(reminder.SentAt.Value).ToString("MMM d, yyyy h:mm tt")</span>
+                                    }
+                                </div>
+                                @if (reminder.Status == ReminderStatus.Failed && !string.IsNullOrEmpty(reminder.FailureReason))
+                                {
+                                    <p class="reminder-error">@reminder.FailureReason</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="reminder-empty">No reminders sent yet.</p>
+                }
+                @if (IsActionable())
+                {
+                    <div class="reminder-actions">
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.FortyEightHour))" Disabled="@(_resendingType.HasValue)">
+                            @(_resendingType == ReminderType.FortyEightHour ? "Sending..." : "Send 48h Reminder")
+                        </Button>
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.TwentyFourHour))" Disabled="@(_resendingType.HasValue)">
+                            @(_resendingType == ReminderType.TwentyFourHour ? "Sending..." : "Send 24h Reminder")
+                        </Button>
+                        @if (_reminderError is not null)
+                        {
+                            <p class="reminder-send-error">@_reminderError</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
         @* ── Notes ───────────────────────────────────────── *@
         @if (!string.IsNullOrEmpty(_appointment.Notes))
         {
@@ -364,6 +418,9 @@
     private IntakeFormListDto? _intakeForm;
     private bool _isSendingIntake;
     private string? _intakeFormError;
+    private List<AppointmentReminderDto> _reminders = [];
+    private ReminderType? _resendingType;
+    private string? _reminderError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -383,6 +440,8 @@
             {
                 _intakeForm = await IntakeFormService.GetByAppointmentIdAsync(Id);
             }
+
+            _reminders = await ReminderService.GetRemindersForAppointmentAsync(Id);
         }
     }
 
@@ -529,6 +588,32 @@
         }
     }
 
+    private async Task ResendReminderAsync(ReminderType type)
+    {
+        if (_resendingType.HasValue) return;
+        _resendingType = type;
+        _reminderError = null;
+        StateHasChanged();
+
+        try
+        {
+            var userId = await GetUserId();
+            await ReminderService.ResendReminderAsync(Id, type, userId);
+            _reminders = await ReminderService.GetRemindersForAppointmentAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _reminderError = ex is InvalidOperationException
+                ? ex.Message
+                : "Failed to send reminder. Please try again.";
+        }
+        finally
+        {
+            _resendingType = null;
+            StateHasChanged();
+        }
+    }
+
     private void NavigateToList() => NavigationManager.NavigateTo("/appointments");
 
     private static string FormatType(AppointmentType type) => type switch
@@ -576,6 +661,20 @@
         IntakeFormStatus.Reviewed => "Reviewed",
         IntakeFormStatus.Expired => "Expired",
         _ => status.ToString()
+    };
+
+    private static string FormatReminderType(ReminderType type) => type switch
+    {
+        ReminderType.FortyEightHour => "48-Hour Reminder",
+        ReminderType.TwentyFourHour => "24-Hour Reminder",
+        _ => type.ToString()
+    };
+
+    private static BadgeVariant GetReminderStatusVariant(ReminderStatus status) => status switch
+    {
+        ReminderStatus.Sent => BadgeVariant.Success,
+        ReminderStatus.Failed => BadgeVariant.Error,
+        _ => BadgeVariant.Secondary
     };
 
     private static BadgeVariant GetIntakeStatusVariant(IntakeFormStatus status) => status switch

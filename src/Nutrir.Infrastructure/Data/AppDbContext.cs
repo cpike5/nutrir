@@ -64,6 +64,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<IntakeFormResponse> IntakeFormResponses => Set<IntakeFormResponse>();
 
+    public DbSet<AppointmentReminder> AppointmentReminders => Set<AppointmentReminder>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -112,6 +114,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(c => c.Phone).HasMaxLength(20);
             entity.Property(c => c.ConsentPolicyVersion).HasMaxLength(50);
             entity.Property(c => c.Notes).HasColumnType("text");
+            entity.Property(c => c.EmailRemindersEnabled).HasDefaultValue(false);
             entity.Property(c => c.IsDeleted).HasDefaultValue(false);
             entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
@@ -543,6 +546,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(m => m.GenericName).HasMaxLength(200);
             entity.Property(m => m.IsDeleted).HasDefaultValue(false);
             entity.Property(m => m.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<AppointmentReminder>(entity =>
+        {
+            entity.HasQueryFilter(r => !r.IsDeleted);
+
+            entity.HasOne<Appointment>()
+                .WithMany()
+                .HasForeignKey(r => r.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(r => new { r.AppointmentId, r.ReminderType, r.ScheduledFor }).IsUnique();
+
+            entity.Property(r => r.ReminderType).HasConversion<string>();
+            entity.Property(r => r.Status).HasConversion<string>();
+            entity.Property(r => r.FailureReason).HasMaxLength(500);
+            entity.Property(r => r.IsDeleted).HasDefaultValue(false);
+            entity.Property(r => r.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 

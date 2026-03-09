@@ -254,6 +254,7 @@ public class ClientService : IClientService
         entity.PrimaryNutritionistId = dto.PrimaryNutritionistId;
         // Consent fields are immutable via UpdateAsync — use IConsentService instead
         entity.Notes = dto.Notes;
+        entity.EmailRemindersEnabled = dto.EmailRemindersEnabled;
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -348,6 +349,7 @@ public class ClientService : IClientService
             entity.CreatedAt,
             entity.UpdatedAt,
             entity.DeletedAt,
-            lastAppointmentDate);
+            lastAppointmentDate,
+            entity.EmailRemindersEnabled);
     }
 }

@@ -452,6 +452,67 @@
     margin: 0;
 }
 
+/* ── Reminders Section ──────────────────────────────── */
+.reminder-list {
+    padding: var(--space-4) var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.reminder-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.reminder-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.reminder-type {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    min-width: 120px;
+}
+
+.reminder-meta {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.reminder-error {
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    margin: 0;
+    padding-left: calc(120px + var(--space-3));
+}
+
+.reminder-empty {
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-6) var(--space-4);
+    flex-wrap: wrap;
+}
+
+.reminder-send-error {
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    margin: 0;
+}
+
 /* ── Metadata Footer ─────────────────────────────────── */
 .meta-footer {
     font-size: var(--text-xs);
@@ -535,5 +596,21 @@
 
     .cancel-info-body {
         padding: var(--space-4);
+    }
+
+    .reminder-list {
+        padding: var(--space-4);
+    }
+
+    .reminder-empty {
+        padding: var(--space-4);
+    }
+
+    .reminder-actions {
+        padding: var(--space-3) var(--space-4) var(--space-4);
+    }
+
+    .reminder-error {
+        padding-left: 0;
     }
 }
