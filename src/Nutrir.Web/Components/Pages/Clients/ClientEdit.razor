@@ -133,6 +133,20 @@
                                   placeholder="Additional notes about the client..."></textarea>
                     </FormGroup>
 
+                    @if (_client!.ConsentGiven && !string.IsNullOrEmpty(_client.Email))
+                    {
+                        <div class="reminder-toggle-row">
+                            <label class="toggle-label" for="emailReminders">
+                                <input type="checkbox"
+                                       id="emailReminders"
+                                       checked="@_model.EmailRemindersEnabled"
+                                       @onchange="OnEmailRemindersToggled" />
+                                <span class="toggle-text">Email Appointment Reminders</span>
+                            </label>
+                            <span class="toggle-desc">Send automated reminders 48h and 24h before appointments</span>
+                        </div>
+                    }
+
                     @* ── Health Profile ───────────────────────────── *@
                     <AllergyFormGroup @ref="_allergyFormGroup" Entries="@_allergyEntries" />
                     <MedicationFormGroup @ref="_medicationFormGroup" Entries="@_medicationEntries" />
@@ -275,7 +289,8 @@
                 Phone = PhoneFormatter.Format(_client.Phone),
                 DateOfBirth = _client.DateOfBirth?.ToString("yyyy-MM-dd"),
                 PrimaryNutritionistId = _client.PrimaryNutritionistId,
-                Notes = _client.Notes
+                Notes = _client.Notes,
+                EmailRemindersEnabled = _client.EmailRemindersEnabled
             };
             _editContext = new EditContext(_model);
 
@@ -336,6 +351,33 @@
     private void OnPhoneChanged(string value)
     {
         _model.Phone = PhoneFormatter.Format(value);
+    }
+
+    private async Task OnEmailRemindersToggled(ChangeEventArgs e)
+    {
+        var enabled = (bool)(e.Value ?? false);
+        _model.EmailRemindersEnabled = enabled;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var purpose = enabled
+                ? "Electronic appointment reminders"
+                : "Withdrawal of electronic appointment reminders";
+
+            await ConsentService.GrantConsentAsync(
+                Id,
+                purpose,
+                _client!.ConsentPolicyVersion ?? "1.0",
+                userId);
+        }
+        catch
+        {
+            // Revert toggle on failure
+            _model.EmailRemindersEnabled = !enabled;
+        }
     }
 
     private bool _isWithdrawing;
@@ -441,7 +483,8 @@
                 IsDeleted: _client.IsDeleted,
                 CreatedAt: _client.CreatedAt,
                 UpdatedAt: DateTime.UtcNow,
-                DeletedAt: _client.DeletedAt
+                DeletedAt: _client.DeletedAt,
+                EmailRemindersEnabled: _model.EmailRemindersEnabled
             );
 
             var success = await ClientService.UpdateAsync(Id, dto, userId);
@@ -538,5 +581,7 @@
         public string? PrimaryNutritionistId { get; set; }
 
         public string? Notes { get; set; }
+
+        public bool EmailRemindersEnabled { get; set; }
     }
 }

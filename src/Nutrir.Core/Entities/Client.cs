@@ -24,6 +24,8 @@ public class Client
 
     public string? Notes { get; set; }
 
+    public bool EmailRemindersEnabled { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
