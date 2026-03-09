@@ -315,7 +315,7 @@
                             <div class="reminder-row">
                                 <div class="reminder-info">
                                     <span class="reminder-type">@FormatReminderType(reminder.ReminderType)</span>
-                                    <Badge Variant="@(reminder.Status == ReminderStatus.Sent ? BadgeVariant.Success : BadgeVariant.Error)">
+                                    <Badge Variant="@GetReminderStatusVariant(reminder.Status)">
                                         <span class="badge-dot"></span> @reminder.Status
                                     </Badge>
                                     @if (reminder.SentAt.HasValue)
@@ -338,11 +338,11 @@
                 @if (IsActionable())
                 {
                     <div class="reminder-actions">
-                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.FortyEightHour))" Disabled="@_isResending">
-                            @(_isResending ? "Sending..." : "Send 48h Reminder")
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.FortyEightHour))" Disabled="@(_resendingType.HasValue)">
+                            @(_resendingType == ReminderType.FortyEightHour ? "Sending..." : "Send 48h Reminder")
                         </Button>
-                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.TwentyFourHour))" Disabled="@_isResending">
-                            @(_isResending ? "Sending..." : "Send 24h Reminder")
+                        <Button Variant="ButtonVariant.Outline" OnClick="@(() => ResendReminderAsync(ReminderType.TwentyFourHour))" Disabled="@(_resendingType.HasValue)">
+                            @(_resendingType == ReminderType.TwentyFourHour ? "Sending..." : "Send 24h Reminder")
                         </Button>
                         @if (_reminderError is not null)
                         {
@@ -419,7 +419,7 @@
     private bool _isSendingIntake;
     private string? _intakeFormError;
     private List<AppointmentReminderDto> _reminders = [];
-    private bool _isResending;
+    private ReminderType? _resendingType;
     private string? _reminderError;
 
     protected override async Task OnInitializedAsync()
@@ -590,8 +590,8 @@
 
     private async Task ResendReminderAsync(ReminderType type)
     {
-        if (_isResending) return;
-        _isResending = true;
+        if (_resendingType.HasValue) return;
+        _resendingType = type;
         _reminderError = null;
         StateHasChanged();
 
@@ -607,7 +607,7 @@
         }
         finally
         {
-            _isResending = false;
+            _resendingType = null;
             StateHasChanged();
         }
     }
@@ -666,6 +666,13 @@
         ReminderType.FortyEightHour => "48-Hour Reminder",
         ReminderType.TwentyFourHour => "24-Hour Reminder",
         _ => type.ToString()
+    };
+
+    private static BadgeVariant GetReminderStatusVariant(ReminderStatus status) => status switch
+    {
+        ReminderStatus.Sent => BadgeVariant.Success,
+        ReminderStatus.Failed => BadgeVariant.Error,
+        _ => BadgeVariant.Secondary
     };
 
     private static BadgeVariant GetIntakeStatusVariant(IntakeFormStatus status) => status switch

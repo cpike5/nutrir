@@ -139,11 +139,12 @@
                             <label class="toggle-label" for="emailReminders">
                                 <input type="checkbox"
                                        id="emailReminders"
+                                       aria-describedby="emailRemindersDesc"
                                        checked="@_model.EmailRemindersEnabled"
                                        @onchange="OnEmailRemindersToggled" />
                                 <span class="toggle-text">Email Appointment Reminders</span>
                             </label>
-                            <span class="toggle-desc">Send automated reminders 48h and 24h before appointments</span>
+                            <span id="emailRemindersDesc" class="toggle-desc">Send automated reminders 48h and 24h before appointments</span>
                         </div>
                     }
 
