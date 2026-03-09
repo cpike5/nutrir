@@ -31,6 +31,8 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [AI Assistant](infrastructure/ai-assistant-spec.md) | AI assistant panel — architecture, 38 tools, confirmation flow, streaming, markdown rendering, persistence, rate limiting, usage tracking |
 | [Seed Data Generator](infrastructure/seed-data-generator.md) | Dynamic development seed data — Bogus-powered profile-driven generator, configuration, food database, extending |
 | [Real-Time Notifications](infrastructure/real-time-notifications.md) | In-process event bus architecture, notification payload, dispatch points, consumer pages, integration pattern |
+| [Email Service](infrastructure/email-service.md) | MailKit/Gmail SMTP implementation — architecture, SmtpOptions, DI registration, usage examples, future considerations |
+| [Gmail SMTP Setup](infrastructure/gmail-smtp-setup.md) | Practitioner setup guide — App Password, SPF/DKIM/DMARC DNS records, .env configuration, sending limits, DMARC progression |
 
 ## Design System Documents
 

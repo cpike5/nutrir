@@ -22,6 +22,9 @@ services:
       - Elasticsearch__Url=${ELASTICSEARCH_URL:-}
       - Elasticsearch__ApiKey=${ELASTICSEARCH_API_KEY:-}
       - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
+      - Smtp__SenderEmail=${SMTP_SENDER_EMAIL:-}
+      - Smtp__Username=${SMTP_USERNAME:-}
+      - Smtp__Password=${SMTP_PASSWORD:-}
 
   db:
     image: postgres:17

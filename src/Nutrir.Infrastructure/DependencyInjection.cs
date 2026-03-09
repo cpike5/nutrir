@@ -60,6 +60,10 @@ public static class DependencyInjection
         services.AddSingleton<IAiMarkdownRenderer, AiMarkdownRenderer>();
         services.AddSingleton<IAiSuggestionService, AiSuggestionService>();
 
+        // Email
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.AddSingleton<IEmailService, EmailService>();
+
         return services;
     }
 }
