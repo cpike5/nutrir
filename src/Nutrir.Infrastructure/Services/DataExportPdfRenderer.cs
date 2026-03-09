@@ -354,7 +354,7 @@ public static class DataExportPdfRenderer
                     table.Cell().Background(bgColor).Padding(4)
                         .Text($"{appt.Type}{deletedSuffix}").FontSize(8);
                     table.Cell().Background(bgColor).Padding(4)
-                        .Text(appt.StartTime.ToString("MMM d, H:mm")).FontSize(8);
+                        .Text(appt.StartTime.ToString("MMM d, yyyy HH:mm")).FontSize(8);
                     table.Cell().Background(bgColor).Padding(4)
                         .Text($"{appt.DurationMinutes}m").FontSize(8);
                     table.Cell().Background(bgColor).Padding(4)
@@ -579,6 +579,13 @@ public static class DataExportPdfRenderer
                             columns.ConstantColumn(50);
                         });
 
+                        table.Header(header =>
+                        {
+                            header.Cell().Padding(3).Text("Metric").Bold().FontSize(7).FontColor(MutedColor);
+                            header.Cell().Padding(3).AlignRight().Text("Value").Bold().FontSize(7).FontColor(MutedColor);
+                            header.Cell().Padding(3).Text("Unit").Bold().FontSize(7).FontColor(MutedColor);
+                        });
+
                         for (var i = 0; i < entry.Measurements.Count; i++)
                         {
                             var m = entry.Measurements[i];
@@ -713,7 +720,7 @@ public static class DataExportPdfRenderer
                         table.Cell().Background(bgColor).Padding(3)
                             .Text(evt.PolicyVersion).FontSize(7);
                         table.Cell().Background(bgColor).Padding(3)
-                            .Text(evt.Timestamp.ToString("MMM d")).FontSize(7);
+                            .Text(evt.Timestamp.ToString("MMM d, yyyy HH:mm")).FontSize(7);
                         table.Cell().Background(bgColor).Padding(3)
                             .Text(evt.RecordedByName).FontSize(7);
                     }
@@ -807,7 +814,7 @@ public static class DataExportPdfRenderer
                     var bgColor = i % 2 == 1 ? AlternateRowColor : "#ffffff";
 
                     table.Cell().Background(bgColor).Padding(3)
-                        .Text(log.Timestamp.ToString("MMM d, H:mm")).FontSize(7);
+                        .Text(log.Timestamp.ToString("MMM d, yyyy HH:mm")).FontSize(7);
                     table.Cell().Background(bgColor).Padding(3)
                         .Text(log.Action).FontSize(7);
                     table.Cell().Background(bgColor).Padding(3)
