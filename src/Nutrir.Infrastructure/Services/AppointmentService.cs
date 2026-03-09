@@ -189,6 +189,7 @@ public class AppointmentService : IAppointmentService
             VirtualMeetingUrl = dto.VirtualMeetingUrl,
             LocationNotes = dto.LocationNotes,
             Notes = dto.Notes,
+            PrepNotes = dto.PrepNotes,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -232,6 +233,7 @@ public class AppointmentService : IAppointmentService
         entity.VirtualMeetingUrl = dto.VirtualMeetingUrl;
         entity.LocationNotes = dto.LocationNotes;
         entity.Notes = dto.Notes;
+        entity.PrepNotes = dto.PrepNotes;
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -354,6 +356,49 @@ public class AppointmentService : IAppointmentService
                              && a.StartTime < endOfWeek);
     }
 
+    public async Task<RecurringAppointmentResultDto> CreateRecurringAsync(CreateRecurringAppointmentDto dto, string userId)
+    {
+        if (dto.Count < 2 || dto.Count > 52)
+            throw new ArgumentException("Recurrence count must be between 2 and 52.");
+        if (dto.IntervalDays < 1)
+            throw new ArgumentException("Interval must be at least 1 day.");
+
+        var createdIds = new List<int>();
+        var skippedReasons = new List<string>();
+
+        for (var i = 0; i < dto.Count; i++)
+        {
+            var startTime = dto.Base.StartTime.AddDays(i * dto.IntervalDays);
+            var appointmentDto = new CreateAppointmentDto(
+                dto.Base.ClientId,
+                dto.Base.Type,
+                startTime,
+                dto.Base.DurationMinutes,
+                dto.Base.Location,
+                dto.Base.VirtualMeetingUrl,
+                dto.Base.LocationNotes,
+                dto.Base.Notes,
+                dto.Base.PrepNotes);
+
+            try
+            {
+                var created = await CreateAsync(appointmentDto, userId);
+                createdIds.Add(created.Id);
+            }
+            catch (SchedulingConflictException ex)
+            {
+                _logger.LogWarning("Recurring appointment skipped at {StartTime}: {Reason}", startTime, ex.Message);
+                skippedReasons.Add($"{startTime:g}: {ex.Message}");
+            }
+        }
+
+        _logger.LogInformation(
+            "Recurring appointments created: {CreatedCount} created, {SkippedCount} skipped for user {UserId}",
+            createdIds.Count, skippedReasons.Count, userId);
+
+        return new RecurringAppointmentResultDto(createdIds.Count, skippedReasons.Count, createdIds, skippedReasons);
+    }
+
     private async Task<List<AppointmentDto>> MapToDtoListAsync(List<Appointment> entities, AppDbContext? db = null)
     {
         if (entities.Count == 0) return [];
@@ -471,6 +516,7 @@ public class AppointmentService : IAppointmentService
             entity.VirtualMeetingUrl,
             entity.LocationNotes,
             entity.Notes,
+            entity.PrepNotes,
             entity.CancellationReason,
             entity.CancelledAt,
             entity.CreatedAt,

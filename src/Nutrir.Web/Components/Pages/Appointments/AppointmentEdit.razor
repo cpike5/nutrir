@@ -258,6 +258,14 @@
                                   @bind="_model.Notes"
                                   placeholder="Appointment notes..."></textarea>
                     </FormGroup>
+
+                    <FormGroup Label="Preparation Notes" Id="prepNotes">
+                        <textarea id="prepNotes"
+                                  class="form-input"
+                                  rows="3"
+                                  @bind="_model.PrepNotes"
+                                  placeholder="Notes to help prepare for this appointment..."></textarea>
+                    </FormGroup>
                 </div>
                 }
 
@@ -343,7 +351,8 @@
                 Location = _appointment.Location.ToString(),
                 VirtualMeetingUrl = _appointment.VirtualMeetingUrl,
                 LocationNotes = _appointment.LocationNotes,
-                Notes = _appointment.Notes
+                Notes = _appointment.Notes,
+                PrepNotes = _appointment.PrepNotes
             };
 
             await LoadAvailableSlotsAsync();
@@ -402,7 +411,8 @@
                 Location: location,
                 VirtualMeetingUrl: string.IsNullOrWhiteSpace(_model.VirtualMeetingUrl) ? null : _model.VirtualMeetingUrl,
                 LocationNotes: string.IsNullOrWhiteSpace(_model.LocationNotes) ? null : _model.LocationNotes,
-                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes);
+                Notes: string.IsNullOrWhiteSpace(_model.Notes) ? null : _model.Notes,
+                PrepNotes: string.IsNullOrWhiteSpace(_model.PrepNotes) ? null : _model.PrepNotes);
 
             var success = await AppointmentService.UpdateAsync(dto, _userId);
             if (success)
@@ -527,5 +537,6 @@
         public string? VirtualMeetingUrl { get; set; }
         public string? LocationNotes { get; set; }
         public string? Notes { get; set; }
+        public string? PrepNotes { get; set; }
     }
 }

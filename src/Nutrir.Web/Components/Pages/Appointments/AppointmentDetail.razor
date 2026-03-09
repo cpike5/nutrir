@@ -119,6 +119,14 @@
                             Revert to Confirmed
                         </Button>
                     }
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/prep"))">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6"/>
+                            <path d="M9 6h3M9 9h3M9 12h2"/>
+                            <path d="M2 5h3v3H2z"/>
+                        </svg>
+                        Prep View
+                    </Button>
                 </div>
             </div>
         </div>
@@ -308,6 +316,19 @@
                 </div>
                 <div class="notes-body">
                     <pre class="notes-text">@_appointment.Notes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Preparation Notes ──────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_appointment.PrepNotes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 200ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Preparation Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_appointment.PrepNotes</pre>
                 </div>
             </div>
         }

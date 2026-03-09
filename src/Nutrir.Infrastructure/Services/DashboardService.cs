@@ -89,7 +89,7 @@ public class DashboardService : IDashboardService
                 e.NutritionistId, nutritionistName,
                 e.Type, e.Status, e.StartTime, e.DurationMinutes, e.EndTime,
                 e.Location, e.VirtualMeetingUrl, e.LocationNotes,
-                e.Notes, e.CancellationReason, e.CancelledAt,
+                e.Notes, e.PrepNotes, e.CancellationReason, e.CancelledAt,
                 e.CreatedAt, e.UpdatedAt);
         }).ToList();
     }

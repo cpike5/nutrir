@@ -29,4 +29,6 @@ public interface IAppointmentService
     Task<List<AppointmentDto>> GetUpcomingByClientAsync(int clientId, int count = 5);
 
     Task<int> GetWeekCountAsync(string nutritionistId);
+
+    Task<RecurringAppointmentResultDto> CreateRecurringAsync(CreateRecurringAppointmentDto dto, string userId);
 }

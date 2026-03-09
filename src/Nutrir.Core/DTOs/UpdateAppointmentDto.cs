@@ -11,4 +11,5 @@ public record UpdateAppointmentDto(
     AppointmentLocation Location,
     string? VirtualMeetingUrl,
     string? LocationNotes,
-    string? Notes);
+    string? Notes,
+    string? PrepNotes);
