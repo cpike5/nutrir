@@ -19,18 +19,18 @@ public static class DataExportEndpoints
             if (exportFormat != "json" && exportFormat != "pdf")
                 return Results.BadRequest("Invalid format. Use 'json' or 'pdf'.");
 
+            ctx.Response.Headers.CacheControl = "no-store";
+
             try
             {
                 if (exportFormat == "json")
                 {
                     var jsonBytes = await exportService.ExportAsJsonAsync(clientId, userId);
-                    ctx.Response.Headers.CacheControl = "no-store";
                     return Results.File(jsonBytes, "application/json", $"client-{clientId}-export.json");
                 }
                 else
                 {
                     var pdfBytes = await exportService.ExportAsPdfAsync(clientId, userId);
-                    ctx.Response.Headers.CacheControl = "no-store";
                     return Results.File(pdfBytes, "application/pdf", $"client-{clientId}-export.pdf");
                 }
             }

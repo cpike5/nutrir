@@ -31,7 +31,7 @@ public class DataExportService : IDataExportService
         _logger = logger;
     }
 
-    public async Task<ClientDataExportDto> CollectClientDataAsync(int clientId, string userId)
+    public async Task<ClientDataExportDto> CollectClientDataAsync(int clientId, string userId, string format = "json")
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync();
 
@@ -157,12 +157,13 @@ public class DataExportService : IDataExportService
         foreach (var fUserId in formUserIds)
             userIds.Add(fUserId);
 
-        // Collect consent events and forms
-        var consentEvents = await db.ConsentEvents
+        // Collect consent events and forms (IgnoreQueryFilters for consistency,
+        // even though these entities are append-only with no soft-delete)
+        var consentEvents = await db.ConsentEvents.IgnoreQueryFilters()
             .Where(ce => ce.ClientId == clientId)
             .ToListAsync();
 
-        var consentForms = await db.ConsentForms
+        var consentForms = await db.ConsentForms.IgnoreQueryFilters()
             .Where(cf => cf.ClientId == clientId)
             .ToListAsync();
 
@@ -316,22 +317,21 @@ public class DataExportService : IDataExportService
             .Where(e => e.EntityType == "Client" && e.EntityId == clientId.ToString())
             .ToListAsync();
 
-        // Collect all sub-entity IDs from the main entities
-        var subEntityIds = new HashSet<string>();
-        foreach (var appt in appointments)
-            subEntityIds.Add(appt.Id.ToString());
-        foreach (var plan in mealPlans)
-            subEntityIds.Add(plan.Id.ToString());
-        foreach (var goal in progressGoals)
-            subEntityIds.Add(goal.Id.ToString());
-        foreach (var entry in progressEntries)
-            subEntityIds.Add(entry.Id.ToString());
-        foreach (var form in intakeForms)
-            subEntityIds.Add(form.Id.ToString());
+        // Collect typed sub-entity ID sets for precise audit log querying
+        var appointmentIds = appointments.Select(a => a.Id.ToString()).ToHashSet();
+        var mealPlanIds = mealPlans.Select(mp => mp.Id.ToString()).ToHashSet();
+        var progressGoalIds = progressGoals.Select(g => g.Id.ToString()).ToHashSet();
+        var progressEntryIds = progressEntries.Select(e => e.Id.ToString()).ToHashSet();
+        var intakeFormIds = intakeForms.Select(f => f.Id.ToString()).ToHashSet();
 
-        // Query for audit entries matching the sub-entities
+        // Query for audit entries matching specific entity type + ID pairs
         var subAuditEntries = await db.AuditLogEntries
-            .Where(e => subEntityIds.Contains(e.EntityId!))
+            .Where(e =>
+                (e.EntityType == "Appointment" && appointmentIds.Contains(e.EntityId!)) ||
+                (e.EntityType == "MealPlan" && mealPlanIds.Contains(e.EntityId!)) ||
+                (e.EntityType == "ProgressGoal" && progressGoalIds.Contains(e.EntityId!)) ||
+                (e.EntityType == "ProgressEntry" && progressEntryIds.Contains(e.EntityId!)) ||
+                (e.EntityType == "IntakeForm" && intakeFormIds.Contains(e.EntityId!)))
             .ToListAsync();
 
         var allAuditEntries = clientAuditEntries.Concat(subAuditEntries).ToList();
@@ -370,7 +370,7 @@ public class DataExportService : IDataExportService
         var metadata = new ExportMetadataDto(
             ExportDate: DateTime.UtcNow,
             ExportVersion: ExportVersion,
-            ExportFormat: "Nutrir Data Export v1",
+            ExportFormat: format,
             ClientId: clientId,
             GeneratedByName: generatingUserName,
             PipedaNotice: PipedaNotice
@@ -396,7 +396,7 @@ public class DataExportService : IDataExportService
 
     public async Task<byte[]> ExportAsJsonAsync(int clientId, string userId)
     {
-        var data = await CollectClientDataAsync(clientId, userId);
+        var data = await CollectClientDataAsync(clientId, userId, "json");
 
         var options = new JsonSerializerOptions
         {
@@ -421,7 +421,7 @@ public class DataExportService : IDataExportService
 
     public async Task<byte[]> ExportAsPdfAsync(int clientId, string userId)
     {
-        var data = await CollectClientDataAsync(clientId, userId);
+        var data = await CollectClientDataAsync(clientId, userId, "pdf");
         var pdfBytes = DataExportPdfRenderer.Render(data);
 
         await _auditLogService.LogAsync(

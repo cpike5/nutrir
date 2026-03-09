@@ -23,7 +23,6 @@ public class AiToolExecutor
     private readonly IDashboardService _dashboardService;
     private readonly IAvailabilityService _availabilityService;
     private readonly IIntakeFormService _intakeFormService;
-    private readonly IDataExportService _dataExportService;
     private readonly ILogger<AiToolExecutor> _logger;
 
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
@@ -708,7 +707,6 @@ public class AiToolExecutor
         IDashboardService dashboardService,
         IAvailabilityService availabilityService,
         IIntakeFormService intakeFormService,
-        IDataExportService dataExportService,
         ILogger<AiToolExecutor> logger)
     {
         _clientService = clientService;
@@ -722,7 +720,6 @@ public class AiToolExecutor
         _dashboardService = dashboardService;
         _availabilityService = availabilityService;
         _intakeFormService = intakeFormService;
-        _dataExportService = dataExportService;
         _logger = logger;
 
         _handlers = new Dictionary<string, Func<JsonElement, Task<string>>>
