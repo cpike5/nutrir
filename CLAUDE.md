@@ -3,6 +3,7 @@
 ## Environment Specifics
 
 Use the docker compose environment for checking logs and accessing the development version of the site for debugging and testing purposes
+Be mindful of Blazor Server concurrency issues with DbContext access. Prefer IDbContextFactory over direct use.
 
 ## Build Commands
 
