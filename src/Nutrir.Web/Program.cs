@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.Entities;
 using Nutrir.Infrastructure;
@@ -17,6 +18,7 @@ using Nutrir.Web.Services;
 using Radzen;
 using QuestPDF.Infrastructure;
 using Serilog;
+using System.Threading.RateLimiting;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -84,6 +86,18 @@ try
     builder.Services.AddSignalR();
     builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddFixedWindowLimiter("dataExport", limiter =>
+        {
+            limiter.PermitLimit = 5;
+            limiter.Window = TimeSpan.FromMinutes(15);
+            limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiter.QueueLimit = 0;
+        });
+    });
 
     builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
         .AddRoles<IdentityRole>()
@@ -167,6 +181,8 @@ try
 
     app.UseAntiforgery();
 
+    app.UseRateLimiter();
+
     app.MapStaticAssets();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
@@ -179,6 +195,9 @@ try
 
     // Meal plan API endpoints.
     app.MapMealPlanEndpoints();
+
+    // Data export API endpoints (PIPEDA compliance).
+    app.MapDataExportEndpoints();
 
     // SignalR hub for real-time notifications.
     app.MapHub<NutrirHub>("/hubs/nutrir");

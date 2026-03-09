@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IAllergenCheckService, AllergenCheckService>();
         services.AddScoped<IAllergenService, AllergenService>();
         services.AddScoped<IMealPlanPdfService, MealPlanPdfService>();
+        services.AddScoped<IDataExportService, DataExportService>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IReportService, ReportService>();

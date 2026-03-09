@@ -64,6 +64,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Compliance Requirements](compliance/requirements.md) | Actionable application-level requirements (v1 must-have, v2 should-have) distilled from the legal research |
 | [Consent Form](compliance/consent-form.md) | Nine-section PIPEDA-compliant intake consent form — PDF/DOCX generation, digital and physical signing workflows, `ConsentForm` entity |
 | [AI Conversation Data Policy](compliance/ai-conversation-data-policy.md) | Retention, audit, and privacy policy for AI assistant conversation data containing PHI |
+| [Data Export Spec](compliance/data-export-spec.md) | PIPEDA-compliant per-client data export — JSON envelope, PDF sections, redaction rules, API endpoint, audit event |
 
 ## Scheduling Documents
 

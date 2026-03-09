@@ -242,6 +242,52 @@
             </div>
         </div>
 
+        @* ── Data Export (PIPEDA) ─────────────────────────── *@
+        <AuthorizeView Roles="Admin,Nutritionist">
+            <div class="table-card section-animate" style="animation-delay: 200ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Data Export</span>
+                </div>
+                <div class="consent-form-body">
+                    <p class="export-desc">Export complete client record for PIPEDA compliance. Includes profile, health data, appointments, meal plans, progress, consent history, and audit log.</p>
+                    <div class="consent-form-actions">
+                        <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" OnClick="@(() => ShowExportConfirm("pdf"))">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            Export as PDF
+                        </Button>
+                        <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" OnClick="@(() => ShowExportConfirm("json"))">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Export as JSON
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </AuthorizeView>
+
+        @if (_showExportConfirm)
+        {
+            <div class="table-card delete-card section-animate">
+                <div class="delete-confirm">
+                    <div class="delete-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 1.5 17h17Z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+                    </div>
+                    <div class="delete-content">
+                        <p class="delete-title">Confirm Data Export</p>
+                        <p class="delete-desc">
+                            This will export <strong>all data</strong> for <strong>@_client.FirstName @_client.LastName</strong> as @(_selectedExportFormat.ToUpperInvariant()),
+                            including health records, appointments, meal plans, progress tracking, consent history, and audit log entries.
+                        </p>
+                        <div class="delete-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmExport">
+                                Export @(_selectedExportFormat.ToUpperInvariant())
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showExportConfirm = false)">Cancel</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
         @* ── Widget Grid: Progress + Meal Plan ─────────── *@
         <div class="widget-grid section-animate" style="animation-delay: 240ms;">
             <ProgressSummaryWidget ClientId="@Id" @key="@($"progress-{_refreshKey}")" />
@@ -315,6 +361,8 @@
     private bool _refreshedByRealTime;
     private string? _errorMessage;
     private string? _scanUploadMessage;
+    private bool _showExportConfirm;
+    private string _selectedExportFormat = "pdf";
 
     protected override async Task OnInitializedAsync()
     {
@@ -419,6 +467,18 @@
         {
             _scanUploadMessage = "Failed to upload scan. Please try again.";
         }
+    }
+
+    private void ShowExportConfirm(string format)
+    {
+        _selectedExportFormat = format;
+        _showExportConfirm = true;
+    }
+
+    private void ConfirmExport()
+    {
+        _showExportConfirm = false;
+        NavigationManager.NavigateTo($"/api/clients/{Id}/export?format={_selectedExportFormat}", forceLoad: true);
     }
 
     private async Task ConfirmDelete()

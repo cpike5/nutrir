@@ -23,6 +23,7 @@ public class AiToolExecutor
     private readonly IDashboardService _dashboardService;
     private readonly IAvailabilityService _availabilityService;
     private readonly IIntakeFormService _intakeFormService;
+    private readonly IDataExportService _dataExportService;
     private readonly ILogger<AiToolExecutor> _logger;
 
     private readonly Dictionary<string, Func<JsonElement, Task<string>>> _handlers;
@@ -82,6 +83,9 @@ public class AiToolExecutor
         // Standard tier — Intake Forms
         ["create_intake_form"] = ConfirmationTier.Standard,
         ["review_intake_form"] = ConfirmationTier.Standard,
+
+        // Elevated tier — Data Export (sensitive PIPEDA operation)
+        ["export_client_data"] = ConfirmationTier.Elevated,
     };
 
     public ConfirmationTier? GetConfirmationTier(string toolName)
@@ -143,6 +147,8 @@ public class AiToolExecutor
 
                 "create_intake_form" => BuildCreateIntakeFormContext(input),
                 "review_intake_form" => await BuildReviewIntakeFormContext(input),
+
+                "export_client_data" => await BuildExportClientDataContext(input),
 
                 _ => (toolName.Replace('_', ' '), null),
             };
@@ -674,6 +680,22 @@ public class AiToolExecutor
         return (desc, new EntityContext("IntakeForm", "review", formId, form?.ClientEmail ?? $"#{formId}", []));
     }
 
+    private async Task<(string Description, EntityContext? Entity)> BuildExportClientDataContext(JsonElement input)
+    {
+        var clientId = GetRequiredInt(input, "client_id");
+        var format = GetOptionalString(input, "format") ?? "json";
+        var client = await ResolveClientAsync(clientId);
+        var name = client is not null ? $"{client.FirstName} {client.LastName}" : $"#{clientId}";
+        var desc = $"export all data for client \"{name}\" as {format.ToUpperInvariant()} (PIPEDA data export)";
+        var fields = new List<FieldChange>
+        {
+            new("Client", null, name),
+            new("Format", null, format.ToUpperInvariant()),
+        };
+        var warnings = new List<string> { "This will export ALL client data including health records, appointments, meal plans, and consent history." };
+        return (desc, new EntityContext("Client", "export", clientId, name, fields, warnings));
+    }
+
     public AiToolExecutor(
         IClientService clientService,
         IClientHealthProfileService healthProfileService,
@@ -686,6 +708,7 @@ public class AiToolExecutor
         IDashboardService dashboardService,
         IAvailabilityService availabilityService,
         IIntakeFormService intakeFormService,
+        IDataExportService dataExportService,
         ILogger<AiToolExecutor> logger)
     {
         _clientService = clientService;
@@ -699,6 +722,7 @@ public class AiToolExecutor
         _dashboardService = dashboardService;
         _availabilityService = availabilityService;
         _intakeFormService = intakeFormService;
+        _dataExportService = dataExportService;
         _logger = logger;
 
         _handlers = new Dictionary<string, Func<JsonElement, Task<string>>>
@@ -778,6 +802,9 @@ public class AiToolExecutor
             // Write tools — Intake Forms
             ["create_intake_form"] = HandleCreateIntakeForm,
             ["review_intake_form"] = HandleReviewIntakeForm,
+
+            // Read tools — Data Export
+            ["export_client_data"] = HandleExportClientData,
         };
     }
 
@@ -1357,6 +1384,16 @@ public class AiToolExecutor
                     ["form_id"] = new { type = "integer", description = "The intake form ID to review" }
                 },
                 "form_id"),
+
+            // --- Data Export ---
+
+            CreateTool("export_client_data", "Export a client's complete record (profile, health data, appointments, meal plans, progress, consent history, audit log) as JSON or PDF for PIPEDA compliance. Returns a download URL. This is a sensitive operation that exports all client data.",
+                new Dictionary<string, object>
+                {
+                    ["client_id"] = new { type = "integer", description = "The client ID to export data for" },
+                    ["format"] = new { type = "string", description = "Export format: 'json' or 'pdf' (default: json)" }
+                },
+                "client_id"),
         ];
     }
 
@@ -1793,6 +1830,27 @@ public class AiToolExecutor
         {
             download_url = $"/api/meal-plans/{id}/pdf",
             message = $"PDF export ready for '{plan.Title}'. Click the link to download."
+        });
+    }
+
+    private async Task<string> HandleExportClientData(JsonElement input)
+    {
+        var clientId = GetRequiredInt(input, "client_id");
+        var format = (GetOptionalString(input, "format") ?? "json").ToLowerInvariant();
+
+        if (format != "json" && format != "pdf")
+            return JsonSerializer.Serialize(new { error = "Invalid format. Use 'json' or 'pdf'." });
+
+        var client = await _clientService.GetByIdAsync(clientId);
+        if (client is null)
+            return JsonSerializer.Serialize(new { error = $"Client #{clientId} not found" });
+
+        return JsonSerializer.Serialize(new
+        {
+            download_url = $"/api/clients/{clientId}/export?format={format}",
+            message = $"Data export ready for '{client.FirstName} {client.LastName}' as {format.ToUpperInvariant()}. Click the link to download.",
+            format,
+            client_name = $"{client.FirstName} {client.LastName}"
         });
     }
 
