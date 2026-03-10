@@ -33,6 +33,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Real-Time Notifications](infrastructure/real-time-notifications.md) | In-process event bus architecture, notification payload, dispatch points, consumer pages, integration pattern |
 | [Email Service](infrastructure/email-service.md) | MailKit/Gmail SMTP implementation — architecture, SmtpOptions, DI registration, usage examples, future considerations |
 | [Gmail SMTP Setup](infrastructure/gmail-smtp-setup.md) | Practitioner setup guide — App Password, SPF/DKIM/DMARC DNS records, .env configuration, sending limits, DMARC progression |
+| [Kibana Dashboard API Learnings](infrastructure/kibana-api-learnings.md) | Practical findings from building dashboards via the Kibana Saved Objects API — critical missing fields, formula limitations, field mapping gotchas, debugging strategy |
 
 ## Design System Documents
 
