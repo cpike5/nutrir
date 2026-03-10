@@ -19,6 +19,7 @@
 @inject IEmailService EmailService
 @inject IMealPlanPdfService MealPlanPdfService
 @inject IClientService ClientService
+@inject ILogger<MealPlanDetail> _logger
 
 <PageTitle>@(_plan is not null ? _plan.Title : "Meal Plan") — Nutrir</PageTitle>
 
@@ -294,12 +295,27 @@
                     {
                         <div class="success-msg">@_emailSuccess</div>
                     }
-                    <div class="form-actions">
-                        <Button Variant="ButtonVariant.Primary" OnClick="SendEmailAsync" Disabled="@_isSendingEmail">
-                            @(_isSendingEmail ? "Sending..." : "Send Email")
-                        </Button>
-                        <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showEmailForm = false)">Cancel</Button>
-                    </div>
+                    @if (_showEmailConfirm)
+                    {
+                        <div class="confirm-banner">
+                            <p>Send <strong>@_plan!.Title</strong> to <strong>@_emailTo</strong>?</p>
+                            <div class="form-actions">
+                                <Button Variant="ButtonVariant.Primary" OnClick="SendEmailAsync" Disabled="@_isSendingEmail">
+                                    @(_isSendingEmail ? "Sending..." : "Yes, Send")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" OnClick="@(() => { _showEmailConfirm = false; })">Cancel</Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmSendEmail">
+                                Send Email
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showEmailForm = false)">Cancel</Button>
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -396,6 +412,7 @@
     private string? _acknowledgingKey;
     private string _acknowledgeNote = string.Empty;
     private bool _showEmailForm;
+    private bool _showEmailConfirm;
     private bool _isSendingEmail;
     private bool _hasClientEmail;
     private string _emailTo = string.Empty;
@@ -567,15 +584,30 @@
     private void ShowEmailModal()
     {
         _showEmailForm = true;
+        _showEmailConfirm = false;
         _emailError = null;
         _emailSuccess = null;
     }
 
-    private async Task SendEmailAsync()
+    private void ConfirmSendEmail()
     {
         if (string.IsNullOrWhiteSpace(_emailTo))
         {
             _emailError = "Email address is required.";
+            return;
+        }
+
+        _emailError = null;
+        _emailSuccess = null;
+        _showEmailConfirm = true;
+    }
+
+    private async Task SendEmailAsync()
+    {
+        if (!EmailService.IsConfigured)
+        {
+            _emailError = "Email is not configured. Please set up SMTP settings before sending.";
+            _showEmailConfirm = false;
             return;
         }
 
@@ -603,10 +635,13 @@
                 $"Emailed meal plan to {_emailTo}");
 
             _emailSuccess = $"Meal plan sent to {_emailTo}";
+            _showEmailConfirm = false;
         }
         catch (Exception ex)
         {
-            _emailError = $"Failed to send email: {ex.Message}";
+            _emailError = "Failed to send email. Please check your SMTP configuration and try again.";
+            _showEmailConfirm = false;
+            _logger.LogError(ex, "Failed to send meal plan email to {Recipient} for MealPlan {MealPlanId}", _emailTo, Id);
         }
         finally
         {

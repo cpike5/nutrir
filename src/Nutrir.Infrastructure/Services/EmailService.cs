@@ -19,6 +19,12 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(_options.Host) &&
+        !string.IsNullOrWhiteSpace(_options.SenderEmail) &&
+        !string.IsNullOrWhiteSpace(_options.Username) &&
+        !string.IsNullOrWhiteSpace(_options.Password);
+
     public Task SendEmailAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
         => SendEmailAsync(to, toName: null, subject, htmlBody, ct);
 
