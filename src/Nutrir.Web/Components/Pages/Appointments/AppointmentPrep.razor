@@ -117,12 +117,12 @@
                 }
                 else
                 {
-                    <p class="cc-empty-state" style="padding: 1rem 0;">No allergies recorded</p>
+                    <p class="cc-empty-state prep-empty">No allergies recorded</p>
                 }
             </div>
 
             @* Medications *@
-            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+            <div class="detail-section detail-section-divider">
                 <div class="detail-subsection-title">Medications</div>
                 @if (_healthProfile?.Medications is not null && _healthProfile.Medications.Count > 0)
                 {
@@ -149,12 +149,12 @@
                 }
                 else
                 {
-                    <p class="cc-empty-state" style="padding: 1rem 0;">No medications recorded</p>
+                    <p class="cc-empty-state prep-empty">No medications recorded</p>
                 }
             </div>
 
             @* Conditions *@
-            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+            <div class="detail-section detail-section-divider">
                 <div class="detail-subsection-title">Medical Conditions</div>
                 @if (_healthProfile?.Conditions is not null && _healthProfile.Conditions.Count > 0)
                 {
@@ -180,12 +180,12 @@
                 }
                 else
                 {
-                    <p class="cc-empty-state" style="padding: 1rem 0;">No conditions recorded</p>
+                    <p class="cc-empty-state prep-empty">No conditions recorded</p>
                 }
             </div>
 
             @* Dietary Restrictions *@
-            <div class="detail-section" style="margin-top: 1.5rem; border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); padding-top: 1.5rem;">
+            <div class="detail-section detail-section-divider">
                 <div class="detail-subsection-title">Dietary Restrictions</div>
                 @if (_healthProfile?.DietaryRestrictions is not null && _healthProfile.DietaryRestrictions.Count > 0)
                 {
@@ -204,7 +204,7 @@
                 }
                 else
                 {
-                    <p class="cc-empty-state" style="padding: 1rem 0;">No dietary restrictions recorded</p>
+                    <p class="cc-empty-state prep-empty">No dietary restrictions recorded</p>
                 }
             </div>
         </div>
@@ -222,24 +222,24 @@
                         <div class="detail-field">
                             <span class="detail-label">@plan.Title</span>
                             <span class="detail-value">
-                                <div style="margin-bottom: 0.5rem;">
+                                <div class="prep-detail-row">
                                     @if (plan.StartDate.HasValue || plan.EndDate.HasValue)
                                     {
-                                        <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">
+                                        <div class="prep-detail-secondary">
                                             @(plan.StartDate?.ToString("MMM d, yyyy") ?? "—") to @(plan.EndDate?.ToString("MMM d, yyyy") ?? "—")
                                         </div>
                                     }
                                 </div>
                                 @if (plan.CalorieTarget.HasValue || plan.ProteinTargetG.HasValue)
                                 {
-                                    <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">
+                                    <div class="prep-detail-secondary prep-macros">
                                         @if (plan.CalorieTarget.HasValue) { <span>@plan.CalorieTarget.Value.ToString("N0") kcal</span> }
-                                        @if (plan.ProteinTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.ProteinTargetG.Value.ToString("N0")g P</span> }
-                                        @if (plan.CarbsTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.CarbsTargetG.Value.ToString("N0")g C</span> }
-                                        @if (plan.FatTargetG.HasValue) { <span style="margin-left: 0.5rem;">@plan.FatTargetG.Value.ToString("N0")g F</span> }
+                                        @if (plan.ProteinTargetG.HasValue) { <span>@plan.ProteinTargetG.Value.ToString("N0")g P</span> }
+                                        @if (plan.CarbsTargetG.HasValue) { <span>@plan.CarbsTargetG.Value.ToString("N0")g C</span> }
+                                        @if (plan.FatTargetG.HasValue) { <span>@plan.FatTargetG.Value.ToString("N0")g F</span> }
                                     </div>
                                 }
-                                <a href="/meal-plans/@plan.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Plan</a>
+                                <a href="/meal-plans/@plan.Id" class="prep-link">View Plan</a>
                             </span>
                         </div>
                     }
@@ -264,14 +264,14 @@
                         <div class="detail-field">
                             <span class="detail-label">@entry.EntryDate.ToString("dddd, MMM d")</span>
                             <span class="detail-value">
-                                <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280); margin-bottom: 0.25rem;">
+                                <div class="prep-detail-secondary prep-detail-row">
                                     @entry.MeasurementCount measurement@(entry.MeasurementCount == 1 ? "" : "s")
                                 </div>
                                 @if (!string.IsNullOrEmpty(entry.NotePreview))
                                 {
-                                    <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280);">@entry.NotePreview</div>
+                                    <div class="prep-detail-secondary">@entry.NotePreview</div>
                                 }
-                                <a href="/progress/@entry.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Entry</a>
+                                <a href="/progress/@entry.Id" class="prep-link">View Entry</a>
                             </span>
                         </div>
                     }
@@ -296,11 +296,11 @@
                         <div class="detail-field">
                             <span class="detail-label">@TimeZoneService.ToUserLocal(appt.StartTime).ToString("dddd, MMM d")</span>
                             <span class="detail-value">
-                                <div style="font-size: var(--font-sm, 0.875rem); color: var(--text-secondary, #6b7280); margin-bottom: 0.25rem;">
+                                <div class="prep-detail-secondary prep-detail-row">
                                     @TimeZoneService.ToUserLocal(appt.StartTime).ToString("h:mm tt") — @FormatType(appt.Type)
                                 </div>
                                 <Badge Variant="@GetStatusVariant(appt.Status)">@FormatStatus(appt.Status)</Badge>
-                                <a href="/appointments/@appt.Id" class="prep-link" style="display: inline-block; margin-top: 0.5rem;">View Appointment</a>
+                                <a href="/appointments/@appt.Id" class="prep-link">View Appointment</a>
                             </span>
                         </div>
                     }
