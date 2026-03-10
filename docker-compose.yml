@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: src/Nutrir.Web/Dockerfile
+    networks:
+      - elastic-network
+      - db-network
+      - seq-network
     ports:
       - "7100:8080"
     depends_on:
@@ -28,6 +32,8 @@ services:
 
   db:
     image: postgres:17
+    networks:
+      - db-network
     ports:
       - "7103:5432"
     restart: unless-stopped
@@ -40,6 +46,8 @@ services:
 
   seq:
     image: datalust/seq:latest
+    networks:
+      - seq-network
     ports:
       - "7102:5341"
       - "7101:80"
@@ -49,3 +57,11 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  elastic-network:
+    external: true
+  db-network:
+    external: false
+  seq-network:
+    external: false
