@@ -1,17 +1,19 @@
 .prep-page {
     max-width: 960px;
     margin: 0 auto;
+    padding: var(--space-8);
 }
 
+/* ── Health Profile Grid ─────────────────────────────── */
 .prep-section-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: var(--space-4);
 }
 
 .prep-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.06));
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .prep-item:last-child {
@@ -22,31 +24,74 @@
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     flex-wrap: wrap;
 }
 
 .prep-item-meta {
-    font-size: var(--font-sm, 0.875rem);
-    color: var(--text-secondary, #6b7280);
-    margin-top: 0.125rem;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-top: 2px;
 }
 
+/* ── Section Layout ──────────────────────────────────── */
+.detail-section {
+    padding: 0 var(--space-6) var(--space-6);
+}
+
+.detail-section-divider {
+    margin-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-6);
+}
+
+.detail-subsection-title {
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    color: var(--color-text);
+}
+
+.prep-empty {
+    padding: var(--space-4) 0;
+}
+
+/* ── Detail Value Helpers ────────────────────────────── */
+.prep-detail-secondary {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.prep-detail-row {
+    margin-bottom: var(--space-1);
+}
+
+.prep-macros {
+    display: flex;
+    gap: var(--space-2);
+}
+
+/* ── Links ───────────────────────────────────────────── */
 .prep-link {
-    color: var(--primary, #059669);
+    display: inline-block;
+    margin-top: var(--space-2);
+    color: var(--color-primary);
     text-decoration: none;
+    font-size: var(--text-sm);
 }
 
 .prep-link:hover {
     text-decoration: underline;
 }
 
-.detail-section {
-    padding: 0 0 1.5rem 0;
+/* ── Responsive: Mobile ──────────────────────────────── */
+@media (max-width: 768px) {
+    .prep-section-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-.detail-subsection-title {
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    color: var(--text-primary, #111827);
+@media (max-width: 600px) {
+    .prep-page {
+        padding: var(--space-4);
+    }
 }
