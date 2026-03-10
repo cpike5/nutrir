@@ -22,8 +22,6 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
-Serilog.Debugging.SelfLog.Enable(Console.Error);
-
 try
 {
     var builder = WebApplication.CreateBuilder(args);
