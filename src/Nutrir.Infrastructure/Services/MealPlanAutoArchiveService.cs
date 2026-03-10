@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
+using Nutrir.Infrastructure.Configuration;
 using Nutrir.Infrastructure.Data;
 
 namespace Nutrir.Infrastructure.Services;
@@ -12,22 +14,30 @@ public class MealPlanAutoArchiveService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<MealPlanAutoArchiveService> _logger;
+    private readonly AutoArchiveOptions _options;
 
-    public MealPlanAutoArchiveService(IServiceScopeFactory scopeFactory, ILogger<MealPlanAutoArchiveService> logger)
+    public MealPlanAutoArchiveService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<MealPlanAutoArchiveService> logger,
+        IOptions<AutoArchiveOptions> options)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _options = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var interval = TimeSpan.FromMinutes(_options.IntervalMinutes);
+        _logger.LogInformation("Meal plan auto-archive service starting with interval of {IntervalMinutes} minutes", _options.IntervalMinutes);
+
         // Initial delay to let the app start up
         await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
         // Run immediately on startup, then periodically
         await ArchiveExpiredPlansAsync(stoppingToken);
 
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
+        using var timer = new PeriodicTimer(interval);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             await ArchiveExpiredPlansAsync(stoppingToken);
