@@ -49,6 +49,7 @@ See [`docs/compliance/requirements.md`](docs/compliance/requirements.md) for the
 | **Data** | EF Core + PostgreSQL | Open-source DB, strong .NET integration, avoids vendor lock-in |
 | **Auth** | ASP.NET Identity + OAuth (Google, Microsoft) + TOTP MFA | Compliance requirement: MFA enforcement |
 | **Logging** | Serilog → Seq (dev), Elastic APM (prod) | Structured logging with full APM in production |
+| **Observability** | 6 Kibana dashboards (34 panels) | Request throughput, latency, errors, infrastructure metrics, AI activity |
 | **Hosting** | Self-hosted Linux VPS, Docker | Data residency control — no third-party SaaS required for core data storage |
 
 ## Architecture
@@ -73,6 +74,7 @@ See [`docs/compliance/requirements.md`](docs/compliance/requirements.md) for the
 
 - **Docker Compose** — App + PostgreSQL + Seq (dev)
 - **Elastic APM** — Production logging, tracing, and APM (external cluster, not managed by this project)
+- **Kibana Dashboards** — 6 purpose-built dashboards (34 panels) created via the Saved Objects API, covering application overview, endpoint performance, database & dependencies, errors & exceptions, infrastructure & Docker, and AI assistant activity
 - **OAuth** — Providers registered dynamically based on configuration; unconfigured providers are skipped
 - **Maintenance Mode** — Admin-toggleable maintenance mode with 503 page and API endpoints
 
