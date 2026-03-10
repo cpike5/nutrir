@@ -102,6 +102,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [2026-02-23 Client Detail Redesign](worklog/2026-02-23-client-detail-redesign.md) | Client detail page redesign |
 | [2026-02-23 Appointment Pages Redesign](worklog/2026-02-23-appointment-pages-redesign.md) | Appointment pages styling overhaul |
 | [2026-03-07 AI Assistant Appointment Filtering](worklog/2026-03-07-ai-assistant-appointment-filtering.md) | Role-aware appointment filtering for AI assistant (#183, #184) |
+| [2026-03-10 Tier 1 Implementation Plan](worklog/2026-03-10-tier1-implementation-plan.md) | Implementation plan for Milestone 12 Tier 1 issues (#224, #233, #234, #232) |
 
 ## Conventions
 
