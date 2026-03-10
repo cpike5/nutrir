@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddSingleton<IEmailService, EmailService>();
 
         // Background services
+        services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
         services.AddHostedService<MealPlanAutoArchiveService>();
 
         return services;
