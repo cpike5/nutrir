@@ -45,7 +45,7 @@ try
                 opts =>
                 {
                     opts.DataStream = new Elastic.Ingest.Elasticsearch.DataStreams.DataStreamName("logs", "nutrir");
-                    opts.BootstrapMethod = Elastic.Ingest.Elasticsearch.BootstrapMethod.None;
+                    opts.BootstrapMethod = Elastic.Ingest.Elasticsearch.BootstrapMethod.Failure;
                 },
                 transport =>
                 {
