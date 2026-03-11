@@ -15,6 +15,7 @@ public class AppointmentService : IAppointmentService
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly ISessionNoteService _sessionNoteService;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
@@ -22,12 +23,14 @@ public class AppointmentService : IAppointmentService
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         INotificationDispatcher notificationDispatcher,
+        ISessionNoteService sessionNoteService,
         ILogger<AppointmentService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _notificationDispatcher = notificationDispatcher;
+        _sessionNoteService = sessionNoteService;
         _logger = logger;
     }
 
@@ -282,6 +285,18 @@ public class AppointmentService : IAppointmentService
             $"Status changed from {oldStatus} to {newStatus}");
 
         await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId);
+
+        if (newStatus == AppointmentStatus.Completed)
+        {
+            try
+            {
+                await _sessionNoteService.CreateDraftAsync(id, entity.ClientId, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create draft session note for appointment {AppointmentId}", id);
+            }
+        }
 
         return true;
     }

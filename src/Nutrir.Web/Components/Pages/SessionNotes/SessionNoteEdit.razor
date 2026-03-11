@@ -1,0 +1,329 @@
+@page "/appointments/{AppointmentId:int}/notes"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
+@inject ISessionNoteService SessionNoteService
+@inject ITimeZoneService TimeZoneService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Session Notes — Nutrir</PageTitle>
+
+<Breadcrumb Items="@_breadcrumbs" />
+
+<div class="session-note-page">
+    @if (_isLoading)
+    {
+        <div class="table-card">
+            <div class="loading-container">
+                <LoadingSpinner Message="Loading session notes..." Centered="true" />
+            </div>
+        </div>
+    }
+    else if (_sessionNote is null)
+    {
+        <div class="table-card">
+            <div class="not-found">
+                <p class="not-found-title">Session notes not found</p>
+                <p class="not-found-desc">No session notes exist for this appointment. The appointment may not have been completed yet.</p>
+                <div class="not-found-action">
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{AppointmentId}"))">Back to Appointment</Button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="page-header">
+            <a href="/appointments/@AppointmentId" class="back-link" aria-label="Back to appointment">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5l-5 5 5 5"/>
+                </svg>
+            </a>
+            <div class="page-header-text">
+                <h1 class="page-title">Session Notes</h1>
+                <span class="page-subtitle">
+                    @_sessionNote.ClientFirstName @_sessionNote.ClientLastName
+                    @if (_sessionNote.AppointmentDate.HasValue)
+                    {
+                        <span> — @TimeZoneService.ToUserLocal(_sessionNote.AppointmentDate.Value).ToString("MMM d, yyyy")</span>
+                    }
+                </span>
+            </div>
+            <div class="header-status">
+                @if (_sessionNote.IsDraft)
+                {
+                    <Badge Variant="BadgeVariant.Accent"><span class="badge-dot"></span> Draft</Badge>
+                }
+                else
+                {
+                    <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Finalized</Badge>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="success-banner" role="status">@_successMessage</div>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="error-banner" role="alert">@_errorMessage</div>
+        }
+
+        <div class="table-card">
+            <div class="form-body">
+                <div class="form-section">
+                    <FormGroup Label="Session Notes" Id="notes">
+                        <textarea id="notes"
+                                  class="form-input form-textarea"
+                                  rows="6"
+                                  @bind="_notes"
+                                  placeholder="Record observations, discussion points, and key takeaways from the session..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Client-Reported Adherence" Id="adherence">
+                        <div class="adherence-input-row">
+                            <input id="adherence"
+                                   type="number"
+                                   class="form-input adherence-input"
+                                   min="0"
+                                   max="100"
+                                   @bind="_adherenceScore"
+                                   placeholder="0-100"
+                                   disabled="@_isFinalized" />
+                            <span class="adherence-label">%</span>
+                        </div>
+                        @if (_adherenceScore.HasValue)
+                        {
+                            <div class="adherence-bar-container">
+                                <div class="adherence-bar" style="width: @(Math.Clamp(_adherenceScore.Value, 0, 100))%"></div>
+                            </div>
+                        }
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Measurements Taken" Id="measurements">
+                        <textarea id="measurements"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                                  @bind="_measurementsTaken"
+                                  placeholder="Weight, body composition, blood pressure, or other measurements recorded..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Plan Adjustments" Id="planAdjustments">
+                        <textarea id="planAdjustments"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                                  @bind="_planAdjustments"
+                                  placeholder="Changes made to meal plan, macros, supplements, or other plan modifications..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Follow-up Action Items" Id="followUpActions">
+                        <textarea id="followUpActions"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                                  @bind="_followUpActions"
+                                  placeholder="Tasks for the client or practitioner before the next appointment..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+            </div>
+
+            @if (!_isFinalized)
+            {
+                <div class="form-actions">
+                    <Button Variant="ButtonVariant.Outline" OnClick="SaveDraft" Disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save Draft")
+                    </Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick="@(() => _showFinalizeConfirm = true)" Disabled="@_isSaving">
+                        Finalize
+                    </Button>
+                </div>
+            }
+        </div>
+
+        @if (_showFinalizeConfirm)
+        {
+            <div class="table-card finalize-card">
+                <div class="finalize-confirm">
+                    <div class="finalize-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 1.5 17h17Z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+                    </div>
+                    <div class="finalize-content">
+                        <p class="finalize-title">Finalize Session Notes</p>
+                        <p class="finalize-desc">
+                            Once finalized, session notes can no longer be edited. Are you sure you want to finalize?
+                        </p>
+                        <div class="finalize-actions">
+                            <Button Variant="ButtonVariant.Primary" OnClick="FinalizeNotes" Disabled="@_isSaving">
+                                @(_isSaving ? "Finalizing..." : "Confirm Finalize")
+                            </Button>
+                            <Button Variant="ButtonVariant.Ghost" OnClick="@(() => _showFinalizeConfirm = false)">Go Back</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="meta-footer">
+            <span>Created: @_sessionNote.CreatedAt.ToString("MMM d, yyyy h:mm tt") UTC</span>
+            @if (_sessionNote.UpdatedAt.HasValue)
+            {
+                <span> · Updated: @_sessionNote.UpdatedAt.Value.ToString("MMM d, yyyy h:mm tt") UTC</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int AppointmentId { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private SessionNoteDto? _sessionNote;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isFinalized;
+    private bool _showFinalizeConfirm;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    // Form fields
+    private string? _notes;
+    private int? _adherenceScore;
+    private string? _measurementsTaken;
+    private string? _planAdjustments;
+    private string? _followUpActions;
+
+    private BreadcrumbItem[] _breadcrumbs = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TimeZoneService.InitializeAsync();
+        _sessionNote = await SessionNoteService.GetByAppointmentIdAsync(AppointmentId);
+        _isLoading = false;
+
+        if (_sessionNote is not null)
+        {
+            _notes = _sessionNote.Notes;
+            _adherenceScore = _sessionNote.AdherenceScore;
+            _measurementsTaken = _sessionNote.MeasurementsTaken;
+            _planAdjustments = _sessionNote.PlanAdjustments;
+            _followUpActions = _sessionNote.FollowUpActions;
+            _isFinalized = !_sessionNote.IsDraft;
+
+            _breadcrumbs =
+            [
+                new BreadcrumbItem("Appointments", "/appointments"),
+                new BreadcrumbItem($"{_sessionNote.ClientFirstName} {_sessionNote.ClientLastName}", $"/appointments/{AppointmentId}"),
+                new BreadcrumbItem("Session Notes")
+            ];
+        }
+        else
+        {
+            _breadcrumbs =
+            [
+                new BreadcrumbItem("Appointments", "/appointments"),
+                new BreadcrumbItem($"Appointment #{AppointmentId}", $"/appointments/{AppointmentId}"),
+                new BreadcrumbItem("Session Notes")
+            ];
+        }
+    }
+
+    private async Task<string> GetUserId()
+    {
+        var authState = await AuthState;
+        return authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private async Task SaveDraft()
+    {
+        if (_sessionNote is null) return;
+        _isSaving = true;
+        _successMessage = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var userId = await GetUserId();
+            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            var result = await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
+
+            if (result)
+            {
+                _sessionNote = await SessionNoteService.GetByAppointmentIdAsync(AppointmentId);
+                _successMessage = "Draft saved successfully.";
+            }
+            else
+            {
+                _errorMessage = "Failed to save draft. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = "An error occurred while saving. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task FinalizeNotes()
+    {
+        if (_sessionNote is null) return;
+        _isSaving = true;
+        _successMessage = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var userId = await GetUserId();
+
+            // Save current content first
+            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
+
+            // Then finalize
+            var result = await SessionNoteService.FinalizeAsync(_sessionNote.Id, userId);
+
+            if (result)
+            {
+                _sessionNote = await SessionNoteService.GetByAppointmentIdAsync(AppointmentId);
+                _isFinalized = true;
+                _showFinalizeConfirm = false;
+                _successMessage = "Session notes finalized.";
+            }
+            else
+            {
+                _errorMessage = "Failed to finalize notes. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+}
