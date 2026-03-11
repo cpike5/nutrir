@@ -181,7 +181,21 @@
             <Panel Title="@(day.Label ?? $"Day {day.DayNumber}")" Count="@(day.MealSlots.Count > 0 ? day.MealSlots.Count : null)">
                 <HeaderExtra>
                     <span class="day-totals-header">
-                        @day.TotalCalories.ToString("N0") kcal · @day.TotalProtein.ToString("N0")g P · @day.TotalCarbs.ToString("N0")g C · @day.TotalFat.ToString("N0")g F
+                        <span class="@GetMacroClass(day.TotalCalories, _plan.CalorieTarget)">
+                            @day.TotalCalories.ToString("N0") kcal@(GetMacroDiff(day.TotalCalories, _plan.CalorieTarget, "kcal"))
+                        </span>
+                        ·
+                        <span class="@GetMacroClass(day.TotalProtein, _plan.ProteinTargetG)">
+                            @day.TotalProtein.ToString("N0")g P@(GetMacroDiff(day.TotalProtein, _plan.ProteinTargetG, "g P"))
+                        </span>
+                        ·
+                        <span class="@GetMacroClass(day.TotalCarbs, _plan.CarbsTargetG)">
+                            @day.TotalCarbs.ToString("N0")g C@(GetMacroDiff(day.TotalCarbs, _plan.CarbsTargetG, "g C"))
+                        </span>
+                        ·
+                        <span class="@GetMacroClass(day.TotalFat, _plan.FatTargetG)">
+                            @day.TotalFat.ToString("N0")g F@(GetMacroDiff(day.TotalFat, _plan.FatTargetG, "g F"))
+                        </span>
                     </span>
                 </HeaderExtra>
                 <ChildContent>
@@ -647,6 +661,20 @@
         {
             _isSendingEmail = false;
         }
+    }
+
+    private static string GetMacroClass(decimal actual, decimal? target)
+    {
+        if (!target.HasValue || target.Value == 0) return "";
+        var pct = Math.Abs((actual - target.Value) / target.Value);
+        return pct <= 0.05m ? "on-target" : pct <= 0.10m ? "near-target" : "off-target";
+    }
+
+    private static string GetMacroDiff(decimal actual, decimal? target, string unit)
+    {
+        if (!target.HasValue || target.Value == 0) return "";
+        var diff = actual - target.Value;
+        return $" ({(diff >= 0 ? "+" : "")}{diff.ToString("N0")} {unit})";
     }
 
     private static BadgeVariant GetStatusVariant(MealPlanStatus status) => status switch
