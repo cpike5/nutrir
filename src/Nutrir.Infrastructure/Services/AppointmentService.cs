@@ -14,6 +14,7 @@ public class AppointmentService : IAppointmentService
     private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
+    private readonly IAvailabilityService _availabilityService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ISessionNoteService _sessionNoteService;
     private readonly ILogger<AppointmentService> _logger;
@@ -22,6 +23,7 @@ public class AppointmentService : IAppointmentService
         AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
+        IAvailabilityService availabilityService,
         INotificationDispatcher notificationDispatcher,
         ISessionNoteService sessionNoteService,
         ILogger<AppointmentService> logger)
@@ -29,6 +31,7 @@ public class AppointmentService : IAppointmentService
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
+        _availabilityService = availabilityService;
         _notificationDispatcher = notificationDispatcher;
         _sessionNoteService = sessionNoteService;
         _logger = logger;
@@ -178,6 +181,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId)
     {
+        var (isWithin, reason) = await _availabilityService
+            .IsSlotWithinScheduleAsync(userId, dto.StartTime, dto.DurationMinutes);
+        if (!isWithin)
+            throw new SchedulingConflictException("Outside working hours", reason!);
+
         await CheckOverlapAsync(_dbContext, userId, dto.StartTime, dto.DurationMinutes);
 
         var entity = new Appointment
@@ -222,9 +230,14 @@ public class AppointmentService : IAppointmentService
 
         if (entity is null) return false;
 
-        // Check overlap only if time or duration changed
+        // Check availability and overlap only if time or duration changed
         if (entity.StartTime != dto.StartTime || entity.DurationMinutes != dto.DurationMinutes)
         {
+            var (isWithin, reason) = await _availabilityService
+                .IsSlotWithinScheduleAsync(entity.NutritionistId, dto.StartTime, dto.DurationMinutes);
+            if (!isWithin)
+                throw new SchedulingConflictException("Outside working hours", reason!);
+
             await CheckOverlapAsync(_dbContext, entity.NutritionistId, dto.StartTime, dto.DurationMinutes, dto.Id);
         }
 

@@ -19,4 +19,7 @@ public interface IAvailabilityService
     Task<int> GetBufferTimeMinutesAsync(string practitionerId);
 
     Task SetBufferTimeMinutesAsync(string practitionerId, int minutes, string userId);
+
+    Task<(bool IsWithin, string? Reason)> IsSlotWithinScheduleAsync(
+        string practitionerId, DateTime startTimeUtc, int durationMinutes);
 }
