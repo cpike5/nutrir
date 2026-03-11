@@ -255,6 +255,41 @@ public class AvailabilityService : IAvailabilityService
             $"Buffer time set to {minutes} minutes");
     }
 
+    public async Task<(bool IsWithin, string? Reason)> IsSlotWithinScheduleAsync(
+        string practitionerId, DateTime startTimeUtc, int durationMinutes)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+        var date = DateOnly.FromDateTime(startTimeUtc);
+        var dayOfWeek = startTimeUtc.DayOfWeek;
+
+        // 1. Check practitioner schedule for the day of week
+        var schedule = await db.PractitionerSchedules
+            .FirstOrDefaultAsync(s => s.UserId == practitionerId && s.DayOfWeek == dayOfWeek);
+
+        if (schedule is null || !schedule.IsAvailable)
+            return (false, $"Practitioner is not available on {dayOfWeek}");
+
+        // 2. Check if appointment falls within working hours
+        var slotStart = TimeOnly.FromDateTime(startTimeUtc);
+        var slotEnd = slotStart.AddMinutes(durationMinutes);
+
+        if (slotStart < schedule.StartTime || slotEnd > schedule.EndTime)
+            return (false, $"Appointment falls outside working hours ({schedule.StartTime}–{schedule.EndTime})");
+
+        // 3. Check for time blocks on the specific date
+        var conflictingBlock = await db.PractitionerTimeBlocks
+            .FirstOrDefaultAsync(tb => tb.UserId == practitionerId
+                                       && tb.Date == date
+                                       && tb.StartTime < slotEnd
+                                       && tb.EndTime > slotStart);
+
+        if (conflictingBlock is not null)
+            return (false, $"Time block conflict: {conflictingBlock.BlockType}");
+
+        return (true, null);
+    }
+
     private static PractitionerTimeBlockDto MapToTimeBlockDto(PractitionerTimeBlock entity) =>
         new(entity.Id, entity.UserId, entity.Date, entity.StartTime, entity.EndTime, entity.BlockType, entity.Notes);
 }
