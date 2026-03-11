@@ -251,6 +251,22 @@
     line-height: 1.6;
 }
 
+/* ── Macro Target Comparison Indicators ──────────────── */
+.on-target {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+.near-target {
+    color: var(--color-warning, #d97706);
+    font-weight: 600;
+}
+
+.off-target {
+    color: var(--color-error);
+    font-weight: 600;
+}
+
 /* ── Day Panel Meal Slot Sections ────────────────────── */
 .slot-section {
     border-bottom: 1px solid rgba(var(--rgb-accent), 0.08);
