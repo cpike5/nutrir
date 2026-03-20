@@ -34,6 +34,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Email Service](infrastructure/email-service.md) | MailKit/Gmail SMTP implementation — architecture, SmtpOptions, DI registration, usage examples, future considerations |
 | [Gmail SMTP Setup](infrastructure/gmail-smtp-setup.md) | Practitioner setup guide — App Password, SPF/DKIM/DMARC DNS records, .env configuration, sending limits, DMARC progression |
 | [Kibana Dashboard API Learnings](infrastructure/kibana-api-learnings.md) | Practical findings from building dashboards via the Kibana Saved Objects API — critical missing fields, formula limitations, field mapping gotchas, debugging strategy |
+| [Tech Stack Evaluation](infrastructure/tech-stack-evaluation.md) | Assessment of additional .NET stack technologies — recommendations, priorities, and rationale for Nutrir |
 
 ## Design System Documents
 
