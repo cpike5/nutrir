@@ -28,6 +28,8 @@ public class Appointment
 
     public string? Notes { get; set; }
 
+    public string? PrepNotes { get; set; }
+
     public string? CancellationReason { get; set; }
 
     public DateTime? CancelledAt { get; set; }

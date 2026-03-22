@@ -94,7 +94,8 @@ else
                                           Type="@appt.Type"
                                           Status="@appt.Status"
                                           Location="@appt.Location"
-                                          Href="@($"/appointments/{appt.Id}")" />
+                                          Href="@($"/appointments/{appt.Id}")"
+                                          PrepHref="@($"/appointments/{appt.Id}/prep")" />
                     }
                 }
             </ChildContent>

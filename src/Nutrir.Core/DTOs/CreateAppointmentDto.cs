@@ -10,4 +10,5 @@ public record CreateAppointmentDto(
     AppointmentLocation Location,
     string? VirtualMeetingUrl,
     string? LocationNotes,
-    string? Notes);
+    string? Notes,
+    string? PrepNotes);

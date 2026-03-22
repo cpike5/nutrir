@@ -155,14 +155,14 @@
     background: rgba(90, 158, 107, 0.05);
 }
 
-.day-totals.over {
-    border-color: var(--color-warning);
+.day-totals.near-target {
+    border-color: var(--color-warning, #d97706);
     background: rgba(196, 136, 47, 0.05);
 }
 
-.day-totals.under {
-    border-color: var(--color-info);
-    background: rgba(74, 126, 139, 0.05);
+.day-totals.off-target {
+    border-color: var(--color-error);
+    background: rgba(220, 38, 38, 0.05);
 }
 
 .totals-label {
@@ -173,21 +173,20 @@
     color: var(--color-text-muted);
 }
 
-.target-diff {
-    font-weight: 600;
-    font-size: var(--text-xs);
-}
-
-.target-diff.over {
-    color: var(--color-warning);
-}
-
-.target-diff.under {
-    color: var(--color-info);
-}
-
-.target-diff.on-target {
+/* ── Macro Target Comparison Indicators ──────────────── */
+.on-target {
     color: var(--color-success);
+    font-weight: 600;
+}
+
+.near-target {
+    color: var(--color-warning, #d97706);
+    font-weight: 600;
+}
+
+.off-target {
+    color: var(--color-error);
+    font-weight: 600;
 }
 
 /* ── Slot Card ───────────────────────────────────────── */

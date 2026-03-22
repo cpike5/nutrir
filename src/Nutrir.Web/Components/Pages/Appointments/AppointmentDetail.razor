@@ -16,6 +16,7 @@
 @inject IClientService ClientService
 @inject IIntakeFormService IntakeFormService
 @inject IReminderService ReminderService
+@inject ISessionNoteService SessionNoteService
 @inject NavigationManager NavigationManager
 @inject RealTimeNotificationService NotificationService
 
@@ -120,6 +121,14 @@
                             Revert to Confirmed
                         </Button>
                     }
+                    <Button Variant="ButtonVariant.Outline" OnClick="@(() => NavigationManager.NavigateTo($"/appointments/{Id}/prep"))">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6"/>
+                            <path d="M9 6h3M9 9h3M9 12h2"/>
+                            <path d="M2 5h3v3H2z"/>
+                        </svg>
+                        Prep View
+                    </Button>
                 </div>
             </div>
         </div>
@@ -172,6 +181,44 @@
                                 {
                                     <p class="intake-error">@_intakeFormError</p>
                                 }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Session Notes Section ─────────────────────────── *@
+        @if (_sessionNoteChecked && _appointment.Status == AppointmentStatus.Completed)
+        {
+            <div class="table-card section-animate" style="animation-delay: 60ms;">
+                <div class="session-note-section">
+                    <div class="session-note-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><path d="M6 6h8M6 10h8M6 14h4"/></svg>
+                    </div>
+                    <div class="session-note-content">
+                        <span class="session-note-label">Session Notes</span>
+                        @if (_sessionNote is null)
+                        {
+                            <div class="session-note-warning">
+                                <Badge Variant="BadgeVariant.Warning"><span class="badge-dot"></span> Missing</Badge>
+                                <span class="session-note-desc">Session notes have not been completed for this appointment.</span>
+                                <a href="/appointments/@Id/notes" class="session-note-link">Write Notes</a>
+                            </div>
+                        }
+                        else if (_sessionNote.IsDraft)
+                        {
+                            <div class="session-note-info">
+                                <Badge Variant="BadgeVariant.Accent"><span class="badge-dot"></span> Draft</Badge>
+                                <span class="session-note-desc">Session notes are in draft.</span>
+                                <a href="/appointments/@Id/notes" class="session-note-link">Edit Notes</a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="session-note-finalized">
+                                <Badge Variant="BadgeVariant.Success"><span class="badge-dot"></span> Finalized</Badge>
+                                <a href="/appointments/@Id/notes" class="session-note-link">View Notes</a>
                             </div>
                         }
                     </div>
@@ -366,6 +413,19 @@
             </div>
         }
 
+        @* ── Preparation Notes ──────────────────────────── *@
+        @if (!string.IsNullOrEmpty(_appointment.PrepNotes))
+        {
+            <div class="table-card section-animate" style="animation-delay: 200ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Preparation Notes</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_appointment.PrepNotes</pre>
+                </div>
+            </div>
+        }
+
         @* ── Cancellation Info ───────────────────────────── *@
         @if (_appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.LateCancellation)
         {
@@ -421,6 +481,8 @@
     private List<AppointmentReminderDto> _reminders = [];
     private ReminderType? _resendingType;
     private string? _reminderError;
+    private SessionNoteDto? _sessionNote;
+    private bool _sessionNoteChecked;
 
     protected override async Task OnInitializedAsync()
     {
@@ -442,6 +504,12 @@
             }
 
             _reminders = await ReminderService.GetRemindersForAppointmentAsync(Id);
+
+            if (_appointment.Status == AppointmentStatus.Completed)
+            {
+                _sessionNote = await SessionNoteService.GetByAppointmentIdAsync(Id);
+                _sessionNoteChecked = true;
+            }
         }
     }
 
@@ -495,8 +563,7 @@
         _isProcessing = true;
         var userId = await GetUserId();
         await AppointmentService.UpdateStatusAsync(Id, AppointmentStatus.Completed, userId);
-        _appointment = await AppointmentService.GetByIdAsync(Id);
-        _isProcessing = false;
+        NavigationManager.NavigateTo($"/appointments/{Id}/notes");
     }
 
     private async Task MarkNoShow()

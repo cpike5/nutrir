@@ -66,6 +66,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AppointmentReminder> AppointmentReminders => Set<AppointmentReminder>();
 
+    public DbSet<SessionNote> SessionNotes => Set<SessionNote>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -564,6 +566,37 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(r => r.FailureReason).HasMaxLength(500);
             entity.Property(r => r.IsDeleted).HasDefaultValue(false);
             entity.Property(r => r.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<SessionNote>(entity =>
+        {
+            entity.HasQueryFilter(sn => !sn.IsDeleted);
+
+            entity.HasIndex(sn => sn.AppointmentId).IsUnique();
+            entity.HasIndex(sn => sn.ClientId);
+
+            entity.HasOne<Client>()
+                .WithMany()
+                .HasForeignKey(sn => sn.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Appointment>()
+                .WithMany()
+                .HasForeignKey(sn => sn.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(sn => sn.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(sn => sn.CreatedByUserId).HasMaxLength(450);
+            entity.Property(sn => sn.Notes).HasColumnType("text");
+            entity.Property(sn => sn.MeasurementsTaken).HasColumnType("text");
+            entity.Property(sn => sn.PlanAdjustments).HasColumnType("text");
+            entity.Property(sn => sn.FollowUpActions).HasColumnType("text");
+            entity.Property(sn => sn.IsDeleted).HasDefaultValue(false);
+            entity.Property(sn => sn.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 

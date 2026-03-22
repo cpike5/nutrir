@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.Entities;
 using Nutrir.Infrastructure;
@@ -17,6 +18,7 @@ using Nutrir.Web.Services;
 using Radzen;
 using QuestPDF.Infrastructure;
 using Serilog;
+using System.Threading.RateLimiting;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -45,7 +47,7 @@ try
                 opts =>
                 {
                     opts.DataStream = new Elastic.Ingest.Elasticsearch.DataStreams.DataStreamName("logs", "nutrir");
-                    opts.BootstrapMethod = Elastic.Ingest.Elasticsearch.BootstrapMethod.None;
+                    opts.BootstrapMethod = Elastic.Ingest.Elasticsearch.BootstrapMethod.Failure;
                 },
                 transport =>
                 {
@@ -84,6 +86,23 @@ try
     builder.Services.AddSignalR();
     builder.Services.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("dataExport", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "anonymous",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+    });
 
     builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
         .AddRoles<IdentityRole>()
@@ -167,6 +186,8 @@ try
 
     app.UseAntiforgery();
 
+    app.UseRateLimiter();
+
     app.MapStaticAssets();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
@@ -179,6 +200,9 @@ try
 
     // Meal plan API endpoints.
     app.MapMealPlanEndpoints();
+
+    // Data export API endpoints (PIPEDA compliance).
+    app.MapDataExportEndpoints();
 
     // SignalR hub for real-time notifications.
     app.MapHub<NutrirHub>("/hubs/nutrir");

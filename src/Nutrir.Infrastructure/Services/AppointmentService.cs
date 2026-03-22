@@ -14,20 +14,26 @@ public class AppointmentService : IAppointmentService
     private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
+    private readonly IAvailabilityService _availabilityService;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly ISessionNoteService _sessionNoteService;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
         AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
+        IAvailabilityService availabilityService,
         INotificationDispatcher notificationDispatcher,
+        ISessionNoteService sessionNoteService,
         ILogger<AppointmentService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
+        _availabilityService = availabilityService;
         _notificationDispatcher = notificationDispatcher;
+        _sessionNoteService = sessionNoteService;
         _logger = logger;
     }
 
@@ -175,6 +181,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId)
     {
+        var (isWithin, reason) = await _availabilityService
+            .IsSlotWithinScheduleAsync(userId, dto.StartTime, dto.DurationMinutes);
+        if (!isWithin)
+            throw new SchedulingConflictException("Outside working hours", reason!);
+
         await CheckOverlapAsync(_dbContext, userId, dto.StartTime, dto.DurationMinutes);
 
         var entity = new Appointment
@@ -189,6 +200,7 @@ public class AppointmentService : IAppointmentService
             VirtualMeetingUrl = dto.VirtualMeetingUrl,
             LocationNotes = dto.LocationNotes,
             Notes = dto.Notes,
+            PrepNotes = dto.PrepNotes,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -218,9 +230,14 @@ public class AppointmentService : IAppointmentService
 
         if (entity is null) return false;
 
-        // Check overlap only if time or duration changed
+        // Check availability and overlap only if time or duration changed
         if (entity.StartTime != dto.StartTime || entity.DurationMinutes != dto.DurationMinutes)
         {
+            var (isWithin, reason) = await _availabilityService
+                .IsSlotWithinScheduleAsync(entity.NutritionistId, dto.StartTime, dto.DurationMinutes);
+            if (!isWithin)
+                throw new SchedulingConflictException("Outside working hours", reason!);
+
             await CheckOverlapAsync(_dbContext, entity.NutritionistId, dto.StartTime, dto.DurationMinutes, dto.Id);
         }
 
@@ -232,6 +249,7 @@ public class AppointmentService : IAppointmentService
         entity.VirtualMeetingUrl = dto.VirtualMeetingUrl;
         entity.LocationNotes = dto.LocationNotes;
         entity.Notes = dto.Notes;
+        entity.PrepNotes = dto.PrepNotes;
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -280,6 +298,18 @@ public class AppointmentService : IAppointmentService
             $"Status changed from {oldStatus} to {newStatus}");
 
         await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId);
+
+        if (newStatus == AppointmentStatus.Completed)
+        {
+            try
+            {
+                await _sessionNoteService.CreateDraftAsync(id, entity.ClientId, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create draft session note for appointment {AppointmentId}", id);
+            }
+        }
 
         return true;
     }
@@ -352,6 +382,49 @@ public class AppointmentService : IAppointmentService
             .CountAsync(a => a.NutritionistId == nutritionistId
                              && a.StartTime >= startOfWeek
                              && a.StartTime < endOfWeek);
+    }
+
+    public async Task<RecurringAppointmentResultDto> CreateRecurringAsync(CreateRecurringAppointmentDto dto, string userId)
+    {
+        if (dto.Count < 2 || dto.Count > 52)
+            throw new ArgumentException("Recurrence count must be between 2 and 52.");
+        if (dto.IntervalDays < 1)
+            throw new ArgumentException("Interval must be at least 1 day.");
+
+        var createdIds = new List<int>();
+        var skippedReasons = new List<string>();
+
+        for (var i = 0; i < dto.Count; i++)
+        {
+            var startTime = dto.Base.StartTime.AddDays(i * dto.IntervalDays);
+            var appointmentDto = new CreateAppointmentDto(
+                dto.Base.ClientId,
+                dto.Base.Type,
+                startTime,
+                dto.Base.DurationMinutes,
+                dto.Base.Location,
+                dto.Base.VirtualMeetingUrl,
+                dto.Base.LocationNotes,
+                dto.Base.Notes,
+                dto.Base.PrepNotes);
+
+            try
+            {
+                var created = await CreateAsync(appointmentDto, userId);
+                createdIds.Add(created.Id);
+            }
+            catch (SchedulingConflictException ex)
+            {
+                _logger.LogWarning("Recurring appointment skipped at {StartTime}: {Reason}", startTime, ex.Message);
+                skippedReasons.Add($"{startTime:g}: {ex.Message}");
+            }
+        }
+
+        _logger.LogInformation(
+            "Recurring appointments created: {CreatedCount} created, {SkippedCount} skipped for user {UserId}",
+            createdIds.Count, skippedReasons.Count, userId);
+
+        return new RecurringAppointmentResultDto(createdIds.Count, skippedReasons.Count, createdIds, skippedReasons);
     }
 
     private async Task<List<AppointmentDto>> MapToDtoListAsync(List<Appointment> entities, AppDbContext? db = null)
@@ -471,6 +544,7 @@ public class AppointmentService : IAppointmentService
             entity.VirtualMeetingUrl,
             entity.LocationNotes,
             entity.Notes,
+            entity.PrepNotes,
             entity.CancellationReason,
             entity.CancelledAt,
             entity.CreatedAt,

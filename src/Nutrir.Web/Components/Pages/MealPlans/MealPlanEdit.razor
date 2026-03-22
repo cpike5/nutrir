@@ -80,17 +80,18 @@
             <!-- Day Summary Bar -->
             <div class="day-totals @GetDayTotalsClass(currentDay)">
                 <span class="totals-label">Day Total:</span>
-                <span>@GetDayCalories(currentDay).ToString("N0") kcal</span>
-                <span>· @GetDayProtein(currentDay).ToString("N0")g P</span>
-                <span>· @GetDayCarbs(currentDay).ToString("N0")g C</span>
-                <span>· @GetDayFat(currentDay).ToString("N0")g F</span>
-                @if (_plan.CalorieTarget.HasValue)
-                {
-                    var diff = GetDayCalories(currentDay) - _plan.CalorieTarget.Value;
-                    <span class="target-diff @(diff > 50 ? "over" : diff < -50 ? "under" : "on-target")">
-                        (@(diff >= 0 ? "+" : "")@diff.ToString("N0") kcal)
-                    </span>
-                }
+                <span class="@GetMacroClass(GetDayCalories(currentDay), _plan.CalorieTarget)">
+                    @GetDayCalories(currentDay).ToString("N0") kcal@(GetMacroDiff(GetDayCalories(currentDay), _plan.CalorieTarget, "kcal"))
+                </span>
+                <span class="@GetMacroClass(GetDayProtein(currentDay), _plan.ProteinTargetG)">
+                    · @GetDayProtein(currentDay).ToString("N0")g P@(GetMacroDiff(GetDayProtein(currentDay), _plan.ProteinTargetG, "g P"))
+                </span>
+                <span class="@GetMacroClass(GetDayCarbs(currentDay), _plan.CarbsTargetG)">
+                    · @GetDayCarbs(currentDay).ToString("N0")g C@(GetMacroDiff(GetDayCarbs(currentDay), _plan.CarbsTargetG, "g C"))
+                </span>
+                <span class="@GetMacroClass(GetDayFat(currentDay), _plan.FatTargetG)">
+                    · @GetDayFat(currentDay).ToString("N0")g F@(GetMacroDiff(GetDayFat(currentDay), _plan.FatTargetG, "g F"))
+                </span>
             </div>
 
             <!-- Meal Slots -->
@@ -445,11 +446,23 @@
 
     private string GetDayTotalsClass(EditDay day)
     {
-        if (_plan?.CalorieTarget is null) return "";
-        var diff = GetDayCalories(day) - _plan.CalorieTarget.Value;
-        if (diff > 100) return "over";
-        if (diff < -100) return "under";
-        return "on-target";
+        if (_plan?.CalorieTarget is null || _plan.CalorieTarget.Value == 0) return "";
+        var pct = Math.Abs((GetDayCalories(day) - _plan.CalorieTarget.Value) / _plan.CalorieTarget.Value);
+        return pct <= 0.05m ? "on-target" : pct <= 0.10m ? "near-target" : "off-target";
+    }
+
+    private static string GetMacroClass(decimal actual, decimal? target)
+    {
+        if (!target.HasValue || target.Value == 0) return "";
+        var pct = Math.Abs((actual - target.Value) / target.Value);
+        return pct <= 0.05m ? "on-target" : pct <= 0.10m ? "near-target" : "off-target";
+    }
+
+    private static string GetMacroDiff(decimal actual, decimal? target, string unit)
+    {
+        if (!target.HasValue || target.Value == 0) return "";
+        var diff = actual - target.Value;
+        return $" ({(diff >= 0 ? "+" : "")}{diff.ToString("N0")} {unit})";
     }
 
     private static string FormatMealType(MealType type) => type switch

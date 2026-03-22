@@ -18,6 +18,7 @@ public record AppointmentDto(
     string? VirtualMeetingUrl,
     string? LocationNotes,
     string? Notes,
+    string? PrepNotes,
     string? CancellationReason,
     DateTime? CancelledAt,
     DateTime CreatedAt,

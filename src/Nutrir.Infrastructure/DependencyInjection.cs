@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IConsentFormTemplate, DefaultConsentFormTemplate>();
         services.AddScoped<IConsentFormService, ConsentFormService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ISessionNoteService, SessionNoteService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IAllergenCheckService, AllergenCheckService>();
         services.AddScoped<IAllergenService, AllergenService>();
         services.AddScoped<IMealPlanPdfService, MealPlanPdfService>();
+        services.AddScoped<IDataExportService, DataExportService>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IReportService, ReportService>();
@@ -68,6 +70,10 @@ public static class DependencyInjection
         services.AddSingleton<IReminderEmailBuilder, ReminderEmailBuilder>();
         services.AddScoped<IReminderService, ReminderService>();
         services.AddHostedService<ReminderBackgroundService>();
+
+        // Background services
+        services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
+        services.AddHostedService<MealPlanAutoArchiveService>();
 
         return services;
     }

@@ -33,6 +33,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Real-Time Notifications](infrastructure/real-time-notifications.md) | In-process event bus architecture, notification payload, dispatch points, consumer pages, integration pattern |
 | [Email Service](infrastructure/email-service.md) | MailKit/Gmail SMTP implementation — architecture, SmtpOptions, DI registration, usage examples, future considerations |
 | [Gmail SMTP Setup](infrastructure/gmail-smtp-setup.md) | Practitioner setup guide — App Password, SPF/DKIM/DMARC DNS records, .env configuration, sending limits, DMARC progression |
+| [Kibana Dashboard API Learnings](infrastructure/kibana-api-learnings.md) | Practical findings from building dashboards via the Kibana Saved Objects API — critical missing fields, formula limitations, field mapping gotchas, debugging strategy |
 
 ## Design System Documents
 
@@ -64,6 +65,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Compliance Requirements](compliance/requirements.md) | Actionable application-level requirements (v1 must-have, v2 should-have) distilled from the legal research |
 | [Consent Form](compliance/consent-form.md) | Nine-section PIPEDA-compliant intake consent form — PDF/DOCX generation, digital and physical signing workflows, `ConsentForm` entity |
 | [AI Conversation Data Policy](compliance/ai-conversation-data-policy.md) | Retention, audit, and privacy policy for AI assistant conversation data containing PHI |
+| [Data Export Spec](compliance/data-export-spec.md) | PIPEDA-compliant per-client data export — JSON envelope, PDF sections, redaction rules, API endpoint, audit event |
 
 ## Scheduling Documents
 
@@ -77,6 +79,12 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | Document | Description |
 |----------|-------------|
 | [Practice Reports Spec](reports/practice-reports-spec.md) | Monthly practice reports — metrics, trend data, period options, UI layout |
+
+## Product Documents
+
+| Document | Description |
+|----------|-------------|
+| [Feature Discovery Roundtable](product/2026-03-09-roundtable-feature-discovery.md) | Simulated stakeholder roundtable — pain points, quick wins, major enhancements, workflow gaps |
 
 ## Architecture Decision Records
 
@@ -94,6 +102,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [2026-02-23 Client Detail Redesign](worklog/2026-02-23-client-detail-redesign.md) | Client detail page redesign |
 | [2026-02-23 Appointment Pages Redesign](worklog/2026-02-23-appointment-pages-redesign.md) | Appointment pages styling overhaul |
 | [2026-03-07 AI Assistant Appointment Filtering](worklog/2026-03-07-ai-assistant-appointment-filtering.md) | Role-aware appointment filtering for AI assistant (#183, #184) |
+| [2026-03-10 Tier 1 Implementation Plan](worklog/2026-03-10-tier1-implementation-plan.md) | Implementation plan for Milestone 12 Tier 1 issues (#224, #233, #234, #232) |
 
 ## Conventions
 

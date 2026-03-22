@@ -442,6 +442,80 @@
             </div>
           </div>
         </div>
+        <!-- Observability -->
+        <div class="feature-row reveal">
+          <div class="feature-info">
+            <div class="feature-label">Observability</div>
+            <h3 class="feature-title">Know what's happening, always</h3>
+            <p class="feature-desc">
+              Six purpose-built Kibana dashboards with 34 panels give you full visibility into application health, endpoint performance, database activity, errors, infrastructure resources, and AI assistant usage &mdash; all created programmatically via the Saved Objects API.
+            </p>
+            <ul class="feature-bullets">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Request throughput, latency (avg &amp; P95), and error rates
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Endpoint-level performance breakdown with SignalR tracking
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Infrastructure metrics: CPU, memory, disk, network, Docker containers
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                AI assistant activity: Anthropic API latency, conversation volume, agent logs
+              </li>
+            </ul>
+          </div>
+          <div class="feature-visual">
+            <div class="visual-card">
+              <div class="observability-visual">
+                <div class="obs-header">Application Overview</div>
+                <div class="obs-metrics">
+                  <div class="obs-metric">
+                    <div class="obs-metric-label">Avg Latency</div>
+                    <div class="obs-metric-value">42<span class="obs-metric-unit">ms</span></div>
+                  </div>
+                  <div class="obs-metric">
+                    <div class="obs-metric-label">P95 Latency</div>
+                    <div class="obs-metric-value">187<span class="obs-metric-unit">ms</span></div>
+                  </div>
+                  <div class="obs-metric">
+                    <div class="obs-metric-label">Requests</div>
+                    <div class="obs-metric-value" data-count="2847">0</div>
+                  </div>
+                  <div class="obs-metric">
+                    <div class="obs-metric-label">Error Rate</div>
+                    <div class="obs-metric-value">0.3<span class="obs-metric-unit">%</span></div>
+                  </div>
+                </div>
+                <div class="obs-chart">
+                  <svg viewBox="0 0 320 80" preserveAspectRatio="none" class="obs-sparkline">
+                    <defs>
+                      <linearGradient id="obs-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--green-500)" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="var(--green-500)" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,60 L20,55 L40,48 L60,52 L80,35 L100,40 L120,28 L140,32 L160,22 L180,25 L200,18 L220,20 L240,15 L260,22 L280,12 L300,16 L320,10" fill="none" stroke="var(--green-500)" stroke-width="2"/>
+                    <path d="M0,60 L20,55 L40,48 L60,52 L80,35 L100,40 L120,28 L140,32 L160,22 L180,25 L200,18 L220,20 L240,15 L260,22 L280,12 L300,16 L320,10 L320,80 L0,80Z" fill="url(#obs-grad)"/>
+                  </svg>
+                  <div class="obs-chart-label">Request throughput &mdash; last 24h</div>
+                </div>
+                <div class="obs-dashboards">
+                  <span class="obs-dash-tag">Overview</span>
+                  <span class="obs-dash-tag">Endpoints</span>
+                  <span class="obs-dash-tag">DB &amp; Deps</span>
+                  <span class="obs-dash-tag">Errors</span>
+                  <span class="obs-dash-tag">Infra</span>
+                  <span class="obs-dash-tag">AI</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -462,6 +536,7 @@
         <button class="screenshot-tab" data-tab="ss-scheduling">Scheduling</button>
         <button class="screenshot-tab" data-tab="ss-ai">AI Assistant</button>
         <button class="screenshot-tab" data-tab="ss-progress">Progress</button>
+        <button class="screenshot-tab" data-tab="ss-observability">Observability</button>
         <div class="tab-indicator"></div>
       </div>
 
@@ -793,6 +868,77 @@
             </div>
           </div>
         </div>
+
+        <!-- Observability -->
+        <div class="screenshot-panel" id="ss-observability">
+          <div class="browser-chrome">
+            <div class="browser-chrome-bar">
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-dot"></div>
+              <div class="browser-chrome-url">kibana.yourpractice.ca/app/dashboards</div>
+            </div>
+            <div class="browser-chrome-body">
+              <!-- TODO: Replace with actual Kibana dashboard screenshot -->
+              <div class="mock-observability">
+                <div class="mock-obs-nav">
+                  <span class="mock-obs-nav-item active">Overview</span>
+                  <span class="mock-obs-nav-item">Endpoints</span>
+                  <span class="mock-obs-nav-item">DB &amp; Deps</span>
+                  <span class="mock-obs-nav-item">Errors</span>
+                  <span class="mock-obs-nav-item">Infrastructure</span>
+                  <span class="mock-obs-nav-item">AI Assistant</span>
+                </div>
+                <div class="mock-obs-grid">
+                  <div class="mock-obs-panel wide">
+                    <div class="mock-obs-panel-title">Request Throughput</div>
+                    <svg viewBox="0 0 440 100" preserveAspectRatio="none" class="mock-obs-chart">
+                      <defs>
+                        <linearGradient id="obsMockGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#2d6a4f" stop-opacity="0.25"/>
+                          <stop offset="100%" stop-color="#2d6a4f" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,70 L30,65 L60,55 L90,60 L120,40 L150,45 L180,30 L210,35 L240,25 L270,30 L300,20 L330,25 L360,15 L390,20 L420,12 L440,14" fill="none" stroke="#2d6a4f" stroke-width="2"/>
+                      <path d="M0,70 L30,65 L60,55 L90,60 L120,40 L150,45 L180,30 L210,35 L240,25 L270,30 L300,20 L330,25 L360,15 L390,20 L420,12 L440,14 L440,100 L0,100Z" fill="url(#obsMockGrad)"/>
+                    </svg>
+                  </div>
+                  <div class="mock-obs-panel">
+                    <div class="mock-obs-panel-title">Avg Latency</div>
+                    <div class="mock-obs-big-num">42<span>ms</span></div>
+                  </div>
+                  <div class="mock-obs-panel">
+                    <div class="mock-obs-panel-title">P95 Latency</div>
+                    <div class="mock-obs-big-num">187<span>ms</span></div>
+                  </div>
+                  <div class="mock-obs-panel">
+                    <div class="mock-obs-panel-title">Total Requests</div>
+                    <div class="mock-obs-big-num">2,847</div>
+                  </div>
+                  <div class="mock-obs-panel">
+                    <div class="mock-obs-panel-title">Errors</div>
+                    <div class="mock-obs-big-num" style="color:#e55353;">8</div>
+                  </div>
+                  <div class="mock-obs-panel wide">
+                    <div class="mock-obs-panel-title">HTTP Status Codes</div>
+                    <div class="mock-obs-stacked-bar">
+                      <div class="mock-obs-bar-seg" style="width:82%;background:#2d6a4f;" title="2xx"></div>
+                      <div class="mock-obs-bar-seg" style="width:12%;background:#f59e0b;" title="3xx"></div>
+                      <div class="mock-obs-bar-seg" style="width:4%;background:#6366f1;" title="4xx"></div>
+                      <div class="mock-obs-bar-seg" style="width:2%;background:#e55353;" title="5xx"></div>
+                    </div>
+                    <div class="mock-obs-legend">
+                      <span><span class="mock-obs-dot" style="background:#2d6a4f;"></span>2xx</span>
+                      <span><span class="mock-obs-dot" style="background:#f59e0b;"></span>3xx</span>
+                      <span><span class="mock-obs-dot" style="background:#6366f1;"></span>4xx</span>
+                      <span><span class="mock-obs-dot" style="background:#e55353;"></span>5xx</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -841,7 +987,7 @@
           <div class="tech-icon" style="background:rgba(45,106,79,0.15);color:var(--green-500);">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
-          <div><div class="tech-item-name">Serilog + Seq + Elastic</div><div class="tech-item-desc">Structured logging &amp; APM</div></div>
+          <div><div class="tech-item-name">Serilog + Seq + Elastic</div><div class="tech-item-desc">Structured logging, APM &amp; 6 Kibana dashboards</div></div>
         </div>
         <div class="tech-item reveal reveal-delay-4">
           <div class="tech-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">
