@@ -77,6 +77,7 @@ public class ConsentService : IConsentService
 
         client.ConsentGiven = false;
         client.ConsentTimestamp = consentEvent.Timestamp;
+        client.EmailRemindersEnabled = false;
 
         await _dbContext.SaveChangesAsync();
 

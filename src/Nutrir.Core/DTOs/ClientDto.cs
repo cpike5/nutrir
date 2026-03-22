@@ -17,4 +17,5 @@ public record ClientDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     DateTime? DeletedAt,
-    DateTime? LastAppointmentDate = null);
+    DateTime? LastAppointmentDate = null,
+    bool EmailRemindersEnabled = false);

@@ -66,6 +66,11 @@ public static class DependencyInjection
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.AddSingleton<IEmailService, EmailService>();
 
+        // Appointment Reminders
+        services.AddSingleton<IReminderEmailBuilder, ReminderEmailBuilder>();
+        services.AddScoped<IReminderService, ReminderService>();
+        services.AddHostedService<ReminderBackgroundService>();
+
         // Background services
         services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
         services.AddHostedService<MealPlanAutoArchiveService>();
