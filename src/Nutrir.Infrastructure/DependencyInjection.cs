@@ -60,6 +60,8 @@ public static class DependencyInjection
         services.Configure<IntakeFormOptions>(configuration.GetSection(IntakeFormOptions.SectionName));
         services.AddScoped<IIntakeFormService, IntakeFormService>();
         services.AddScoped<ITimeZoneService, TimeZoneService>();
+        services.AddScoped<IRetentionTracker, RetentionTracker>();
+        services.AddScoped<IDataPurgeService, DataPurgeService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();
 
@@ -86,6 +88,11 @@ public static class DependencyInjection
         // Background services
         services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
         services.AddHostedService<MealPlanAutoArchiveService>();
+
+        // AI data retention (PIPEDA compliance)
+        services.Configure<AiRetentionOptions>(configuration.GetSection(AiRetentionOptions.SectionName));
+        services.AddHostedService<AiContentStrippingService>();
+        services.AddHostedService<AiConversationPurgeService>();
 
         // Field encryption data migration (runs once at startup)
         services.AddHostedService<FieldEncryptionMigrationService>();

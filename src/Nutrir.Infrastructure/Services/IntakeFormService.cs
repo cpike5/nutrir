@@ -18,6 +18,7 @@ public class IntakeFormService : IIntakeFormService
     private readonly IAuditLogService _auditLogService;
     private readonly IConsentService _consentService;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly IntakeFormOptions _options;
     private readonly ILogger<IntakeFormService> _logger;
 
@@ -26,6 +27,7 @@ public class IntakeFormService : IIntakeFormService
         IAuditLogService auditLogService,
         IConsentService consentService,
         INotificationDispatcher notificationDispatcher,
+        IRetentionTracker retentionTracker,
         IOptions<IntakeFormOptions> options,
         ILogger<IntakeFormService> logger)
     {
@@ -33,6 +35,7 @@ public class IntakeFormService : IIntakeFormService
         _auditLogService = auditLogService;
         _consentService = consentService;
         _notificationDispatcher = notificationDispatcher;
+        _retentionTracker = retentionTracker;
         _options = options.Value;
         _logger = logger;
     }
@@ -211,6 +214,9 @@ public class IntakeFormService : IIntakeFormService
 
         await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, entity.CreatedByUserId);
 
+        if (entity.ClientId.HasValue)
+            await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId.Value);
+
         return (true, null);
     }
 
@@ -252,6 +258,7 @@ public class IntakeFormService : IIntakeFormService
             $"Reviewed intake form and mapped to client {clientId}");
 
         await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, reviewedByUserId);
+        await _retentionTracker.UpdateLastInteractionAsync(clientId);
 
         return (true, clientId, null);
     }

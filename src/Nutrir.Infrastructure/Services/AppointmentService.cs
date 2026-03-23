@@ -17,6 +17,7 @@ public class AppointmentService : IAppointmentService
     private readonly IAvailabilityService _availabilityService;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ISessionNoteService _sessionNoteService;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
@@ -26,6 +27,7 @@ public class AppointmentService : IAppointmentService
         IAvailabilityService availabilityService,
         INotificationDispatcher notificationDispatcher,
         ISessionNoteService sessionNoteService,
+        IRetentionTracker retentionTracker,
         ILogger<AppointmentService> logger)
     {
         _dbContext = dbContext;
@@ -34,6 +36,7 @@ public class AppointmentService : IAppointmentService
         _availabilityService = availabilityService;
         _notificationDispatcher = notificationDispatcher;
         _sessionNoteService = sessionNoteService;
+        _retentionTracker = retentionTracker;
         _logger = logger;
     }
 
@@ -217,6 +220,7 @@ public class AppointmentService : IAppointmentService
             $"Created {entity.Type} appointment for client {entity.ClientId}");
 
         await TryDispatchAsync("Appointment", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var nutritionistName = await GetNutritionistNameAsync(entity.NutritionistId);
@@ -264,6 +268,7 @@ public class AppointmentService : IAppointmentService
             $"Updated appointment {dto.Id}");
 
         await TryDispatchAsync("Appointment", dto.Id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -298,6 +303,7 @@ public class AppointmentService : IAppointmentService
             $"Status changed from {oldStatus} to {newStatus}");
 
         await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         if (newStatus == AppointmentStatus.Completed)
         {
