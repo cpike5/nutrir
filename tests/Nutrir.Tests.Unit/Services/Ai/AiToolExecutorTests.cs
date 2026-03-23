@@ -190,12 +190,20 @@ public class AiToolExecutorTests
         }
 
         [Fact]
-        public void GetToolDefinitions_Returns57Tools()
+        public async Task GetToolDefinitions_MatchesRegisteredHandlerCount()
         {
+            // Every tool definition should have a matching handler in the executor.
+            // Instead of a magic number, verify each defined tool is recognized.
             var tools = AiToolExecutor.GetToolDefinitions();
-            // The handler dictionary and tool definitions list are built independently;
-            // both should have the same count (57 registered handlers).
-            tools.Should().HaveCount(57);
+            foreach (var tool in tools)
+            {
+                var result = await _sut.ExecuteAsync(tool.Name, new Dictionary<string, JsonElement>(), "u", "Nutritionist");
+                using var doc = ParseResult(result);
+                if (doc.RootElement.TryGetProperty("error", out var err))
+                {
+                    err.GetString().Should().NotStartWith($"Unknown tool:", $"tool '{tool.Name}' is defined but has no handler");
+                }
+            }
         }
     }
 
@@ -453,6 +461,26 @@ public class AiToolExecutorTests
             await _appointmentService.Received(1).GetTodaysAppointmentsAsync("nutri-user-1");
             await _appointmentService.Received(1).GetWeekCountAsync("nutri-user-1");
             await _dashboardService.DidNotReceive().GetTodaysAppointmentsAsync();
+        }
+    }
+
+    // =========================================================================
+    // Category 4b: Search Handler Tests
+    // =========================================================================
+
+    public class SearchHandlerTests : AiToolExecutorTests
+    {
+        [Fact]
+        public async Task ExecuteAsync_Search_ForwardsQueryToSearchService()
+        {
+            _searchService.SearchAsync("alice", "", true, 5)
+                .Returns(new SearchResultDto(new List<SearchResultGroup>(), 0));
+
+            await _sut.ExecuteAsync("search", MakeInput(new { query = "alice" }), "user-1", "Nutritionist");
+
+            // NOTE: The source currently hardcodes isAdmin: true for all roles.
+            // This test pins current behavior so any future fix is detectable.
+            await _searchService.Received(1).SearchAsync("alice", "", true, 5);
         }
     }
 
@@ -1058,11 +1086,8 @@ public class AiToolExecutorTests
         [Fact]
         public async Task ExecuteAsync_UnknownTool_ReturnsErrorJsonNotException()
         {
-            Func<Task> act = () => _sut.ExecuteAsync("totally_fake_tool", new Dictionary<string, JsonElement>());
-
-            await act.Should().NotThrowAsync("ExecuteAsync must never throw — it always returns a JSON string");
-
             var result = await _sut.ExecuteAsync("totally_fake_tool", new Dictionary<string, JsonElement>());
+
             using var doc = ParseResult(result);
             doc.RootElement.GetProperty("error").GetString().Should().Contain("Unknown tool");
         }
@@ -1177,9 +1202,6 @@ public class AiToolExecutorTests
             });
 
             // Should not throw — falls back to basic description
-            Func<Task> act = () => _sut.BuildConfirmationDescriptionAsync("update_client", input);
-            await act.Should().NotThrowAsync();
-
             var (description, _) = await _sut.BuildConfirmationDescriptionAsync("update_client", input);
             description.Should().NotBeNullOrWhiteSpace();
         }
