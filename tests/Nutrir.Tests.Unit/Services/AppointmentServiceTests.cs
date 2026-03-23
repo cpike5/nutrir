@@ -17,26 +17,6 @@ using Xunit;
 namespace Nutrir.Tests.Unit.Services;
 
 /// <summary>
-/// Factory that creates NEW TestAppDbContext instances sharing the same SQLite connection.
-/// Required for testing methods that use IDbContextFactory (GetTodaysAppointmentsAsync,
-/// GetUpcomingByClientAsync, GetListAsync) which dispose their context via 'await using'.
-/// The shared connection keeps schema and data intact across multiple disposals.
-/// </summary>
-file sealed class SharedConnectionContextFactory(SqliteConnection connection) : IDbContextFactory<AppDbContext>
-{
-    public AppDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-        return new TestAppDbContext(options);
-    }
-
-    public Task<AppDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(CreateDbContext());
-}
-
-/// <summary>
 /// Unit tests for AppointmentService covering GetByIdAsync, UpdateAsync, UpdateStatusAsync,
 /// SoftDeleteAsync, GetTodaysAppointmentsAsync, GetUpcomingByClientAsync, GetWeekCountAsync,
 /// CreateRecurringAsync, and buffer-time overlap behaviour.
