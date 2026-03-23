@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Configuration;
 using Nutrir.Infrastructure.Data;
+using Nutrir.Infrastructure.Security;
 using Nutrir.Infrastructure.Services;
 
 namespace Nutrir.Infrastructure;
@@ -12,6 +13,17 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Field-level encryption (must be registered before DbContext factory so
+        // the static instance is available when OnModelCreating runs)
+        services.Configure<EncryptionOptions>(configuration.GetSection(EncryptionOptions.SectionName));
+        services.AddSingleton<AesGcmFieldEncryptor>();
+        // Initialize static instance eagerly for EF value converters in pooled DbContext
+        var encryptionOptions = new EncryptionOptions();
+        configuration.GetSection(EncryptionOptions.SectionName).Bind(encryptionOptions);
+        AesGcmFieldEncryptor.Instance = new AesGcmFieldEncryptor(
+            Microsoft.Extensions.Options.Options.Create(encryptionOptions),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AesGcmFieldEncryptor>.Instance);
+
         services.AddPooledDbContextFactory<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
         // Also register scoped DbContext so existing services can still inject AppDbContext directly
@@ -74,6 +86,9 @@ public static class DependencyInjection
         // Background services
         services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
         services.AddHostedService<MealPlanAutoArchiveService>();
+
+        // Field encryption data migration (runs once at startup)
+        services.AddHostedService<FieldEncryptionMigrationService>();
 
         return services;
     }
