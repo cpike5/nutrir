@@ -13,6 +13,7 @@ public class ProgressService : IProgressService
     private readonly AppDbContext _dbContext;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ProgressService> _logger;
 
@@ -20,12 +21,14 @@ public class ProgressService : IProgressService
         AppDbContext dbContext,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
+        IRetentionTracker retentionTracker,
         INotificationDispatcher notificationDispatcher,
         ILogger<ProgressService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
+        _retentionTracker = retentionTracker;
         _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
@@ -95,6 +98,7 @@ public class ProgressService : IProgressService
             entity.Id.ToString(),
             $"Created progress entry for client {entity.ClientId} on {entity.EntryDate}");
 
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
         await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Created, userId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
@@ -143,6 +147,7 @@ public class ProgressService : IProgressService
             id.ToString(),
             $"Updated progress entry for {entity.EntryDate}");
 
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
         await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Updated, userId);
 
         await CheckGoalAchievementsAsync(entity.ClientId, entity.Measurements, userId);
@@ -230,6 +235,7 @@ public class ProgressService : IProgressService
             entity.Id.ToString(),
             $"Created progress goal for client {entity.ClientId}");
 
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
         await TryDispatchAsync("ProgressGoal", entity.Id, EntityChangeType.Created, userId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
@@ -262,6 +268,7 @@ public class ProgressService : IProgressService
             id.ToString(),
             "Updated progress goal");
 
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
         await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId);
 
         return true;

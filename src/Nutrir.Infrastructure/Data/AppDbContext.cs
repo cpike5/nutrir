@@ -68,6 +68,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<SessionNote> SessionNotes => Set<SessionNote>();
 
+    public DbSet<DataPurgeAuditLog> DataPurgeAuditLogs => Set<DataPurgeAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -117,8 +119,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(c => c.ConsentPolicyVersion).HasMaxLength(50);
             entity.Property(c => c.Notes).HasColumnType("text");
             entity.Property(c => c.EmailRemindersEnabled).HasDefaultValue(false);
+            entity.Property(c => c.RetentionYears).HasDefaultValue(7);
+            entity.Property(c => c.IsPurged).HasDefaultValue(false);
             entity.Property(c => c.IsDeleted).HasDefaultValue(false);
             entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+        });
+
+        builder.Entity<DataPurgeAuditLog>(entity =>
+        {
+            entity.Property(d => d.PurgedByUserId).HasMaxLength(450).IsRequired();
+            entity.Property(d => d.ClientIdentifier).HasMaxLength(200).IsRequired();
+            entity.Property(d => d.PurgedEntities).HasColumnType("text").IsRequired();
+            entity.Property(d => d.Justification).HasColumnType("text").IsRequired();
+            entity.Property(d => d.PurgedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
         builder.Entity<Appointment>(entity =>
@@ -608,6 +621,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             {
                 throw new InvalidOperationException(
                     "AuditLogEntry records are immutable and cannot be modified or deleted.");
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<DataPurgeAuditLog>())
+        {
+            if (entry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                throw new InvalidOperationException(
+                    "DataPurgeAuditLog records are immutable and cannot be modified or deleted.");
             }
         }
 
