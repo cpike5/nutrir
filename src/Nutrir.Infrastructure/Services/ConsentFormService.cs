@@ -17,6 +17,7 @@ public class ConsentFormService : IConsentFormService
     private readonly IConsentFormTemplate _template;
     private readonly IConsentService _consentService;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ConsentFormOptions _options;
     private readonly ILogger<ConsentFormService> _logger;
 
@@ -25,6 +26,7 @@ public class ConsentFormService : IConsentFormService
         IConsentFormTemplate template,
         IConsentService consentService,
         IAuditLogService auditLogService,
+        INotificationDispatcher notificationDispatcher,
         IOptions<ConsentFormOptions> options,
         ILogger<ConsentFormService> logger)
     {
@@ -32,6 +34,7 @@ public class ConsentFormService : IConsentFormService
         _template = template;
         _consentService = consentService;
         _auditLogService = auditLogService;
+        _notificationDispatcher = notificationDispatcher;
         _options = options.Value;
         _logger = logger;
     }
@@ -152,6 +155,8 @@ public class ConsentFormService : IConsentFormService
             userId, "ConsentFormPhysicallySigned", "Client", clientId.ToString(),
             $"Physical consent marked as signed, form version {form.FormVersion}");
 
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId);
+
         _logger.LogInformation(
             "Physical consent marked as signed for client {ClientId} by {UserId}",
             clientId, userId);
@@ -187,6 +192,8 @@ public class ConsentFormService : IConsentFormService
         await _auditLogService.LogAsync(
             userId, "ConsentFormScanUploaded", "Client", clientId.ToString(),
             $"Scanned consent form uploaded: {safeFileName}");
+
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId);
 
         _logger.LogInformation(
             "Scanned consent form uploaded for client {ClientId} by {UserId}: {FileName}",
@@ -250,6 +257,8 @@ public class ConsentFormService : IConsentFormService
         _dbContext.Set<ConsentForm>().Add(form);
         await _dbContext.SaveChangesAsync();
 
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId);
+
         return form;
     }
 
@@ -274,6 +283,22 @@ public class ConsentFormService : IConsentFormService
 
         _dbContext.Set<ConsentForm>().Add(form);
         await _dbContext.SaveChangesAsync();
+
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId);
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 
     private static ConsentFormDto ToDto(ConsentForm form) => new(
