@@ -157,11 +157,15 @@
 
         args.Attributes["style"] = args.Data.Type switch
         {
-            AppointmentType.InitialConsultation => $"background: color-mix(in srgb, var(--color-primary) 12%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}",
-            AppointmentType.FollowUp => $"background: color-mix(in srgb, var(--color-secondary) 12%, transparent); border-left: 3px solid var(--color-secondary); color: var(--color-text);{cancelledStyle}",
-            AppointmentType.CheckIn => $"background: color-mix(in srgb, var(--color-info) 12%, transparent); border-left: 3px solid var(--color-info); color: var(--color-text);{cancelledStyle}",
-            _ => $"background: color-mix(in srgb, var(--color-primary) 12%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}"
+            AppointmentType.InitialConsultation => $"background: color-mix(in srgb, var(--color-primary) 20%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}",
+            AppointmentType.FollowUp => $"background: color-mix(in srgb, var(--color-secondary) 20%, transparent); border-left: 3px solid var(--color-secondary); color: var(--color-text);{cancelledStyle}",
+            AppointmentType.CheckIn => $"background: color-mix(in srgb, var(--color-info) 20%, transparent); border-left: 3px solid var(--color-info); color: var(--color-text);{cancelledStyle}",
+            _ => $"background: color-mix(in srgb, var(--color-primary) 20%, transparent); border-left: 3px solid var(--color-primary); color: var(--color-text);{cancelledStyle}"
         };
+
+        // Expose local time as a data attribute so it can be read by custom templates or CSS
+        var localStart = TimeZoneService.ToUserLocal(args.Data.StartTime);
+        args.Attributes["data-appt-time"] = localStart.ToString("h:mm tt");
     }
 
     private void OnJumpDateChanged(ChangeEventArgs e)
