@@ -204,7 +204,7 @@ public class ConsentFormServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GeneratePdfAsync_WhenFormRecordAlreadyExists_DoesNotCreateDuplicate()
+    public async Task GeneratePdfAsync_WhenFormAlreadyExists_ReusesExistingFormRecord()
     {
         // Arrange — pre-existing form record
         SeedConsentForm();
@@ -287,7 +287,7 @@ public class ConsentFormServiceTests : IDisposable
             .Where(f => f.ClientId == _seededClientId)
             .ToListAsync();
 
-        forms.Should().ContainSingle();
+        forms.Should().ContainSingle(because: "EnsureFormRecordExistsAsync should create exactly one record");
     }
 
     [Fact]
@@ -530,7 +530,7 @@ public class ConsentFormServiceTests : IDisposable
     public async Task RecordDigitalSignatureAsync_WhenAlreadySignedDigitalFormExists_CreatesNewForm()
     {
         // Arrange — a previously signed digital form; service must create a fresh one
-        SeedConsentForm(method: ConsentSignatureMethod.Digital, isSigned: true);
+        var seededForm = SeedConsentForm(method: ConsentSignatureMethod.Digital, isSigned: true);
 
         // Act
         await _sut.RecordDigitalSignatureAsync(_seededClientId, UserId);
@@ -541,7 +541,9 @@ public class ConsentFormServiceTests : IDisposable
             .ToListAsync();
 
         forms.Should().HaveCount(2);
-        forms.Should().AllSatisfy(f => f.IsSigned.Should().BeTrue());
+        forms.Should().ContainSingle(f => f.IsSigned && f.SignatureMethod == ConsentSignatureMethod.Digital && f.Id != seededForm.Id,
+            because: "a new form should be created and signed, distinct from the already-signed one");
+        forms.Should().ContainSingle(f => f.Id == seededForm.Id && f.IsSigned);
     }
 
     [Fact]
@@ -694,7 +696,7 @@ public class ConsentFormServiceTests : IDisposable
         await _sut.MarkPhysicallySignedAsync(_seededClientId, UserId);
 
         // Assert
-        await _notificationDispatcher.Received().DispatchAsync(Arg.Is<EntityChangeNotification>(n =>
+        await _notificationDispatcher.Received(1).DispatchAsync(Arg.Is<EntityChangeNotification>(n =>
             n.EntityType == "ConsentForm" &&
             n.ChangeType == EntityChangeType.Updated &&
             n.ClientId == _seededClientId));
@@ -967,14 +969,14 @@ public class ConsentFormServiceTests : IDisposable
     [Fact]
     public async Task GetLatestFormAsync_ForDifferentClient_ReturnsNull()
     {
-        // Arrange — form exists for _seededClientId but not for a different client
+        // Arrange — form exists for _seededClientId but not for _otherClientId
         SeedConsentForm();
 
         // Act
-        var result = await _sut.GetLatestFormAsync(999_901);
+        var result = await _sut.GetLatestFormAsync(_otherClientId);
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeNull(because: "forms for a different client should not be returned");
     }
 
     // ---------------------------------------------------------------------------
@@ -1063,6 +1065,85 @@ public class ConsentFormServiceTests : IDisposable
         dto.SignatureMethod.Should().Be(ConsentSignatureMethod.Digital);
         dto.IsSigned.Should().BeFalse();
         dto.GeneratedByUserId.Should().Be(UserId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Additional edge-case tests (from code review)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RecordDigitalSignatureAsync_WithMissingClient_ThrowsDbUpdateException()
+    {
+        // Arrange — the signature path goes through GetOrCreateFormAsync which does
+        // not guard with GetClientAndPractitionerAsync, so the FK constraint is the guard.
+        const int nonExistentId = 999_803;
+
+        // Act
+        var act = () => _sut.RecordDigitalSignatureAsync(nonExistentId, UserId);
+
+        // Assert — SQLite enforces FK constraint on ConsentForm.ClientId
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task MarkPhysicallySignedAsync_WithMissingClient_ThrowsDbUpdateException()
+    {
+        // Arrange — same FK-constraint guard as RecordDigitalSignatureAsync
+        const int nonExistentId = 999_804;
+
+        // Act
+        var act = () => _sut.MarkPhysicallySignedAsync(nonExistentId, UserId);
+
+        // Assert
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task RecordDigitalSignatureAsync_WhenNewFormCreated_DispatchesCreatedNotification()
+    {
+        // Act — no pre-existing form, so GetOrCreateFormAsync creates one and dispatches
+        await _sut.RecordDigitalSignatureAsync(_seededClientId, UserId);
+
+        // Assert
+        await _notificationDispatcher.Received(1).DispatchAsync(Arg.Is<EntityChangeNotification>(n =>
+            n.EntityType == "ConsentForm" &&
+            n.ChangeType == EntityChangeType.Created &&
+            n.ClientId == _seededClientId));
+    }
+
+    [Fact]
+    public async Task RecordDigitalSignatureAsync_WhenExistingUnsignedFormReused_DoesNotDispatchCreatedNotification()
+    {
+        // Arrange — pre-existing unsigned digital form
+        SeedConsentForm(method: ConsentSignatureMethod.Digital, isSigned: false);
+        _notificationDispatcher.ClearReceivedCalls();
+
+        // Act
+        await _sut.RecordDigitalSignatureAsync(_seededClientId, UserId);
+
+        // Assert — no Created notification because the form was reused
+        await _notificationDispatcher.DidNotReceive().DispatchAsync(Arg.Is<EntityChangeNotification>(n =>
+            n.EntityType == "ConsentForm" &&
+            n.ChangeType == EntityChangeType.Created));
+    }
+
+    [Fact]
+    public async Task MarkPhysicallySignedAsync_WhenAlreadySignedPhysicalFormExists_ResignsExistingForm()
+    {
+        // Arrange — a previously signed physical form
+        var seededForm = SeedConsentForm(method: ConsentSignatureMethod.Physical, isSigned: true);
+
+        // Act
+        var result = await _sut.MarkPhysicallySignedAsync(_seededClientId, UserId, "re-signed");
+
+        // Assert — the service re-signs the existing form rather than creating a new one
+        var forms = await _dbContext.Set<ConsentForm>()
+            .Where(f => f.ClientId == _seededClientId && f.SignatureMethod == ConsentSignatureMethod.Physical)
+            .ToListAsync();
+
+        forms.Should().ContainSingle(because: "the existing physical form should be reused, not duplicated");
+        result.Id.Should().Be(seededForm.Id);
+        result.Notes.Should().Be("re-signed");
     }
 
     // ---------------------------------------------------------------------------
