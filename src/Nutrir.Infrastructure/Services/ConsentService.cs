@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Interfaces;
@@ -10,15 +11,18 @@ public class ConsentService : IConsentService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ConsentService> _logger;
 
     public ConsentService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
+        INotificationDispatcher notificationDispatcher,
         ILogger<ConsentService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
 
@@ -55,6 +59,8 @@ public class ConsentService : IConsentService
             "Client",
             clientId.ToString(),
             $"Consent granted for purpose '{purpose}', policy v{policyVersion}");
+
+        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId);
     }
 
     public async Task WithdrawConsentAsync(int clientId, string userId, string? reason = null)
@@ -91,5 +97,21 @@ public class ConsentService : IConsentService
             "Client",
             clientId.ToString(),
             reason is not null ? $"Consent withdrawn. Reason: {reason}" : "Consent withdrawn");
+
+        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId);
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 }

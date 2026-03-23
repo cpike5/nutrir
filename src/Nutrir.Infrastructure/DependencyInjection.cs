@@ -75,6 +75,11 @@ public static class DependencyInjection
         services.Configure<AutoArchiveOptions>(configuration.GetSection(AutoArchiveOptions.SectionName));
         services.AddHostedService<MealPlanAutoArchiveService>();
 
+        // AI data retention (PIPEDA compliance)
+        services.Configure<AiRetentionOptions>(configuration.GetSection(AiRetentionOptions.SectionName));
+        services.AddHostedService<AiContentStrippingService>();
+        services.AddHostedService<AiConversationPurgeService>();
+
         return services;
     }
 }
