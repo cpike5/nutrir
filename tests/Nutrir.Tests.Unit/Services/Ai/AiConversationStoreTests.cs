@@ -31,7 +31,11 @@ public class AiConversationStoreTests : IDisposable
         SeedApplicationUser();
     }
 
-    public void Dispose() => _connection?.Dispose();
+    public void Dispose()
+    {
+        _dbContext.Dispose();
+        _connection?.Dispose();
+    }
 
     // ---------------------------------------------------------------------------
     // Seed helpers
