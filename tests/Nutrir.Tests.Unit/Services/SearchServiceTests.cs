@@ -290,16 +290,16 @@ public class SearchServiceTests : IDisposable
         }
         await _dbContext.SaveChangesAsync();
 
-        // Act — maxPerGroup=2 must cap Items but TotalInGroup must reflect the real count (4)
+        // Act — maxPerGroup=2 must cap Items but TotalInGroup must reflect the full count within scope
         var result = await _sut.SearchAsync("thompson", NutritionistId, maxPerGroup: 2);
 
         // Assert
         var clientGroup = result.Groups.FirstOrDefault(g => g.EntityType == "Clients");
         clientGroup.Should().NotBeNull();
-        clientGroup!.Items.Count.Should().BeLessThanOrEqualTo(2,
+        clientGroup!.Items.Should().HaveCount(2,
             because: "maxPerGroup caps the number of returned items");
         clientGroup.TotalInGroup.Should().Be(4,
-            because: "TotalInGroup reflects the full unfiltered count, not the page limit");
+            because: "TotalInGroup reflects the full count within the user's scope, not the page limit");
     }
 
     [Fact]
@@ -338,17 +338,21 @@ public class SearchServiceTests : IDisposable
     [Fact]
     public async Task SearchAsync_AsNonAdmin_ReturnsOnlyOwnData()
     {
-        // Arrange — NutritionistId owns "alice" data; OtherUserId owns "bob" data
-        // Act — search as NutritionistId (non-admin) with a term that would match both users' data
-        var result = await _sut.SearchAsync("thompson martinez", NutritionistId, isAdmin: false);
+        // Arrange — NutritionistId owns "Alice Thompson"; OtherUserId owns "Bob Martinez"
+        // Use separate single-term searches to avoid AND-logic splitting across names.
 
-        // Assert — only Alice Thompson (owned by NutritionistId) should appear; Bob Martinez must not
-        var clientGroup = result.Groups.FirstOrDefault(g => g.EntityType == "Clients");
-        if (clientGroup is not null)
-        {
-            clientGroup.Items.Should().NotContain(i => i.PrimaryText.Contains("Martinez"),
-                because: "non-admin users must not see other practitioners' clients");
-        }
+        // Act
+        var thompsonResult = await _sut.SearchAsync("thompson", NutritionistId, isAdmin: false);
+        var martinezResult = await _sut.SearchAsync("martinez", NutritionistId, isAdmin: false);
+
+        // Assert — NutritionistId should see their own client but not the other practitioner's
+        thompsonResult.Groups.Should().NotBeEmpty(
+            because: "NutritionistId owns Alice Thompson");
+        thompsonResult.Groups.First(g => g.EntityType == "Clients")
+            .Items.Should().ContainSingle(i => i.PrimaryText == "Alice Thompson");
+
+        martinezResult.Groups.Should().BeEmpty(
+            because: "Bob Martinez belongs to OtherUserId and must not be visible to NutritionistId");
     }
 
     [Fact]
@@ -463,6 +467,27 @@ public class SearchServiceTests : IDisposable
         item.StatusVariant.Should().Be("primary");
         item.Url.Should().StartWith("/meal-plans/");
         item.Initials.Should().Be("AT");
+    }
+
+    // ---------------------------------------------------------------------------
+    // Soft-delete exclusion test
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SearchAsync_SoftDeletedClient_IsExcludedFromResults()
+    {
+        // Arrange — soft-delete Alice Thompson
+        var client = await _dbContext.Clients.FindAsync(_clientId);
+        client!.IsDeleted = true;
+        client.DeletedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.SearchAsync("alice", NutritionistId);
+
+        // Assert — soft-deleted entities must not appear in any group
+        var clientGroup = result.Groups.FirstOrDefault(g => g.EntityType == "Clients");
+        clientGroup.Should().BeNull(because: "soft-deleted clients must not appear in search results");
     }
 
     // ---------------------------------------------------------------------------
