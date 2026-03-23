@@ -201,8 +201,7 @@ public class AppointmentServiceTests : IDisposable
     private static CreateAppointmentDto BuildCreateDto(
         int clientId,
         DateTime startTime,
-        int durationMinutes = 60,
-        string? nutritionistId = null) =>
+        int durationMinutes = 60) =>
         new(
             ClientId: clientId,
             Type: AppointmentType.FollowUp,
@@ -330,7 +329,7 @@ public class AppointmentServiceTests : IDisposable
     [Fact]
     public async Task UpdateAsync_InvalidStatusTransition_ThrowsInvalidStatusTransitionException()
     {
-        // Arrange — appointment is Scheduled; Completed requires going through Confirmed first
+        // Arrange — Scheduled → Completed is not a permitted transition
         var appointment = SeedAppointment(new DateTime(2027, 6, 3, 10, 0, 0, DateTimeKind.Utc));
         var dto = BuildUpdateDto(appointment, status: AppointmentStatus.Completed);
 
@@ -339,6 +338,43 @@ public class AppointmentServiceTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<InvalidStatusTransitionException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TimeChangeOutsideWorkingHours_ThrowsSchedulingConflictException()
+    {
+        // Arrange — seed an appointment, then configure availability to reject the new time
+        var appointment = SeedAppointment(new DateTime(2027, 6, 4, 10, 0, 0, DateTimeKind.Utc));
+        var newStartTime = new DateTime(2027, 6, 4, 22, 0, 0, DateTimeKind.Utc);
+        var dto = BuildUpdateDto(appointment, startTime: newStartTime);
+
+        _availabilityService
+            .IsSlotWithinScheduleAsync(Arg.Any<string>(), newStartTime, Arg.Any<int>())
+            .Returns((false, "Outside working hours"));
+
+        // Act
+        var act = () => _sut.UpdateAsync(dto, UserId);
+
+        // Assert
+        await act.Should().ThrowAsync<SchedulingConflictException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TimeChangeWithinWorkingHours_Succeeds()
+    {
+        // Arrange — seed an appointment, then reschedule it to a new valid time
+        var appointment = SeedAppointment(new DateTime(2027, 6, 5, 10, 0, 0, DateTimeKind.Utc));
+        var newStartTime = new DateTime(2027, 6, 5, 14, 0, 0, DateTimeKind.Utc);
+        var dto = BuildUpdateDto(appointment, startTime: newStartTime);
+
+        // Act
+        var result = await _sut.UpdateAsync(dto, UserId);
+
+        // Assert
+        result.Should().BeTrue();
+        _dbContext.ChangeTracker.Clear();
+        var persisted = await _dbContext.Appointments.FindAsync(appointment.Id);
+        persisted!.StartTime.Should().Be(newStartTime);
     }
 
     // ---------------------------------------------------------------------------
@@ -477,7 +513,7 @@ public class AppointmentServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_CancelledStatus_DoesNotSetCancellationFields()
+    public async Task UpdateStatusAsync_NonCancellationTransition_DoesNotSetCancellationFields()
     {
         // Arrange — confirm that a plain status change to non-cancellation does not
         // set CancelledAt. Use Scheduled → Confirmed (a non-cancellation transition).
