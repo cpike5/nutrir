@@ -35,6 +35,26 @@ public static class TestDbContextFactory
 /// Subclass of AppDbContext that replaces PostgreSQL-only model metadata with
 /// SQLite-compatible equivalents so the schema can be created in tests.
 /// </summary>
+/// <summary>
+/// Factory that creates NEW TestAppDbContext instances sharing the same SQLite connection.
+/// Required for testing services that create/dispose their own context per method call
+/// via IDbContextFactory. The shared connection keeps schema and data intact across
+/// multiple disposals.
+/// </summary>
+internal sealed class SharedConnectionContextFactory(SqliteConnection connection) : IDbContextFactory<AppDbContext>
+{
+    public AppDbContext CreateDbContext()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        return new TestAppDbContext(options);
+    }
+
+    public Task<AppDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(CreateDbContext());
+}
+
 internal sealed class TestAppDbContext(DbContextOptions<AppDbContext> options) : AppDbContext(options)
 {
     protected override void OnModelCreating(ModelBuilder builder)
