@@ -5,6 +5,7 @@ using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
 using Nutrir.Core.Exceptions;
 using Nutrir.Core.Interfaces;
+using Nutrir.Core.Services;
 using Nutrir.Infrastructure.Data;
 
 namespace Nutrir.Infrastructure.Services;
@@ -184,6 +185,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string userId)
     {
+        var client = await _dbContext.Clients.FindAsync(dto.ClientId)
+            ?? throw new ArgumentException($"Client {dto.ClientId} not found.");
+        if (!client.ConsentGiven)
+            throw new ConsentRequiredException(dto.ClientId);
+
         var (isWithin, reason) = await _availabilityService
             .IsSlotWithinScheduleAsync(userId, dto.StartTime, dto.DurationMinutes);
         if (!isWithin)
@@ -219,13 +225,12 @@ public class AppointmentService : IAppointmentService
             entity.Id.ToString(),
             $"Created {entity.Type} appointment for client {entity.ClientId}");
 
-        await TryDispatchAsync("Appointment", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("Appointment", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
-        var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var nutritionistName = await GetNutritionistNameAsync(entity.NutritionistId);
 
-        return MapToDto(entity, client?.FirstName ?? "", client?.LastName ?? "", nutritionistName);
+        return MapToDto(entity, client.FirstName, client.LastName, nutritionistName);
     }
 
     public async Task<bool> UpdateAsync(UpdateAppointmentDto dto, string userId)
@@ -245,6 +250,12 @@ public class AppointmentService : IAppointmentService
             await CheckOverlapAsync(_dbContext, entity.NutritionistId, dto.StartTime, dto.DurationMinutes, dto.Id);
         }
 
+        if (entity.Status != dto.Status)
+        {
+            if (!AppointmentStatusTransitions.IsValidTransition(entity.Status, dto.Status))
+                throw new InvalidStatusTransitionException(entity.Status.ToString(), dto.Status.ToString());
+        }
+
         entity.Type = dto.Type;
         entity.Status = dto.Status;
         entity.StartTime = dto.StartTime;
@@ -256,7 +267,14 @@ public class AppointmentService : IAppointmentService
         entity.PrepNotes = dto.PrepNotes;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("Appointment", dto.Id);
+        }
 
         _logger.LogInformation("Appointment updated: {AppointmentId} by {UserId}", dto.Id, userId);
 
@@ -267,7 +285,7 @@ public class AppointmentService : IAppointmentService
             dto.Id.ToString(),
             $"Updated appointment {dto.Id}");
 
-        await TryDispatchAsync("Appointment", dto.Id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("Appointment", dto.Id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -279,6 +297,9 @@ public class AppointmentService : IAppointmentService
 
         if (entity is null) return false;
 
+        if (!AppointmentStatusTransitions.IsValidTransition(entity.Status, newStatus))
+            throw new InvalidStatusTransitionException(entity.Status.ToString(), newStatus.ToString());
+
         var oldStatus = entity.Status;
         entity.Status = newStatus;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -289,7 +310,14 @@ public class AppointmentService : IAppointmentService
             entity.CancellationReason = cancellationReason;
         }
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("Appointment", id);
+        }
 
         _logger.LogInformation(
             "Appointment status changed: {AppointmentId} {OldStatus} -> {NewStatus} by {UserId}",
@@ -302,7 +330,7 @@ public class AppointmentService : IAppointmentService
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
 
-        await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("Appointment", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         if (newStatus == AppointmentStatus.Completed)
@@ -341,7 +369,7 @@ public class AppointmentService : IAppointmentService
             id.ToString(),
             $"Soft-deleted appointment {id}");
 
-        await TryDispatchAsync("Appointment", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("Appointment", id, EntityChangeType.Deleted, userId, entity.ClientId);
 
         return true;
     }
@@ -396,6 +424,11 @@ public class AppointmentService : IAppointmentService
             throw new ArgumentException("Recurrence count must be between 2 and 52.");
         if (dto.IntervalDays < 1)
             throw new ArgumentException("Interval must be at least 1 day.");
+
+        var client = await _dbContext.Clients.FindAsync(dto.Base.ClientId)
+            ?? throw new ArgumentException($"Client {dto.Base.ClientId} not found.");
+        if (!client.ConsentGiven)
+            throw new ConsentRequiredException(dto.Base.ClientId);
 
         var createdIds = new List<int>();
         var skippedReasons = new List<string>();
@@ -460,12 +493,12 @@ public class AppointmentService : IAppointmentService
         }).ToList();
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

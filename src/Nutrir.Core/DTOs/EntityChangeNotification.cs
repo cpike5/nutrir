@@ -7,4 +7,5 @@ public record EntityChangeNotification(
     int EntityId,
     EntityChangeType ChangeType,
     string PractitionerUserId,
-    DateTime Timestamp);
+    DateTime Timestamp,
+    int? ClientId = null);

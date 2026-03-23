@@ -72,7 +72,7 @@ public class IntakeFormService : IIntakeFormService
             entity.Id.ToString(),
             $"Created intake form for {clientEmail}");
 
-        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Created, createdByUserId);
+        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Created, createdByUserId, entity.ClientId);
 
         return MapToDto(entity);
     }
@@ -212,7 +212,7 @@ public class IntakeFormService : IIntakeFormService
             entity.Id.ToString(),
             $"Client submitted intake form ({responses.Count} responses)");
 
-        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, entity.CreatedByUserId);
+        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, entity.CreatedByUserId, entity.ClientId);
 
         if (entity.ClientId.HasValue)
             await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId.Value);
@@ -257,7 +257,7 @@ public class IntakeFormService : IIntakeFormService
             entity.Id.ToString(),
             $"Reviewed intake form and mapped to client {clientId}");
 
-        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, reviewedByUserId);
+        await TryDispatchAsync("IntakeForm", entity.Id, EntityChangeType.Updated, reviewedByUserId, clientId);
         await _retentionTracker.UpdateLastInteractionAsync(clientId);
 
         return (true, clientId, null);
@@ -470,12 +470,12 @@ public class IntakeFormService : IIntakeFormService
             .TrimEnd('=');
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

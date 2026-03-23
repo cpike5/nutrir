@@ -155,7 +155,7 @@ public class ConsentFormService : IConsentFormService
             userId, "ConsentFormPhysicallySigned", "Client", clientId.ToString(),
             $"Physical consent marked as signed, form version {form.FormVersion}");
 
-        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId, clientId);
 
         _logger.LogInformation(
             "Physical consent marked as signed for client {ClientId} by {UserId}",
@@ -193,7 +193,7 @@ public class ConsentFormService : IConsentFormService
             userId, "ConsentFormScanUploaded", "Client", clientId.ToString(),
             $"Scanned consent form uploaded: {safeFileName}");
 
-        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Updated, userId, clientId);
 
         _logger.LogInformation(
             "Scanned consent form uploaded for client {ClientId} by {UserId}: {FileName}",
@@ -257,7 +257,7 @@ public class ConsentFormService : IConsentFormService
         _dbContext.Set<ConsentForm>().Add(form);
         await _dbContext.SaveChangesAsync();
 
-        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId, clientId);
 
         return form;
     }
@@ -284,15 +284,15 @@ public class ConsentFormService : IConsentFormService
         _dbContext.Set<ConsentForm>().Add(form);
         await _dbContext.SaveChangesAsync();
 
-        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ConsentForm", form.Id, EntityChangeType.Created, userId, clientId);
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

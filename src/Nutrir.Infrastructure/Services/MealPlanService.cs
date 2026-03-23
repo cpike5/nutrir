@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
+using Nutrir.Core.Exceptions;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -216,7 +217,7 @@ public class MealPlanService : IMealPlanService
             entity.Id.ToString(),
             $"Created meal plan for client {entity.ClientId}");
 
-        await TryDispatchAsync("MealPlan", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("MealPlan", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
@@ -243,7 +244,14 @@ public class MealPlanService : IMealPlanService
         entity.Instructions = dto.Instructions;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("MealPlan", id);
+        }
 
         _logger.LogInformation("Meal plan metadata updated: {MealPlanId} by {UserId}", id, userId);
 
@@ -254,7 +262,7 @@ public class MealPlanService : IMealPlanService
             id.ToString(),
             "Updated meal plan metadata");
 
-        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -325,7 +333,15 @@ public class MealPlanService : IMealPlanService
         }
 
         entity.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("MealPlan", dto.MealPlanId);
+        }
 
         _logger.LogInformation("Meal plan content saved: {MealPlanId} by {UserId}", dto.MealPlanId, userId);
 
@@ -336,7 +352,7 @@ public class MealPlanService : IMealPlanService
             dto.MealPlanId.ToString(),
             "Saved content for meal plan");
 
-        await TryDispatchAsync("MealPlan", dto.MealPlanId, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("MealPlan", dto.MealPlanId, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -357,7 +373,14 @@ public class MealPlanService : IMealPlanService
         entity.Status = newStatus;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("MealPlan", id);
+        }
 
         _logger.LogInformation(
             "Meal plan status changed: {MealPlanId} {OldStatus} -> {NewStatus} by {UserId}",
@@ -370,7 +393,7 @@ public class MealPlanService : IMealPlanService
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
 
-        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return new UpdateStatusResultDto(true);
@@ -457,7 +480,7 @@ public class MealPlanService : IMealPlanService
             copy.Id.ToString(),
             $"Duplicated meal plan from source {id}");
 
-        await TryDispatchAsync("MealPlan", copy.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("MealPlan", copy.Id, EntityChangeType.Created, userId, copy.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(copy.ClientId);
 
         return true;
@@ -483,7 +506,7 @@ public class MealPlanService : IMealPlanService
             id.ToString(),
             "Soft-deleted meal plan");
 
-        await TryDispatchAsync("MealPlan", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("MealPlan", id, EntityChangeType.Deleted, userId, entity.ClientId);
 
         return true;
     }
@@ -510,12 +533,12 @@ public class MealPlanService : IMealPlanService
             .CountAsync(mp => mp.Status == MealPlanStatus.Active);
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {
