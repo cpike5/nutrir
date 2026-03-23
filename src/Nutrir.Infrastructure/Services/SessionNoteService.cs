@@ -104,6 +104,7 @@ public class SessionNoteService : ISessionNoteService
     {
         var entity = await _dbContext.SessionNotes.FindAsync(id);
         if (entity is null) return false;
+        if (!entity.IsDraft) return false;
 
         entity.Notes = dto.Notes;
         entity.AdherenceScore = dto.AdherenceScore;
@@ -139,6 +140,7 @@ public class SessionNoteService : ISessionNoteService
     {
         var entity = await _dbContext.SessionNotes.FindAsync(id);
         if (entity is null) return false;
+        if (!entity.IsDraft) return false;
 
         entity.IsDraft = false;
         entity.UpdatedAt = DateTime.UtcNow;
