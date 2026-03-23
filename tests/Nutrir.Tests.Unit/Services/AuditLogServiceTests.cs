@@ -316,7 +316,22 @@ public class AuditLogServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task QueryAsync_FilterBySearchTerm_MatchesAcrossFields()
+    public async Task QueryAsync_FilterByToDateOnly_ExcludesNewerEntries()
+    {
+        // Arrange — To 4 days ago should exclude AppointmentCreated (-3d) and MealPlanCreated (-1d)
+        var to = DateTime.UtcNow.AddDays(-4);
+
+        // Act
+        var result = await _sut.QueryAsync(new AuditLogQueryRequest(To: to));
+
+        // Assert
+        result.TotalCount.Should().Be(2);
+        result.Items.Should().Contain(i => i.Action == "ClientCreated");
+        result.Items.Should().Contain(i => i.Action == "ClientUpdated");
+    }
+
+    [Fact]
+    public async Task QueryAsync_FilterBySearchTerm_MatchesDetailsField()
     {
         // Act — search for "consultation" which appears in the Details of AppointmentCreated
         var result = await _sut.QueryAsync(new AuditLogQueryRequest(SearchTerm: "consultation"));
@@ -363,6 +378,17 @@ public class AuditLogServiceTests : IDisposable
         result.Items.Should().HaveCount(2, because: "page size is 2 and there are 4 total entries");
         result.Page.Should().Be(2);
         result.PageSize.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Pagination_LastPageReturnsFewerItems()
+    {
+        // Act — page 2 with page size 3 against 4 entries should return 1 item
+        var result = await _sut.QueryAsync(new AuditLogQueryRequest(Page: 2, PageSize: 3));
+
+        // Assert
+        result.TotalCount.Should().Be(4);
+        result.Items.Should().HaveCount(1, because: "only 1 entry remains on the last page");
     }
 
     [Fact]
@@ -456,5 +482,68 @@ public class AuditLogServiceTests : IDisposable
         types.Should().Contain("Client");
         types.Should().Contain("Appointment");
         types.Should().Contain("MealPlan");
+    }
+
+}
+
+/// <summary>
+/// Tests for AuditLogService with an empty database (no seeded audit entries).
+/// Separate class avoids the immutability constraint on AuditLogEntry deletion.
+/// </summary>
+public class AuditLogServiceEmptyDatabaseTests : IDisposable
+{
+    private readonly AppDbContext _dbContext;
+    private readonly SqliteConnection _connection;
+    private readonly AuditLogService _sut;
+
+    public AuditLogServiceEmptyDatabaseTests()
+    {
+        (_dbContext, _connection) = TestDbContextFactory.Create();
+
+        var auditSourceProvider = Substitute.For<IAuditSourceProvider>();
+        auditSourceProvider.CurrentSource.Returns(AuditSource.Web);
+
+        var factory = new SharedConnectionContextFactory(_connection);
+
+        _sut = new AuditLogService(
+            factory,
+            auditSourceProvider,
+            NullLogger<AuditLogService>.Instance);
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Dispose();
+        _connection.Dispose();
+    }
+
+    [Fact]
+    public async Task GetRecentAsync_WithNoEntries_ReturnsEmptyList()
+    {
+        var results = await _sut.GetRecentAsync();
+        results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithNoEntries_ReturnsEmptyResult()
+    {
+        var result = await _sut.QueryAsync(new AuditLogQueryRequest());
+
+        result.TotalCount.Should().Be(0);
+        result.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetDistinctActionsAsync_WithNoEntries_ReturnsEmptyList()
+    {
+        var actions = await _sut.GetDistinctActionsAsync();
+        actions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetDistinctEntityTypesAsync_WithNoEntries_ReturnsEmptyList()
+    {
+        var types = await _sut.GetDistinctEntityTypesAsync();
+        types.Should().BeEmpty();
     }
 }
