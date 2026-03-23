@@ -14,6 +14,7 @@ public class ProgressService : IProgressService
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IAuditLogService _auditLogService;
     private readonly IRetentionTracker _retentionTracker;
+    private readonly INotificationDispatcher _notificationDispatcher;
     private readonly ILogger<ProgressService> _logger;
 
     public ProgressService(
@@ -21,12 +22,14 @@ public class ProgressService : IProgressService
         IDbContextFactory<AppDbContext> dbContextFactory,
         IAuditLogService auditLogService,
         IRetentionTracker retentionTracker,
+        INotificationDispatcher notificationDispatcher,
         ILogger<ProgressService> logger)
     {
         _dbContext = dbContext;
         _dbContextFactory = dbContextFactory;
         _auditLogService = auditLogService;
         _retentionTracker = retentionTracker;
+        _notificationDispatcher = notificationDispatcher;
         _logger = logger;
     }
 
@@ -96,6 +99,7 @@ public class ProgressService : IProgressService
             $"Created progress entry for client {entity.ClientId} on {entity.EntryDate}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
+        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Created, userId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -144,6 +148,7 @@ public class ProgressService : IProgressService
             $"Updated progress entry for {entity.EntryDate}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
+        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Updated, userId);
 
         await CheckGoalAchievementsAsync(entity.ClientId, entity.Measurements, userId);
 
@@ -169,6 +174,8 @@ public class ProgressService : IProgressService
             "ProgressEntry",
             id.ToString(),
             $"Soft-deleted progress entry for {entity.EntryDate}");
+
+        await TryDispatchAsync("ProgressEntry", id, EntityChangeType.Deleted, userId);
 
         return true;
     }
@@ -229,6 +236,7 @@ public class ProgressService : IProgressService
             $"Created progress goal for client {entity.ClientId}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
+        await TryDispatchAsync("ProgressGoal", entity.Id, EntityChangeType.Created, userId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -261,6 +269,7 @@ public class ProgressService : IProgressService
             "Updated progress goal");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId);
 
         return true;
     }
@@ -287,6 +296,8 @@ public class ProgressService : IProgressService
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
 
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId);
+
         return true;
     }
 
@@ -309,6 +320,8 @@ public class ProgressService : IProgressService
             "ProgressGoal",
             id.ToString(),
             "Soft-deleted progress goal");
+
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Deleted, userId);
 
         return true;
     }
@@ -509,6 +522,20 @@ public class ProgressService : IProgressService
             entity.TargetDate,
             entity.CreatedAt,
             entity.UpdatedAt);
+    }
+
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    {
+        try
+        {
+            await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch {ChangeType} notification for {EntityType} {EntityId}",
+                changeType, entityType, entityId);
+        }
     }
 
     private static string FormatMetricLabel(MetricType type) => type switch
