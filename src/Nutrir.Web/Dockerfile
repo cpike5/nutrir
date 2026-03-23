@@ -1,15 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy solution and project files
-COPY Nutrir.sln ./
+# Copy project files (exclude test projects)
 COPY src/Nutrir.Core/Nutrir.Core.csproj src/Nutrir.Core/
 COPY src/Nutrir.Infrastructure/Nutrir.Infrastructure.csproj src/Nutrir.Infrastructure/
 COPY src/Nutrir.Web/Nutrir.Web.csproj src/Nutrir.Web/
 COPY src/Nutrir.Cli/Nutrir.Cli.csproj src/Nutrir.Cli/
 
-# Restore
-RUN dotnet restore
+# Restore without solution file (avoids needing test projects)
+RUN dotnet restore src/Nutrir.Web/Nutrir.Web.csproj
 
 # Copy everything and build
 COPY . .
