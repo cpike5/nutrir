@@ -34,13 +34,15 @@ public class PostgresSpecificTests : IAsyncLifetime
     /// </summary>
     private static async Task<ApplicationUser> SeedNutritionistAsync(AppDbContext db)
     {
+        var uniqueId = Guid.NewGuid().ToString("N");
+        var email = $"nutritionist_{uniqueId}@test.com";
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid().ToString(),
-            UserName = $"nutritionist_{Guid.NewGuid():N}@test.com",
-            NormalizedUserName = $"NUTRITIONIST_{Guid.NewGuid():N}@TEST.COM",
-            Email = $"nutritionist_{Guid.NewGuid():N}@test.com",
-            NormalizedEmail = $"NUTRITIONIST_{Guid.NewGuid():N}@TEST.COM",
+            UserName = email,
+            NormalizedUserName = email.ToUpperInvariant(),
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
             FirstName = "Test",
             LastName = "Nutritionist",
             DisplayName = "Test Nutritionist",

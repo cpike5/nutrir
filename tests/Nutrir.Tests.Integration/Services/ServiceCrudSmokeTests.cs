@@ -27,6 +27,9 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     // Set during InitializeAsync after seeding the ApplicationUser.
     private string _testUserId = null!;
 
+    // Track all DbContext instances created during the test for proper disposal
+    private readonly List<AppDbContext> _contexts = [];
+
     public ServiceCrudSmokeTests(DatabaseFixture fixture)
     {
         _fixture = fixture;
@@ -55,7 +58,12 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
         _testUserId = user.Id;
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public async Task DisposeAsync()
+    {
+        foreach (var ctx in _contexts)
+            await ctx.DisposeAsync();
+        _contexts.Clear();
+    }
 
     // -------------------------------------------------------------------------
     // Service factory helpers
@@ -64,6 +72,7 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     private async Task<(ClientService service, AppDbContext context)> CreateClientServiceAsync()
     {
         var context = await _fixture.CreateDbContextAsync();
+        _contexts.Add(context);
         var service = new ClientService(
             context,
             _fixture.DbContextFactory,
@@ -77,6 +86,7 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     private async Task<(AppointmentService service, AppDbContext context)> CreateAppointmentServiceAsync()
     {
         var context = await _fixture.CreateDbContextAsync();
+        _contexts.Add(context);
 
         // IsSlotWithinScheduleAsync must return (true, null) so the time-range guard
         // in AppointmentService.CreateAsync does not throw SchedulingConflictException.
@@ -100,6 +110,7 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     private async Task<(MealPlanService service, AppDbContext context)> CreateMealPlanServiceAsync()
     {
         var context = await _fixture.CreateDbContextAsync();
+        _contexts.Add(context);
 
         // CanActivateAsync must return true so UpdateStatusAsync(Draft -> Active) succeeds
         var allergenCheckService = Substitute.For<IAllergenCheckService>();
@@ -121,6 +132,7 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     private async Task<(ProgressService service, AppDbContext context)> CreateProgressServiceAsync()
     {
         var context = await _fixture.CreateDbContextAsync();
+        _contexts.Add(context);
         var service = new ProgressService(
             context,
             _fixture.DbContextFactory,
@@ -134,6 +146,7 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
     private async Task<(SessionNoteService service, AppDbContext context)> CreateSessionNoteServiceAsync()
     {
         var context = await _fixture.CreateDbContextAsync();
+        _contexts.Add(context);
         var service = new SessionNoteService(
             context,
             _fixture.DbContextFactory,

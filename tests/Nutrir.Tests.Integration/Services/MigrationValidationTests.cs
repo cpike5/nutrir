@@ -29,7 +29,7 @@ public class MigrationValidationTests
     }
 
     [Fact]
-    public async Task Schema_Matches_Model_No_Pending_Changes()
+    public async Task At_Least_One_Migration_Has_Been_Applied()
     {
         await using var context = await _fixture.CreateDbContextAsync();
 
