@@ -198,9 +198,9 @@ public class AiRateLimiterTests
     }
 
     [Fact]
-    public void CheckAndRecord_NewUser_AlwaysStartsWithCleanState()
+    public void CheckAndRecord_DifferentUser_OnSameLimiter_StartsWithCleanState()
     {
-        // Arrange – two completely separate limiter instances share no state
+        // Arrange – a different user on the same limiter instance starts with a clean slate
         var sut = CreateLimiter(requestsPerMinute: 1, requestsPerDay: 5);
         const string userId = "user-fresh";
 
