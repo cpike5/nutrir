@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Nutrir.Tests.Unit" />
+    <InternalsVisibleTo Include="Nutrir.Tests.Integration" />
   </ItemGroup>
 
   <ItemGroup>
