@@ -52,7 +52,7 @@ namespace Nutrir.Infrastructure.Migrations
                         UNION ALL
                         SELECT "ClientId", MAX("EntryDate"::timestamp AT TIME ZONE 'UTC') FROM "ProgressEntries" WHERE NOT "IsDeleted" GROUP BY "ClientId"
                         UNION ALL
-                        SELECT "ClientId", MAX("CreatedAt") FROM "ConsentEvents" GROUP BY "ClientId"
+                        SELECT "ClientId", MAX("Timestamp") FROM "ConsentEvents" GROUP BY "ClientId"
                     ) interactions
                     GROUP BY client_id
                 ) sub
