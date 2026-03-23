@@ -64,7 +64,7 @@ public class ConsentService : IConsentService
             $"Consent granted for purpose '{purpose}', policy v{policyVersion}");
 
         await _retentionTracker.UpdateLastInteractionAsync(clientId);
-        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId, clientId);
     }
 
     public async Task WithdrawConsentAsync(int clientId, string userId, string? reason = null)
@@ -103,15 +103,15 @@ public class ConsentService : IConsentService
             reason is not null ? $"Consent withdrawn. Reason: {reason}" : "Consent withdrawn");
 
         await _retentionTracker.UpdateLastInteractionAsync(clientId);
-        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ConsentEvent", consentEvent.Id, EntityChangeType.Created, userId, clientId);
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

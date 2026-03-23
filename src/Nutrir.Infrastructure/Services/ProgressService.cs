@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
+using Nutrir.Core.Exceptions;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -99,7 +100,7 @@ public class ProgressService : IProgressService
             $"Created progress entry for client {entity.ClientId} on {entity.EntryDate}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
-        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -136,7 +137,14 @@ public class ProgressService : IProgressService
             });
         }
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("ProgressEntry", id);
+        }
 
         _logger.LogInformation("Progress entry updated: {EntryId} by {UserId}", id, userId);
 
@@ -148,7 +156,7 @@ public class ProgressService : IProgressService
             $"Updated progress entry for {entity.EntryDate}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
-        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ProgressEntry", entity.Id, EntityChangeType.Updated, userId, entity.ClientId);
 
         await CheckGoalAchievementsAsync(entity.ClientId, entity.Measurements, userId);
 
@@ -175,7 +183,7 @@ public class ProgressService : IProgressService
             id.ToString(),
             $"Soft-deleted progress entry for {entity.EntryDate}");
 
-        await TryDispatchAsync("ProgressEntry", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ProgressEntry", id, EntityChangeType.Deleted, userId, entity.ClientId);
 
         return true;
     }
@@ -236,7 +244,7 @@ public class ProgressService : IProgressService
             $"Created progress goal for client {entity.ClientId}");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
-        await TryDispatchAsync("ProgressGoal", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ProgressGoal", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -269,7 +277,7 @@ public class ProgressService : IProgressService
             "Updated progress goal");
 
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
-        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId, entity.ClientId);
 
         return true;
     }
@@ -296,7 +304,7 @@ public class ProgressService : IProgressService
             id.ToString(),
             $"Status changed from {oldStatus} to {newStatus}");
 
-        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Updated, userId, entity.ClientId);
 
         return true;
     }
@@ -321,7 +329,7 @@ public class ProgressService : IProgressService
             id.ToString(),
             "Soft-deleted progress goal");
 
-        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ProgressGoal", id, EntityChangeType.Deleted, userId, entity.ClientId);
 
         return true;
     }
@@ -524,12 +532,12 @@ public class ProgressService : IProgressService
             entity.UpdatedAt);
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

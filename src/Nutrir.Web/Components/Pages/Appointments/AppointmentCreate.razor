@@ -49,7 +49,7 @@
                 <FormGroup Label="Client" Id="clientId" Error="@GetFieldError(nameof(_model.ClientId))">
                     <FormSelect Id="clientId"
                                 Value="@_model.ClientId"
-                                ValueChanged="@(v => _model.ClientId = v)">
+                                ValueChanged="OnClientChanged">
                         <option value="">Select a client...</option>
                         @foreach (var client in _clients)
                         {
@@ -57,6 +57,17 @@
                         }
                     </FormSelect>
                 </FormGroup>
+
+                @if (_consentWarning)
+                {
+                    <div class="availability-warning">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 1l7 13H1L8 1Z"/>
+                            <path d="M8 6v3M8 11.5v.5"/>
+                        </svg>
+                        This client has not given consent. Consent is required before creating appointments.
+                    </div>
+                }
 
                 <FormGroup Label="Appointment Type" Id="type">
                     <FormSelect Id="type"
@@ -304,7 +315,7 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSubmitting">
+                <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@(_isSubmitting || _consentWarning)">
                     @if (_isSubmitting)
                     {
                         <span>Creating...</span>
@@ -343,6 +354,7 @@
     private bool _isLoadingSlots;
     private bool _slotsLoaded;
     private string? _availabilityWarning;
+    private bool _consentWarning;
     private string _userId = string.Empty;
 
     private void ToggleSection(string section)
@@ -363,6 +375,11 @@
         if (ClientId.HasValue)
         {
             _model.ClientId = ClientId.Value.ToString();
+            var preselectedClient = _clients.FirstOrDefault(c => c.Id == ClientId.Value);
+            if (preselectedClient is not null && !preselectedClient.ConsentGiven)
+            {
+                _consentWarning = true;
+            }
         }
 
         if (!string.IsNullOrEmpty(PrefilledDate) && DateTime.TryParse(PrefilledDate, out var prefilledDateTime))
@@ -382,6 +399,21 @@
         }
 
         await LoadAvailableSlotsAsync();
+    }
+
+    private void OnClientChanged(string value)
+    {
+        _model.ClientId = value;
+        _consentWarning = false;
+
+        if (int.TryParse(value, out var clientId))
+        {
+            var selectedClient = _clients.FirstOrDefault(c => c.Id == clientId);
+            if (selectedClient is not null && !selectedClient.ConsentGiven)
+            {
+                _consentWarning = true;
+            }
+        }
     }
 
     private async Task OnDateChanged(string value)
@@ -536,6 +568,10 @@
                 var created = await AppointmentService.CreateAsync(dto, _userId);
                 NavigationManager.NavigateTo($"/appointments/{created.Id}");
             }
+        }
+        catch (ConsentRequiredException ex)
+        {
+            _errorMessage = ex.Message;
         }
         catch (SchedulingConflictException ex)
         {

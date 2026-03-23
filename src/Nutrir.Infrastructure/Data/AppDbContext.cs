@@ -113,6 +113,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<Client>(entity =>
         {
+            entity.Property<uint>("xmin").IsRowVersion();
             entity.HasQueryFilter(c => !c.IsDeleted);
 
             entity.HasOne<ApplicationUser>()
@@ -144,6 +145,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<Appointment>(entity =>
         {
+            entity.Property<uint>("xmin").IsRowVersion();
             entity.HasQueryFilter(a => !a.IsDeleted);
 
             entity.HasOne<Client>()
@@ -179,6 +181,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<MealPlan>(entity =>
         {
+            entity.Property<uint>("xmin").IsRowVersion();
             entity.HasQueryFilter(mp => !mp.IsDeleted);
 
             entity.HasOne<Client>()
@@ -280,6 +283,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<ProgressEntry>(entity =>
         {
+            entity.Property<uint>("xmin").IsRowVersion();
             entity.HasQueryFilter(e => !e.IsDeleted);
 
             entity.HasOne<Client>()
@@ -612,6 +616,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<SessionNote>(entity =>
         {
+            entity.Property<uint>("xmin").IsRowVersion();
             entity.HasQueryFilter(sn => !sn.IsDeleted);
 
             entity.HasIndex(sn => sn.AppointmentId).IsUnique();

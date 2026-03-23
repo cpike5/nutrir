@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Nutrir.Core.DTOs;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
+using Nutrir.Core.Exceptions;
 using Nutrir.Core.Interfaces;
 using Nutrir.Infrastructure.Data;
 
@@ -94,7 +95,7 @@ public class SessionNoteService : ISessionNoteService
             entity.Id.ToString(),
             $"Created draft session note for appointment {appointmentId}");
 
-        await TryDispatchAsync("SessionNote", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("SessionNote", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
 
         return (await MapToDtoAsync(entity, _dbContext))!;
     }
@@ -111,7 +112,14 @@ public class SessionNoteService : ISessionNoteService
         entity.FollowUpActions = dto.FollowUpActions;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("SessionNote", id);
+        }
 
         _logger.LogInformation("Session note updated: {SessionNoteId} by {UserId}", id, userId);
 
@@ -122,7 +130,7 @@ public class SessionNoteService : ISessionNoteService
             id.ToString(),
             $"Updated session note {id}");
 
-        await TryDispatchAsync("SessionNote", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("SessionNote", id, EntityChangeType.Updated, userId, entity.ClientId);
 
         return true;
     }
@@ -135,7 +143,14 @@ public class SessionNoteService : ISessionNoteService
         entity.IsDraft = false;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrentEditException("SessionNote", id);
+        }
 
         _logger.LogInformation("Session note finalized: {SessionNoteId} by {UserId}", id, userId);
 
@@ -146,7 +161,7 @@ public class SessionNoteService : ISessionNoteService
             id.ToString(),
             $"Finalized session note {id}");
 
-        await TryDispatchAsync("SessionNote", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("SessionNote", id, EntityChangeType.Updated, userId, entity.ClientId);
 
         return true;
     }
@@ -171,7 +186,7 @@ public class SessionNoteService : ISessionNoteService
             id.ToString(),
             $"Soft-deleted session note {id}");
 
-        await TryDispatchAsync("SessionNote", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("SessionNote", id, EntityChangeType.Deleted, userId, entity.ClientId);
 
         return true;
     }
@@ -283,12 +298,12 @@ public class SessionNoteService : ISessionNoteService
         }).ToList();
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string practitionerUserId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow));
+                entityType, entityId, changeType, practitionerUserId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {

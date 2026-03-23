@@ -48,6 +48,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 
 | Document | Description |
 |----------|-------------|
+| [Domain Summary](clients/domain-summary.md) | Current state of the clients domain — entity model, service API, DTOs, consent flow, health profile, soft-delete, compliance |
 | [Health Profile](clients/health-profile.md) | Client health profile data model — allergies, medications, conditions, dietary restrictions (ERD, enums, design decisions) |
 | [Intake Form Design](clients/intake-form-design.md) | Pre-appointment digital intake form — entities, workflow, token strategy, field mapping, edge cases |
 
@@ -55,7 +56,20 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 
 | Document | Description |
 |----------|-------------|
+| [Domain Summary](meal-plans/domain-summary.md) | Current state of the meal plans domain — entity hierarchy, service API, PDF export, allergen checking, status lifecycle |
 | [PDF Export Layout](meal-plans/pdf-export-layout.md) | PDF export layout spec — page setup, header/content/footer structure, color palette, table columns |
+
+## Progress Documents
+
+| Document | Description |
+|----------|-------------|
+| [Domain Summary](progress/domain-summary.md) | Current state of the progress domain — entries, measurements, goals, metric types, service API |
+
+## Auth Documents
+
+| Document | Description |
+|----------|-------------|
+| [Domain Summary](auth/domain-summary.md) | Current state of the auth domain — Identity setup, role hierarchy, invite codes, MFA, authentication flow, timezone management |
 
 ## Compliance Documents
 
@@ -76,6 +90,9 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 |----------|-------------|
 | [Calendar View](scheduling/calendar-view.md) | PoC spec — Radzen Blazor Scheduler integration for appointment calendar view |
 | [Domain Summary](scheduling/domain-summary.md) | Current state of the scheduling domain — entities, services, gaps |
+| [ADR-0003: Timezone Handling](scheduling/adr-0003-timezone-handling.md) | UTC storage strategy, ITimeZoneService API, Canadian timezone support, DST handling |
+| [ADR-0004: Status Transitions](scheduling/adr-0004-status-transitions.md) | State machine design with valid transitions, terminal states, time-based rules, UI constraints, audit logging |
+| [ADR-0005: Overlap Detection](scheduling/adr-0005-overlap-detection.md) | Appointment conflict prevention algorithm, buffer time expansion, status exclusions, recurring appointment handling |
 
 ## Reports Documents
 
@@ -96,6 +113,9 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [ADR-0001](infrastructure/adr-0001-url-structure.md) | Infrastructure | URL structure & application routing |
 | [ADR-0001](scheduling/adr-0001-calendar-component.md) | Scheduling | Calendar component selection |
 | [ADR-0002](infrastructure/adr-0002-ai-tool-role-aware-filtering.md) | Infrastructure | Role-aware filtering in AI tool handlers |
+| [ADR-0003](scheduling/adr-0003-timezone-handling.md) | Scheduling | Timezone handling strategy (UTC storage, conversion, Canadian timezones) |
+| [ADR-0004](scheduling/adr-0004-status-transitions.md) | Scheduling | Appointment status transition state machine |
+| [ADR-0005](scheduling/adr-0005-overlap-detection.md) | Scheduling | Appointment overlap detection algorithm |
 
 ## Worklog
 

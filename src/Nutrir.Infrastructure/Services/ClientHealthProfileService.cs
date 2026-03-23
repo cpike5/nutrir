@@ -73,7 +73,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "AllergyCreated", "ClientAllergy",
             entity.Id.ToString(), $"Created allergy '{entity.Name}' for client {entity.ClientId}");
 
-        await TryDispatchAsync("ClientAllergy", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ClientAllergy", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(dto.ClientId, userId);
@@ -124,7 +124,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "AllergyUpdated", "ClientAllergy",
             id.ToString(), $"Updated allergy '{entity.Name}'");
 
-        await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
@@ -148,7 +148,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "AllergyDeleted", "ClientAllergy",
             id.ToString(), $"Soft-deleted allergy '{entity.Name}'");
 
-        await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Deleted, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
@@ -181,7 +181,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "MedicationCreated", "ClientMedication",
             entity.Id.ToString(), $"Created medication '{entity.Name}' for client {entity.ClientId}");
 
-        await TryDispatchAsync("ClientMedication", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ClientMedication", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
@@ -221,7 +221,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "MedicationUpdated", "ClientMedication",
             id.ToString(), $"Updated medication '{entity.Name}'");
 
-        await TryDispatchAsync("ClientMedication", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ClientMedication", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -243,7 +243,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "MedicationDeleted", "ClientMedication",
             id.ToString(), $"Soft-deleted medication '{entity.Name}'");
 
-        await TryDispatchAsync("ClientMedication", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ClientMedication", id, EntityChangeType.Deleted, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -275,7 +275,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "ConditionCreated", "ClientCondition",
             entity.Id.ToString(), $"Created condition '{entity.Name}' for client {entity.ClientId}");
 
-        await TryDispatchAsync("ClientCondition", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ClientCondition", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
@@ -316,7 +316,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "ConditionUpdated", "ClientCondition",
             id.ToString(), $"Updated condition '{entity.Name}'");
 
-        await TryDispatchAsync("ClientCondition", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ClientCondition", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -338,7 +338,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "ConditionDeleted", "ClientCondition",
             id.ToString(), $"Soft-deleted condition '{entity.Name}'");
 
-        await TryDispatchAsync("ClientCondition", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ClientCondition", id, EntityChangeType.Deleted, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -367,7 +367,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "DietaryRestrictionCreated", "ClientDietaryRestriction",
             entity.Id.ToString(), $"Created dietary restriction '{entity.RestrictionType}' for client {entity.ClientId}");
 
-        await TryDispatchAsync("ClientDietaryRestriction", entity.Id, EntityChangeType.Created, userId);
+        await TryDispatchAsync("ClientDietaryRestriction", entity.Id, EntityChangeType.Created, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
@@ -405,7 +405,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "DietaryRestrictionUpdated", "ClientDietaryRestriction",
             id.ToString(), $"Updated dietary restriction '{entity.RestrictionType}'");
 
-        await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Updated, userId);
+        await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Updated, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -427,7 +427,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         await _auditLogService.LogAsync(userId, "DietaryRestrictionDeleted", "ClientDietaryRestriction",
             id.ToString(), $"Soft-deleted dietary restriction '{entity.RestrictionType}'");
 
-        await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Deleted, userId);
+        await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Deleted, userId, entity.ClientId);
         await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
@@ -508,12 +508,12 @@ public class ClientHealthProfileService : IClientHealthProfileService
             throw new InvalidOperationException($"Client with ID {clientId} does not exist.");
     }
 
-    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string userId)
+    private async Task TryDispatchAsync(string entityType, int entityId, EntityChangeType changeType, string userId, int? clientId = null)
     {
         try
         {
             await _notificationDispatcher.DispatchAsync(new EntityChangeNotification(
-                entityType, entityId, changeType, userId, DateTime.UtcNow));
+                entityType, entityId, changeType, userId, DateTime.UtcNow, clientId));
         }
         catch (Exception ex)
         {
