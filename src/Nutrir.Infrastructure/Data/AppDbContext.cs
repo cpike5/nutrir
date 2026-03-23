@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Nutrir.Core.Entities;
 using Nutrir.Core.Enums;
+using Nutrir.Infrastructure.Security;
 
 namespace Nutrir.Infrastructure.Data;
 
@@ -74,6 +75,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     {
         base.OnModelCreating(builder);
 
+        // Apply field-level encryption to sensitive Notes fields
+        var encryptor = AesGcmFieldEncryptor.Instance;
+        EncryptedStringConverter? converter = encryptor is not null
+            ? new EncryptedStringConverter(encryptor)
+            : null;
+
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(u => u.FirstName).HasMaxLength(100);
@@ -118,6 +125,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(c => c.Phone).HasMaxLength(20);
             entity.Property(c => c.ConsentPolicyVersion).HasMaxLength(50);
             entity.Property(c => c.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(c => c.Notes).HasConversion(converter);
             entity.Property(c => c.EmailRemindersEnabled).HasDefaultValue(false);
             entity.Property(c => c.RetentionYears).HasDefaultValue(7);
             entity.Property(c => c.IsPurged).HasDefaultValue(false);
@@ -156,6 +164,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(a => a.LocationNotes).HasMaxLength(500);
             entity.Property(a => a.CancellationReason).HasMaxLength(500);
             entity.Property(a => a.Notes).HasColumnType("text");
+            entity.Property(a => a.PrepNotes).HasColumnType("text");
+            if (converter is not null)
+            {
+                entity.Property(a => a.Notes).HasConversion(converter);
+                entity.Property(a => a.PrepNotes).HasConversion(converter);
+            }
 
             entity.Property(a => a.IsDeleted).HasDefaultValue(false);
             entity.Property(a => a.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
@@ -182,6 +196,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(mp => mp.Description).HasColumnType("text");
             entity.Property(mp => mp.Notes).HasColumnType("text");
             entity.Property(mp => mp.Instructions).HasColumnType("text");
+            if (converter is not null)
+            {
+                entity.Property(mp => mp.Description).HasConversion(converter);
+                entity.Property(mp => mp.Notes).HasConversion(converter);
+            }
             entity.Property(mp => mp.CalorieTarget).HasPrecision(18, 2);
             entity.Property(mp => mp.ProteinTargetG).HasPrecision(18, 2);
             entity.Property(mp => mp.CarbsTargetG).HasPrecision(18, 2);
@@ -200,6 +219,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasIndex(d => new { d.MealPlanId, d.DayNumber }).IsUnique();
             entity.Property(d => d.Label).HasMaxLength(100);
             entity.Property(d => d.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(d => d.Notes).HasConversion(converter);
 
             entity.HasMany(d => d.MealSlots)
                 .WithOne()
@@ -212,6 +232,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(s => s.MealType).HasConversion<string>();
             entity.Property(s => s.CustomName).HasMaxLength(100);
             entity.Property(s => s.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(s => s.Notes).HasConversion(converter);
 
             entity.HasMany(s => s.Items)
                 .WithOne()
@@ -229,6 +250,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(i => i.CarbsG).HasPrecision(18, 2);
             entity.Property(i => i.FatG).HasPrecision(18, 2);
             entity.Property(i => i.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(i => i.Notes).HasConversion(converter);
         });
 
         builder.Entity<ProgressGoal>(entity =>
@@ -249,6 +271,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(g => g.Status).HasConversion<string>();
             entity.Property(g => g.Title).HasMaxLength(200);
             entity.Property(g => g.Description).HasColumnType("text");
+            if (converter is not null) entity.Property(g => g.Description).HasConversion(converter);
             entity.Property(g => g.TargetValue).HasPrecision(18, 4);
             entity.Property(g => g.TargetUnit).HasMaxLength(50);
             entity.Property(g => g.IsDeleted).HasDefaultValue(false);
@@ -270,6 +293,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.Property(e => e.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(e => e.Notes).HasConversion(converter);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
 
@@ -300,6 +324,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(ce => ce.PolicyVersion).HasMaxLength(50);
             entity.Property(ce => ce.RecordedByUserId).HasMaxLength(450);
             entity.Property(ce => ce.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(ce => ce.Notes).HasConversion(converter);
             entity.Property(ce => ce.Timestamp).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
@@ -317,6 +342,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(cf => cf.SignedByUserId).HasMaxLength(450);
             entity.Property(cf => cf.ScannedCopyPath).HasMaxLength(500);
             entity.Property(cf => cf.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(cf => cf.Notes).HasConversion(converter);
             entity.Property(cf => cf.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
 
@@ -411,6 +437,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(c => c.Name).HasMaxLength(100);
             entity.Property(c => c.Code).HasMaxLength(20);
             entity.Property(c => c.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(c => c.Notes).HasConversion(converter);
             entity.Property(c => c.IsDeleted).HasDefaultValue(false);
             entity.Property(c => c.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
@@ -428,6 +455,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
             entity.Property(dr => dr.RestrictionType).HasConversion<string>();
             entity.Property(dr => dr.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(dr => dr.Notes).HasConversion(converter);
             entity.Property(dr => dr.IsDeleted).HasDefaultValue(false);
             entity.Property(dr => dr.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
@@ -549,6 +577,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
             entity.Property(tb => tb.BlockType).HasConversion<string>();
             entity.Property(tb => tb.Notes).HasColumnType("text");
+            if (converter is not null) entity.Property(tb => tb.Notes).HasConversion(converter);
             entity.Property(tb => tb.IsDeleted).HasDefaultValue(false);
             entity.Property(tb => tb.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
@@ -608,6 +637,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(sn => sn.MeasurementsTaken).HasColumnType("text");
             entity.Property(sn => sn.PlanAdjustments).HasColumnType("text");
             entity.Property(sn => sn.FollowUpActions).HasColumnType("text");
+            if (converter is not null)
+            {
+                entity.Property(sn => sn.Notes).HasConversion(converter);
+                entity.Property(sn => sn.MeasurementsTaken).HasConversion(converter);
+                entity.Property(sn => sn.PlanAdjustments).HasConversion(converter);
+                entity.Property(sn => sn.FollowUpActions).HasConversion(converter);
+            }
             entity.Property(sn => sn.IsDeleted).HasDefaultValue(false);
             entity.Property(sn => sn.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });

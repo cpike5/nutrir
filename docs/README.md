@@ -66,6 +66,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [Consent Form](compliance/consent-form.md) | Nine-section PIPEDA-compliant intake consent form — PDF/DOCX generation, digital and physical signing workflows, `ConsentForm` entity |
 | [AI Conversation Data Policy](compliance/ai-conversation-data-policy.md) | Retention, audit, and privacy policy for AI assistant conversation data containing PHI |
 | [Data Export Spec](compliance/data-export-spec.md) | PIPEDA-compliant per-client data export — JSON envelope, PDF sections, redaction rules, API endpoint, audit event |
+| [Field-Level Encryption](compliance/field-encryption.md) | AES-256-GCM field encryption — algorithm, encrypted fields, key management, rotation procedure |
 | [Data Retention](compliance/data-retention.md) | Retention periods, tracking mechanism, purge workflow, anonymization rationale, audit trail |
 | [Breach Response Plan](compliance/breach-response-plan.md) | PIPEDA/PHIPA/HIA breach response procedures — detection, containment, 72-hour assessment, notification, remediation |
 
