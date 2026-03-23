@@ -47,7 +47,7 @@ public class CalendarService : ICalendarService
             .Where(a => a.StartTime.AddMinutes(a.DurationMinutes) > start)
             .Select(a => new CalendarAppointmentDto(
                 a.Id,
-                a.ClientName,
+                $"{a.StartTime:h:mm tt} · {a.ClientName}",
                 a.StartTime,
                 a.StartTime.AddMinutes(a.DurationMinutes),
                 a.Type,

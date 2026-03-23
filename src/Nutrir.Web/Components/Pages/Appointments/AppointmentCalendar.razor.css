@@ -107,7 +107,7 @@
 
 /* ── Calendar Container ──────────────────────────────── */
 .calendar-container {
-    --calendar-height: 700px;
+    --calendar-height: 800px;
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -192,11 +192,14 @@
 }
 
 /* ── Today Highlight ─────────────────────────────────── */
-::deep .rz-today {
-    background: var(--color-primary-muted);
+::deep .rz-today,
+::deep .rz-scheduler .rz-today,
+::deep .rz-scheduler .rz-view td.rz-today {
+    background: var(--color-primary-muted) !important;
 }
 
-::deep .rz-today .rz-cell-text {
+::deep .rz-today .rz-cell-text,
+::deep .rz-scheduler .rz-today .rz-cell-text {
     background: var(--color-primary);
     color: var(--color-text-on-primary);
     border-radius: 50%;
@@ -234,12 +237,13 @@
 /* ── Event Styling ───────────────────────────────────── */
 ::deep .rz-event {
     border-radius: var(--radius-sm);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: 500;
     border: none;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-default);
-    margin-bottom: 2px;
+    margin-bottom: 3px;
+    min-height: 36px;
 }
 
 ::deep .rz-event:hover {
@@ -248,7 +252,32 @@
 }
 
 ::deep .rz-event .rz-event-content {
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-2) var(--space-2);
+    line-height: var(--leading-snug);
+    overflow: hidden;
+}
+
+::deep .rz-event .rz-event-content > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+/* Time line shown above the client name in pills */
+::deep .rz-event .appointment-time {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    opacity: 0.75;
+    margin-bottom: 1px;
+}
+
+::deep .rz-event .appointment-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ── Header Cells ────────────────────────────────────── */
@@ -278,7 +307,7 @@
 /* ── Weekend Columns ─────────────────────────────────── */
 ::deep .rz-scheduler td:nth-child(1),
 ::deep .rz-scheduler td:nth-child(7) {
-    background: rgba(0, 0, 0, 0.015);
+    background: rgba(0, 0, 0, 0.035);
 }
 
 /* ── Other Month Days ────────────────────────────────── */
@@ -313,7 +342,7 @@
     }
 
     .calendar-container {
-        --calendar-height: 600px;
+        --calendar-height: 680px;
     }
 }
 
