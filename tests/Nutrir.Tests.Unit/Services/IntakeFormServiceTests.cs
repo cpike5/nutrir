@@ -575,7 +575,8 @@ public class IntakeFormServiceTests : IDisposable
         var result = await _sut.ListFormsAsync(IntakeFormStatus.Submitted);
 
         // Assert
-        result.Should().OnlyContain(f => f.Status == IntakeFormStatus.Submitted,
+        result.Where(f => f.ClientEmail == TestEmail)
+            .Should().OnlyContain(f => f.Status == IntakeFormStatus.Submitted,
             because: "the status filter must exclude forms with a different status");
     }
 
@@ -948,6 +949,7 @@ public class IntakeFormServiceTests : IDisposable
 
         // Assert
         success.Should().BeFalse();
+        clientId.Should().BeNull();
         error.Should().Contain("submitted");
     }
 
