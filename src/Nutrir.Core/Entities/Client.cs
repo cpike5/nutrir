@@ -26,6 +26,15 @@ public class Client
 
     public bool EmailRemindersEnabled { get; set; }
 
+    // Data retention tracking
+    public DateTime? LastInteractionDate { get; set; }
+
+    public DateTime? RetentionExpiresAt { get; set; }
+
+    public int RetentionYears { get; set; } = 7;
+
+    public bool IsPurged { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

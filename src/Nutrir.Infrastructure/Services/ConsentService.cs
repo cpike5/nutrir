@@ -10,15 +10,18 @@ public class ConsentService : IConsentService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly ILogger<ConsentService> _logger;
 
     public ConsentService(
         AppDbContext dbContext,
         IAuditLogService auditLogService,
+        IRetentionTracker retentionTracker,
         ILogger<ConsentService> logger)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _retentionTracker = retentionTracker;
         _logger = logger;
     }
 
@@ -55,6 +58,8 @@ public class ConsentService : IConsentService
             "Client",
             clientId.ToString(),
             $"Consent granted for purpose '{purpose}', policy v{policyVersion}");
+
+        await _retentionTracker.UpdateLastInteractionAsync(clientId);
     }
 
     public async Task WithdrawConsentAsync(int clientId, string userId, string? reason = null)
@@ -91,5 +96,7 @@ public class ConsentService : IConsentService
             "Client",
             clientId.ToString(),
             reason is not null ? $"Consent withdrawn. Reason: {reason}" : "Consent withdrawn");
+
+        await _retentionTracker.UpdateLastInteractionAsync(clientId);
     }
 }

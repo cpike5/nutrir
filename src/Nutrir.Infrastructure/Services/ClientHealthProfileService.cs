@@ -16,6 +16,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
     private readonly IAllergenService _allergenService;
     private readonly IAllergenCheckService _allergenCheckService;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly ILogger<ClientHealthProfileService> _logger;
 
     public ClientHealthProfileService(
@@ -25,6 +26,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         IAllergenService allergenService,
         IAllergenCheckService allergenCheckService,
         INotificationDispatcher notificationDispatcher,
+        IRetentionTracker retentionTracker,
         ILogger<ClientHealthProfileService> logger)
     {
         _dbContext = dbContext;
@@ -33,6 +35,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
         _allergenService = allergenService;
         _allergenCheckService = allergenCheckService;
         _notificationDispatcher = notificationDispatcher;
+        _retentionTracker = retentionTracker;
         _logger = logger;
     }
 
@@ -71,6 +74,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             entity.Id.ToString(), $"Created allergy '{entity.Name}' for client {entity.ClientId}");
 
         await TryDispatchAsync("ClientAllergy", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(dto.ClientId, userId);
 
@@ -121,6 +125,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Updated allergy '{entity.Name}'");
 
         await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
 
@@ -144,6 +149,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Soft-deleted allergy '{entity.Name}'");
 
         await TryDispatchAsync("ClientAllergy", id, EntityChangeType.Deleted, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         await RecheckActiveAllergenWarningsAsync(entity.ClientId, userId);
 
@@ -176,6 +182,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             entity.Id.ToString(), $"Created medication '{entity.Name}' for client {entity.ClientId}");
 
         await TryDispatchAsync("ClientMedication", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
     }
@@ -215,6 +222,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Updated medication '{entity.Name}'");
 
         await TryDispatchAsync("ClientMedication", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -236,6 +244,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Soft-deleted medication '{entity.Name}'");
 
         await TryDispatchAsync("ClientMedication", id, EntityChangeType.Deleted, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -267,6 +276,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             entity.Id.ToString(), $"Created condition '{entity.Name}' for client {entity.ClientId}");
 
         await TryDispatchAsync("ClientCondition", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
     }
@@ -307,6 +317,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Updated condition '{entity.Name}'");
 
         await TryDispatchAsync("ClientCondition", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -328,6 +339,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Soft-deleted condition '{entity.Name}'");
 
         await TryDispatchAsync("ClientCondition", id, EntityChangeType.Deleted, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -356,6 +368,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             entity.Id.ToString(), $"Created dietary restriction '{entity.RestrictionType}' for client {entity.ClientId}");
 
         await TryDispatchAsync("ClientDietaryRestriction", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return MapToDto(entity);
     }
@@ -393,6 +406,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Updated dietary restriction '{entity.RestrictionType}'");
 
         await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -414,6 +428,7 @@ public class ClientHealthProfileService : IClientHealthProfileService
             id.ToString(), $"Soft-deleted dietary restriction '{entity.RestrictionType}'");
 
         await TryDispatchAsync("ClientDietaryRestriction", id, EntityChangeType.Deleted, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }

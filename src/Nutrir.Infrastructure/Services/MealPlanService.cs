@@ -15,6 +15,7 @@ public class MealPlanService : IMealPlanService
     private readonly IAuditLogService _auditLogService;
     private readonly IAllergenCheckService _allergenCheckService;
     private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IRetentionTracker _retentionTracker;
     private readonly ILogger<MealPlanService> _logger;
 
     public MealPlanService(
@@ -23,6 +24,7 @@ public class MealPlanService : IMealPlanService
         IAuditLogService auditLogService,
         IAllergenCheckService allergenCheckService,
         INotificationDispatcher notificationDispatcher,
+        IRetentionTracker retentionTracker,
         ILogger<MealPlanService> logger)
     {
         _dbContext = dbContext;
@@ -30,6 +32,7 @@ public class MealPlanService : IMealPlanService
         _auditLogService = auditLogService;
         _allergenCheckService = allergenCheckService;
         _notificationDispatcher = notificationDispatcher;
+        _retentionTracker = retentionTracker;
         _logger = logger;
     }
 
@@ -214,6 +217,7 @@ public class MealPlanService : IMealPlanService
             $"Created meal plan for client {entity.ClientId}");
 
         await TryDispatchAsync("MealPlan", entity.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         var client = await _dbContext.Clients.FindAsync(entity.ClientId);
         var createdByName = await GetUserNameAsync(userId);
@@ -251,6 +255,7 @@ public class MealPlanService : IMealPlanService
             "Updated meal plan metadata");
 
         await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -332,6 +337,7 @@ public class MealPlanService : IMealPlanService
             "Saved content for meal plan");
 
         await TryDispatchAsync("MealPlan", dto.MealPlanId, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return true;
     }
@@ -365,6 +371,7 @@ public class MealPlanService : IMealPlanService
             $"Status changed from {oldStatus} to {newStatus}");
 
         await TryDispatchAsync("MealPlan", id, EntityChangeType.Updated, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(entity.ClientId);
 
         return new UpdateStatusResultDto(true);
     }
@@ -451,6 +458,7 @@ public class MealPlanService : IMealPlanService
             $"Duplicated meal plan from source {id}");
 
         await TryDispatchAsync("MealPlan", copy.Id, EntityChangeType.Created, userId);
+        await _retentionTracker.UpdateLastInteractionAsync(copy.ClientId);
 
         return true;
     }

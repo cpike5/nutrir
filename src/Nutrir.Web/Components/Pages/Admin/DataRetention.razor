@@ -1,0 +1,505 @@
+@page "/admin/data-retention"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+@attribute [Authorize(Roles = "Admin")]
+@inject IDataPurgeService DataPurgeService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Data Retention — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Admin"), new BreadcrumbItem("Data Retention") })" />
+
+<div class="retention-page">
+    <div class="page-header">
+        <h1 class="page-title">Data Retention</h1>
+        <span class="page-subtitle">Monitor client data retention periods and manage PIPEDA-compliant data purging.</span>
+    </div>
+
+    @* ── Tab Navigation ──────────────────────────────── *@
+    <div class="tab-nav">
+        <button class="tab-button @(_activeTab == Tab.Expiring ? "tab-active" : "")"
+                @onclick="() => SetTab(Tab.Expiring)">
+            Expiring Soon
+            @if (_expiringClients is not null && _expiringClients.Count > 0)
+            {
+                <span class="tab-count">@_expiringClients.Count</span>
+            }
+        </button>
+        <button class="tab-button @(_activeTab == Tab.Expired ? "tab-active" : "")"
+                @onclick="() => SetTab(Tab.Expired)">
+            Expired
+            @if (_expiredClients is not null && _expiredClients.Count > 0)
+            {
+                <span class="tab-count tab-count-danger">@_expiredClients.Count</span>
+            }
+        </button>
+        <button class="tab-button @(_activeTab == Tab.History ? "tab-active" : "")"
+                @onclick="() => SetTab(Tab.History)">
+            Purge History
+        </button>
+    </div>
+
+    @* ── Tab Content ─────────────────────────────────── *@
+    @if (_isLoading)
+    {
+        <div class="table-card">
+            <p class="loading-text">Loading data...</p>
+        </div>
+    }
+    else
+    {
+        @* ── Tab: Expiring Soon ──────────────────────── *@
+        @if (_activeTab == Tab.Expiring)
+        {
+            <div class="table-card section-animate">
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span class="section-header-label">Clients Expiring Within 90 Days</span>
+                </div>
+
+                @if (_expiringClients is null || _expiringClients.Count == 0)
+                {
+                    <div class="empty-state">
+                        <p class="empty-state-title">No clients expiring soon</p>
+                        <p class="empty-state-desc">All client data retention periods are more than 90 days away.</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Last Interaction</th>
+                                <th>Expires</th>
+                                <th>Days Remaining</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var client in _expiringClients)
+                            {
+                                <tr>
+                                    <td class="cell-name">@client.FirstName @client.LastName</td>
+                                    <td class="cell-muted">@FormatDate(client.LastInteractionDate)</td>
+                                    <td class="cell-muted">@FormatDate(client.RetentionExpiresAt)</td>
+                                    <td>
+                                        @if (client.DaysUntilExpiry <= 30)
+                                        {
+                                            <Badge Variant="BadgeVariant.Warning">@client.DaysUntilExpiry days</Badge>
+                                        }
+                                        else
+                                        {
+                                            <span class="cell-muted">@client.DaysUntilExpiry days</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+
+        @* ── Tab: Expired ────────────────────────────── *@
+        @if (_activeTab == Tab.Expired)
+        {
+            <div class="table-card section-animate">
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span class="section-header-label">Expired Client Data</span>
+                </div>
+
+                @if (_expiredClients is null || _expiredClients.Count == 0)
+                {
+                    <div class="empty-state">
+                        <p class="empty-state-title">No expired client data</p>
+                        <p class="empty-state-desc">All client data is within its retention period.</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Last Interaction</th>
+                                <th>Expired On</th>
+                                <th>Days Overdue</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var client in _expiredClients)
+                            {
+                                <tr>
+                                    <td class="cell-name">@client.FirstName @client.LastName</td>
+                                    <td class="cell-muted">@FormatDate(client.LastInteractionDate)</td>
+                                    <td class="cell-muted">@FormatDate(client.RetentionExpiresAt)</td>
+                                    <td>
+                                        <Badge Variant="BadgeVariant.Error">@Math.Abs(client.DaysUntilExpiry) days</Badge>
+                                    </td>
+                                    <td class="col-actions">
+                                        <Button Variant="ButtonVariant.Outline"
+                                                Size="ButtonSize.Small"
+                                                OnClick="() => OpenPurgeModal(client)">
+                                            Begin Purge
+                                        </Button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+
+        @* ── Tab: Purge History ──────────────────────── *@
+        @if (_activeTab == Tab.History)
+        {
+            <div class="table-card section-animate">
+                <div class="section-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span class="section-header-label">Purge History</span>
+                </div>
+
+                @if (_purgeHistory is null || _purgeHistory.Count == 0)
+                {
+                    <div class="empty-state">
+                        <p class="empty-state-title">No purge history</p>
+                        <p class="empty-state-desc">No data purges have been performed yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Performed By</th>
+                                <th>Client Identifier</th>
+                                <th>Entities Purged</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in _purgeHistory)
+                            {
+                                <tr>
+                                    <td class="cell-muted">@entry.PurgedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@entry.PurgedByName</td>
+                                    <td class="cell-muted">@entry.ClientIdentifier</td>
+                                    <td class="cell-muted">@entry.PurgedEntities</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+    }
+</div>
+
+@* ── Purge Modal ─────────────────────────────────────── *@
+@if (_showPurgeModal && _purgeClient is not null)
+{
+    <div class="modal-backdrop" @onclick="ClosePurgeModal">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            @* ── Step 1: Review ──────────────────────── *@
+            @if (_purgeStep == 1)
+            {
+                <div class="modal-header">
+                    <h2 class="modal-title">Review Data Purge</h2>
+                    <button class="modal-close" @onclick="ClosePurgeModal" aria-label="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (_purgeSummary is null)
+                    {
+                        <p class="loading-text">Loading summary...</p>
+                    }
+                    else
+                    {
+                        <div class="purge-client-name">@_purgeSummary.ClientName</div>
+
+                        <div class="purge-summary-grid">
+                            <div class="summary-item">
+                                <span class="summary-label">Appointments</span>
+                                <span class="summary-value">@_purgeSummary.AppointmentCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Meal Plans</span>
+                                <span class="summary-value">@_purgeSummary.MealPlanCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Progress Entries</span>
+                                <span class="summary-value">@_purgeSummary.ProgressEntryCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Progress Goals</span>
+                                <span class="summary-value">@_purgeSummary.ProgressGoalCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Consent Events</span>
+                                <span class="summary-value">@_purgeSummary.ConsentEventCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Health Profile Items</span>
+                                <span class="summary-value">@_purgeSummary.HealthProfileItemCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Intake Forms</span>
+                                <span class="summary-value">@_purgeSummary.IntakeFormCount</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Session Notes</span>
+                                <span class="summary-value">@_purgeSummary.SessionNoteCount</span>
+                            </div>
+                        </div>
+
+                        <div class="purge-warning">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            <span>This action is irreversible. All client data will be permanently anonymized.</span>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(_purgeSummary is null)"
+                            OnClick="() => _purgeStep = 2">
+                        Continue
+                    </Button>
+                    <button class="cancel-link" @onclick="ClosePurgeModal">Cancel</button>
+                </div>
+            }
+
+            @* ── Step 2: Confirm ─────────────────────── *@
+            @if (_purgeStep == 2)
+            {
+                <div class="modal-header">
+                    <h2 class="modal-title">Confirm Data Purge</h2>
+                    <button class="modal-close" @onclick="ClosePurgeModal" aria-label="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="confirm-instruction">
+                        To confirm the purge, type <strong>@_expectedConfirmation</strong> in the field below.
+                    </p>
+                    <input type="text"
+                           class="field-input confirm-input"
+                           placeholder="@_expectedConfirmation"
+                           @bind="_confirmationText"
+                           @bind:event="oninput" />
+
+                    @if (!string.IsNullOrEmpty(_purgeError))
+                    {
+                        <div class="error-banner">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <span>@_purgeError</span>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!IsConfirmationValid || _isPurging)"
+                            OnClick="ExecutePurge">
+                        @if (_isPurging)
+                        {
+                            <span>Purging...</span>
+                        }
+                        else
+                        {
+                            <span>Execute Purge</span>
+                        }
+                    </Button>
+                    <button class="cancel-link" @onclick="ClosePurgeModal">Cancel</button>
+                </div>
+            }
+
+            @* ── Step 3: Result ──────────────────────── *@
+            @if (_purgeStep == 3)
+            {
+                <div class="modal-header">
+                    <h2 class="modal-title">Purge @(_purgeSuccess ? "Complete" : "Failed")</h2>
+                </div>
+                <div class="modal-body">
+                    @if (_purgeSuccess)
+                    {
+                        <div class="result-banner result-success">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            <span>Client data has been successfully anonymized.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="result-banner result-error">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <span>@(_purgeError ?? "An unexpected error occurred during the purge.")</span>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <Button Variant="ButtonVariant.Primary" OnClick="CloseAndReload">Close</Button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private enum Tab { Expiring, Expired, History }
+
+    private Tab _activeTab = Tab.Expiring;
+    private bool _isLoading = true;
+    private string? _userId;
+
+    // Tab data
+    private List<RetentionClientDto>? _expiringClients;
+    private List<RetentionClientDto>? _expiredClients;
+    private List<DataPurgeAuditLogDto>? _purgeHistory;
+
+    // Purge modal state
+    private bool _showPurgeModal;
+    private int _purgeStep = 1;
+    private RetentionClientDto? _purgeClient;
+    private PurgeSummaryDto? _purgeSummary;
+    private string _confirmationText = string.Empty;
+    private string _expectedConfirmation = string.Empty;
+    private bool _isPurging;
+    private bool _purgeSuccess;
+    private string? _purgeError;
+
+    private bool IsConfirmationValid =>
+        string.Equals(_confirmationText, _expectedConfirmation, StringComparison.Ordinal);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadAllDataAsync();
+    }
+
+    private async Task LoadAllDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var expiringTask = DataPurgeService.GetExpiringClientsAsync(90);
+            var expiredTask = DataPurgeService.GetExpiredClientsAsync();
+            var historyTask = DataPurgeService.GetPurgeHistoryAsync();
+
+            await Task.WhenAll(expiringTask, expiredTask, historyTask);
+
+            _expiringClients = expiringTask.Result;
+            _expiredClients = expiredTask.Result;
+            _purgeHistory = historyTask.Result;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SetTab(Tab tab)
+    {
+        _activeTab = tab;
+    }
+
+    private async Task OpenPurgeModal(RetentionClientDto client)
+    {
+        _purgeClient = client;
+        _purgeStep = 1;
+        _confirmationText = string.Empty;
+        _expectedConfirmation = $"PURGE {client.FirstName} {client.LastName}";
+        _purgeSummary = null;
+        _purgeError = null;
+        _purgeSuccess = false;
+        _showPurgeModal = true;
+
+        _purgeSummary = await DataPurgeService.GetPurgeSummaryAsync(client.ClientId);
+        StateHasChanged();
+    }
+
+    private void ClosePurgeModal()
+    {
+        _showPurgeModal = false;
+        _purgeClient = null;
+        _purgeSummary = null;
+        _confirmationText = string.Empty;
+        _purgeError = null;
+    }
+
+    private async Task ExecutePurge()
+    {
+        if (_purgeClient is null || !IsConfirmationValid || string.IsNullOrEmpty(_userId))
+            return;
+
+        _isPurging = true;
+        _purgeError = null;
+
+        try
+        {
+            var result = await DataPurgeService.ExecutePurgeAsync(
+                _purgeClient.ClientId,
+                _confirmationText,
+                _userId);
+
+            _purgeSuccess = result.Success;
+            if (!result.Success)
+            {
+                _purgeError = result.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _purgeSuccess = false;
+            _purgeError = ex.Message;
+        }
+        finally
+        {
+            _isPurging = false;
+            _purgeStep = 3;
+        }
+    }
+
+    private async Task CloseAndReload()
+    {
+        ClosePurgeModal();
+        await LoadAllDataAsync();
+    }
+
+    private static string FormatDate(DateTime? date)
+    {
+        return date?.ToString("yyyy-MM-dd") ?? "N/A";
+    }
+}

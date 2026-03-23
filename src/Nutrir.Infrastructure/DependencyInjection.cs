@@ -48,6 +48,8 @@ public static class DependencyInjection
         services.Configure<IntakeFormOptions>(configuration.GetSection(IntakeFormOptions.SectionName));
         services.AddScoped<IIntakeFormService, IntakeFormService>();
         services.AddScoped<ITimeZoneService, TimeZoneService>();
+        services.AddScoped<IRetentionTracker, RetentionTracker>();
+        services.AddScoped<IDataPurgeService, DataPurgeService>();
 
         services.AddSingleton<IMaintenanceService, MaintenanceService>();
 
