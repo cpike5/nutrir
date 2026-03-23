@@ -284,7 +284,8 @@ public class ClientServiceTests : IDisposable
         var countBefore = await _dbContext.Clients.IgnoreQueryFilters().CountAsync();
 
         // Act
-        try { await _sut.CreateAsync(dto, UserId); } catch (InvalidOperationException) { }
+        await FluentActions.Invoking(() => _sut.CreateAsync(dto, UserId))
+            .Should().ThrowAsync<InvalidOperationException>();
 
         // Assert
         var countAfter = await _dbContext.Clients.IgnoreQueryFilters().CountAsync();
@@ -298,7 +299,8 @@ public class ClientServiceTests : IDisposable
         var dto = BuildCreateDto(consentGiven: false);
 
         // Act
-        try { await _sut.CreateAsync(dto, UserId); } catch (InvalidOperationException) { }
+        await FluentActions.Invoking(() => _sut.CreateAsync(dto, UserId))
+            .Should().ThrowAsync<InvalidOperationException>();
 
         // Assert
         await _auditLogService.DidNotReceive().LogAsync(
@@ -386,17 +388,17 @@ public class ClientServiceTests : IDisposable
     [Fact]
     public async Task GetListAsync_WithNoSearchTerm_ReturnsAllActiveClients()
     {
-        // Arrange
-        var client1 = MakeClient("Diana", "Active");
-        var client2 = MakeClient("Eve", "Active");
+        // Arrange — use a distinctive last name to isolate from other tests' data
+        var client1 = MakeClient("Diana", "AllActiveTest");
+        var client2 = MakeClient("Eve", "AllActiveTest");
         _dbContext.Clients.AddRange(client1, client2);
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var results = await _sut.GetListAsync();
+        var results = await _sut.GetListAsync("AllActiveTest");
 
         // Assert
-        results.Should().HaveCountGreaterThanOrEqualTo(2);
+        results.Should().HaveCount(2);
         results.Should().Contain(r => r.FirstName == "Diana");
         results.Should().Contain(r => r.FirstName == "Eve");
     }
@@ -538,19 +540,19 @@ public class ClientServiceTests : IDisposable
     [Fact]
     public async Task GetPagedAsync_WithDefaultQuery_ReturnsTotalCount()
     {
-        // Arrange
-        var client1 = MakeClient("Oliver", "Paged");
-        var client2 = MakeClient("Paula", "Paged");
+        // Arrange — use search term to isolate from other tests' data
+        var client1 = MakeClient("Oliver", "PagedCount");
+        var client2 = MakeClient("Paula", "PagedCount");
         _dbContext.Clients.AddRange(client1, client2);
         await _dbContext.SaveChangesAsync();
 
-        var query = new ClientListQuery();
+        var query = new ClientListQuery(SearchTerm: "PagedCount");
 
         // Act
         var result = await _sut.GetPagedAsync(query);
 
         // Assert
-        result.TotalCount.Should().BeGreaterThanOrEqualTo(2);
+        result.TotalCount.Should().Be(2);
         result.Page.Should().Be(1);
         result.PageSize.Should().Be(25);
     }
@@ -558,20 +560,20 @@ public class ClientServiceTests : IDisposable
     [Fact]
     public async Task GetPagedAsync_WithPageSizeOne_ReturnsOneItem()
     {
-        // Arrange
-        var client1 = MakeClient("Quinn", "PageSize");
-        var client2 = MakeClient("Rachel", "PageSize");
+        // Arrange — use search term to isolate from other tests' data
+        var client1 = MakeClient("Quinn", "PageSizeTest");
+        var client2 = MakeClient("Rachel", "PageSizeTest");
         _dbContext.Clients.AddRange(client1, client2);
         await _dbContext.SaveChangesAsync();
 
-        var query = new ClientListQuery(Page: 1, PageSize: 1);
+        var query = new ClientListQuery(Page: 1, PageSize: 1, SearchTerm: "PageSizeTest");
 
         // Act
         var result = await _sut.GetPagedAsync(query);
 
         // Assert
         result.Items.Should().HaveCount(1);
-        result.TotalCount.Should().BeGreaterThanOrEqualTo(2,
+        result.TotalCount.Should().Be(2,
             because: "TotalCount reflects all matching records, not just the page");
     }
 
@@ -671,8 +673,8 @@ public class ClientServiceTests : IDisposable
         var result = await _sut.GetPagedAsync(query);
 
         // Assert
-        result.Items.Should().HaveCountGreaterThanOrEqualTo(2);
-        var emails = result.Items.Select(r => r.Email).ToList();
+        result.Items.Should().HaveCount(2);
+        var emails = result.Items.Select(r => r.Email ?? string.Empty).ToList();
         emails.Should().BeInAscendingOrder(because: "results should be sorted by email ascending");
     }
 
@@ -694,7 +696,7 @@ public class ClientServiceTests : IDisposable
         var result = await _sut.GetPagedAsync(query);
 
         // Assert
-        result.Items.Should().HaveCountGreaterThanOrEqualTo(2);
+        result.Items.Should().HaveCount(2);
         var lastNames = result.Items.Select(r => r.LastName).ToList();
         lastNames.Should().BeInDescendingOrder(
             because: "results should be sorted by last name descending");
