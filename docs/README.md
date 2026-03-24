@@ -70,6 +70,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | Document | Description |
 |----------|-------------|
 | [Domain Summary](auth/domain-summary.md) | Current state of the auth domain — Identity setup, role hierarchy, invite codes, MFA, authentication flow, timezone management |
+| [ADR-0006: Multi-Practitioner Data Scoping](auth/adr-0006-multi-practitioner-data-scoping.md) | Optional practitioner filter on all list/aggregate services, IPractitionerScopeProvider, My View vs Practice View toggle |
 
 ## Compliance Documents
 
@@ -116,6 +117,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | [ADR-0003](scheduling/adr-0003-timezone-handling.md) | Scheduling | Timezone handling strategy (UTC storage, conversion, Canadian timezones) |
 | [ADR-0004](scheduling/adr-0004-status-transitions.md) | Scheduling | Appointment status transition state machine |
 | [ADR-0005](scheduling/adr-0005-overlap-detection.md) | Scheduling | Appointment overlap detection algorithm |
+| [ADR-0006](auth/adr-0006-multi-practitioner-data-scoping.md) | Auth | Multi-practitioner data scoping — My View vs Practice View |
 
 ## Worklog
 
