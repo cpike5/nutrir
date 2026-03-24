@@ -1,0 +1,174 @@
+@page "/admin/foods"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+@attribute [Authorize(Roles = "Admin")]
+@inject IFoodService FoodService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Food Database — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Food Database") })" />
+
+<div class="food-list-page">
+    <div class="food-list-header">
+        <div>
+            <h1 class="page-title">Food Database</h1>
+            <p class="page-subtitle">Manage foods available for meal plan autocomplete.</p>
+        </div>
+        <Button Variant="ButtonVariant.Primary" OnClick="@(() => NavigationManager.NavigateTo("/admin/foods/create"))">
+            + Add Food
+        </Button>
+    </div>
+
+    <div class="food-list-search">
+        <FormGroup Label="Search" Id="food-search">
+            <FormInput Id="food-search"
+                       Value="@_searchTerm"
+                       ValueChanged="OnSearchChanged"
+                       Placeholder="Search foods..." />
+        </FormGroup>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="food-list-loading">Loading foods...</p>
+        }
+        else if (_filteredFoods.Count == 0)
+        {
+            <div class="food-list-empty">
+                <p>No foods found.</p>
+            </div>
+        }
+        else
+        {
+            <table class="food-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Serving</th>
+                        <th>Calories</th>
+                        <th>Protein</th>
+                        <th>Carbs</th>
+                        <th>Fat</th>
+                        <th>Tags</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var food in _filteredFoods)
+                    {
+                        <tr class="food-table-row" @onclick="() => NavigateToEdit(food.Id)">
+                            <td class="food-table-name">@food.Name</td>
+                            <td>@food.ServingSize @food.ServingSizeUnit</td>
+                            <td>@food.CaloriesKcal</td>
+                            <td>@food.ProteinG g</td>
+                            <td>@food.CarbsG g</td>
+                            <td>@food.FatG g</td>
+                            <td class="food-table-tags">
+                                @foreach (var tag in food.Tags.Take(3))
+                                {
+                                    <Badge Variant="BadgeVariant.Secondary">@tag</Badge>
+                                }
+                                @if (food.Tags.Length > 3)
+                                {
+                                    <span class="food-tag-more">+@(food.Tags.Length - 3)</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="food-delete-btn" title="Delete"
+                                        @onclick="() => ConfirmDelete(food)"
+                                        @onclick:stopPropagation>
+                                    &times;
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Card>
+
+    @if (_deleteTarget is not null)
+    {
+        <div class="modal-overlay" @onclick="() => _deleteTarget = null">
+            <div class="modal-content" @onclick:stopPropagation>
+                <p>Delete <strong>@_deleteTarget.Name</strong>?</p>
+                <div class="modal-actions">
+                    <Button Variant="ButtonVariant.Primary" OnClick="DeleteFood">Delete</Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="() => _deleteTarget = null">Cancel</Button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="success-msg">@_message</div>
+    }
+</div>
+
+@code {
+    private List<FoodDto> _allFoods = [];
+    private List<FoodDto> _filteredFoods = [];
+    private bool _isLoading = true;
+    private string? _searchTerm;
+    private FoodDto? _deleteTarget;
+    private string? _message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFoodsAsync();
+    }
+
+    private async Task LoadFoodsAsync()
+    {
+        _isLoading = true;
+        _allFoods = await FoodService.GetAllAsync();
+        ApplyFilter();
+        _isLoading = false;
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _searchTerm = value;
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredFoods = _allFoods;
+        }
+        else
+        {
+            _filteredFoods = _allFoods
+                .Where(f => f.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void NavigateToEdit(int id)
+    {
+        NavigationManager.NavigateTo($"/admin/foods/{id}/edit");
+    }
+
+    private void ConfirmDelete(FoodDto food)
+    {
+        _deleteTarget = food;
+    }
+
+    private async Task DeleteFood()
+    {
+        if (_deleteTarget is null) return;
+
+        await FoodService.SoftDeleteAsync(_deleteTarget.Id, "system");
+        _message = $"Deleted {_deleteTarget.Name}.";
+        _deleteTarget = null;
+        await LoadFoodsAsync();
+    }
+}

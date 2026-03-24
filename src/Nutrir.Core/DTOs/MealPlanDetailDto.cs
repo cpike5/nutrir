@@ -57,4 +57,5 @@ public record MealItemDto(
     decimal CarbsG,
     decimal FatG,
     string? Notes,
-    int SortOrder);
+    int SortOrder,
+    int? FoodId = null);

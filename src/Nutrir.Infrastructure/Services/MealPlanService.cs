@@ -322,7 +322,8 @@ public class MealPlanService : IMealPlanService
                         CarbsG = itemDto.CarbsG,
                         FatG = itemDto.FatG,
                         Notes = itemDto.Notes,
-                        SortOrder = itemDto.SortOrder
+                        SortOrder = itemDto.SortOrder,
+                        FoodId = itemDto.FoodId
                     });
                 }
 
@@ -458,7 +459,8 @@ public class MealPlanService : IMealPlanService
                         CarbsG = item.CarbsG,
                         FatG = item.FatG,
                         Notes = item.Notes,
-                        SortOrder = item.SortOrder
+                        SortOrder = item.SortOrder,
+                        FoodId = item.FoodId
                     });
                 }
 
@@ -610,7 +612,7 @@ public class MealPlanService : IMealPlanService
                             .Select(i => new MealItemDto(
                                 i.Id, i.FoodName, i.Quantity, i.Unit,
                                 i.CaloriesKcal, i.ProteinG, i.CarbsG, i.FatG,
-                                i.Notes, i.SortOrder))
+                                i.Notes, i.SortOrder, i.FoodId))
                             .ToList();
 
                         return new MealSlotDto(

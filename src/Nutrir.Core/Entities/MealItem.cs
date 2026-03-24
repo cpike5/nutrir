@@ -23,4 +23,6 @@ public class MealItem
     public string? Notes { get; set; }
 
     public int SortOrder { get; set; }
+
+    public int? FoodId { get; set; }
 }

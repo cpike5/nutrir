@@ -57,6 +57,7 @@ Organized by domain. Each folder contains specs, designs, and decisions for that
 | Document | Description |
 |----------|-------------|
 | [Domain Summary](meal-plans/domain-summary.md) | Current state of the meal plans domain — entity hierarchy, service API, PDF export, allergen checking, status lifecycle |
+| [Food Database](meal-plans/food-database.md) | Food/nutrition database — entity structure, seed data, search behavior, autocomplete UX, admin management |
 | [PDF Export Layout](meal-plans/pdf-export-layout.md) | PDF export layout spec — page setup, header/content/footer structure, color palette, table columns |
 
 ## Progress Documents

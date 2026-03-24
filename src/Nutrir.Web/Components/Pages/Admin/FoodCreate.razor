@@ -1,0 +1,138 @@
+@page "/admin/foods/create"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@using Nutrir.Web.Components.UI
+@attribute [Authorize(Roles = "Admin")]
+@inject IFoodService FoodService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Add Food — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Food Database", "/admin/foods"), new BreadcrumbItem("Add Food") })" />
+
+<div class="food-form-page">
+    <h1 class="page-title">Add Food</h1>
+
+    <Card>
+        <div class="food-form">
+            <FormGroup Label="Name" Id="food-name">
+                <FormInput Id="food-name" Value="@_name" ValueChanged="@(v => _name = v)" Placeholder="e.g. Chicken Breast (grilled)" />
+            </FormGroup>
+
+            <div class="food-form-row">
+                <FormGroup Label="Serving Size" Id="food-serving">
+                    <FormInput Id="food-serving" Type="number" Value="@_servingSize" ValueChanged="@(v => _servingSize = v)" />
+                </FormGroup>
+                <FormGroup Label="Unit" Id="food-unit">
+                    <FormSelect Id="food-unit" Value="@_servingUnit" ValueChanged="@(v => _servingUnit = v)">
+                        <option value="g">g</option>
+                        <option value="mL">mL</option>
+                        <option value="oz">oz</option>
+                        <option value="cup">cup</option>
+                        <option value="piece">piece</option>
+                        <option value="serving">serving</option>
+                    </FormSelect>
+                </FormGroup>
+            </div>
+
+            <div class="food-form-row">
+                <FormGroup Label="Calories (kcal)" Id="food-cal">
+                    <FormInput Id="food-cal" Type="number" Value="@_calories" ValueChanged="@(v => _calories = v)" />
+                </FormGroup>
+                <FormGroup Label="Protein (g)" Id="food-protein">
+                    <FormInput Id="food-protein" Type="number" Value="@_protein" ValueChanged="@(v => _protein = v)" />
+                </FormGroup>
+                <FormGroup Label="Carbs (g)" Id="food-carbs">
+                    <FormInput Id="food-carbs" Type="number" Value="@_carbs" ValueChanged="@(v => _carbs = v)" />
+                </FormGroup>
+                <FormGroup Label="Fat (g)" Id="food-fat">
+                    <FormInput Id="food-fat" Type="number" Value="@_fat" ValueChanged="@(v => _fat = v)" />
+                </FormGroup>
+            </div>
+
+            <FormGroup Label="Tags (comma-separated)" Id="food-tags">
+                <FormInput Id="food-tags" Value="@_tags" ValueChanged="@(v => _tags = v)" Placeholder="e.g. high-protein, low-carb, mediterranean" />
+            </FormGroup>
+
+            <FormGroup Label="Notes" Id="food-notes">
+                <FormInput Id="food-notes" Value="@_notes" ValueChanged="@(v => _notes = v)" Placeholder="Optional notes" />
+            </FormGroup>
+
+            <div class="food-form-actions">
+                <Button Variant="ButtonVariant.Primary" OnClick="Save" Disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : "Create Food")
+                </Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="@(() => NavigationManager.NavigateTo("/admin/foods"))">Cancel</Button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <p class="error-msg">@_error</p>
+            }
+        </div>
+    </Card>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string _name = "";
+    private string _servingSize = "100";
+    private string _servingUnit = "g";
+    private string _calories = "";
+    private string _protein = "";
+    private string _carbs = "";
+    private string _fat = "";
+    private string _tags = "";
+    private string _notes = "";
+    private bool _isSaving;
+    private string? _error;
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            var authState = await AuthState;
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
+
+            decimal.TryParse(_servingSize, out var servingSize);
+            decimal.TryParse(_calories, out var cal);
+            decimal.TryParse(_protein, out var prot);
+            decimal.TryParse(_carbs, out var carbs);
+            decimal.TryParse(_fat, out var fat);
+
+            var tags = string.IsNullOrWhiteSpace(_tags)
+                ? Array.Empty<string>()
+                : _tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var dto = new CreateFoodDto(
+                _name.Trim(), servingSize, _servingUnit,
+                cal, prot, carbs, fat, tags,
+                string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
+
+            await FoodService.CreateAsync(dto, userId);
+            NavigationManager.NavigateTo("/admin/foods");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to create food: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

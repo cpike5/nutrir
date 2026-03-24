@@ -158,11 +158,9 @@
                     {
                         <div class="item-form">
                             <div class="item-form-row">
-                                <FormInput Id="@($"food-{slot.GetHashCode()}")"
-                                           Placeholder="Food name"
-                                           Value="@_newItem.FoodName"
-                                           ValueChanged="@(v => _newItem.FoodName = v)"
-                                           DebounceMs="300" />
+                                <FoodAutocomplete Value="@_newItem.FoodName"
+                                                  ValueChanged="@(v => _newItem.FoodName = v)"
+                                                  OnFoodSelected="OnFoodSelected" />
                                 <FormInput Id="@($"qty-{slot.GetHashCode()}")"
                                            Type="number"
                                            Placeholder="Qty"
@@ -297,7 +295,8 @@
                         CarbsG = i.CarbsG,
                         FatG = i.FatG,
                         Notes = i.Notes,
-                        SortOrder = i.SortOrder
+                        SortOrder = i.SortOrder,
+                        FoodId = i.FoodId
                     }).ToList()
                 }).ToList()
             }).ToList();
@@ -342,6 +341,18 @@
         _newItem = new NewItemModel { Unit = "g" };
     }
 
+    private void OnFoodSelected(FoodSearchResultDto food)
+    {
+        _newItem.FoodName = food.Name;
+        _newItem.FoodId = food.Id;
+        _newItem.Quantity = food.ServingSize.ToString();
+        _newItem.Unit = food.ServingSizeUnit;
+        _newItem.Calories = food.CaloriesKcal.ToString();
+        _newItem.Protein = food.ProteinG.ToString();
+        _newItem.Carbs = food.CarbsG.ToString();
+        _newItem.Fat = food.FatG.ToString();
+    }
+
     private void AddItem(EditSlot slot)
     {
         if (string.IsNullOrWhiteSpace(_newItem.FoodName)) return;
@@ -361,7 +372,8 @@
             ProteinG = prot,
             CarbsG = carbs,
             FatG = fat,
-            SortOrder = slot.Items.Count
+            SortOrder = slot.Items.Count,
+            FoodId = _newItem.FoodId
         });
 
         _addingToSlot = null;
@@ -407,7 +419,8 @@
                             CarbsG: i.CarbsG,
                             FatG: i.FatG,
                             Notes: i.Notes,
-                            SortOrder: i.SortOrder
+                            SortOrder: i.SortOrder,
+                            FoodId: i.FoodId
                         )).ToList()
                     )).ToList()
                 )).ToList()
@@ -514,6 +527,7 @@
         public decimal FatG { get; set; }
         public string? Notes { get; set; }
         public int SortOrder { get; set; }
+        public int? FoodId { get; set; }
     }
 
     private class NewItemModel
@@ -525,5 +539,6 @@
         public string? Protein { get; set; }
         public string? Carbs { get; set; }
         public string? Fat { get; set; }
+        public int? FoodId { get; set; }
     }
 }

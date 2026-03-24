@@ -1,0 +1,117 @@
+.food-list-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.food-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.food-list-search {
+    max-width: 320px;
+}
+
+.food-list-loading,
+.food-list-empty {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.food-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.food-table th {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.food-table td {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.food-table-row {
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.food-table-row:hover {
+    background: var(--color-bg-alt);
+}
+
+.food-table-name {
+    font-weight: 500;
+}
+
+.food-table-tags {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.food-tag-more {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.food-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.food-delete-btn:hover {
+    color: var(--color-error);
+    background: var(--color-error-muted);
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: var(--color-bg-card);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    min-width: 300px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    justify-content: flex-end;
+}
+
+.success-msg {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-success-muted);
+    color: var(--color-success);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+}

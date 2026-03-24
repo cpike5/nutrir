@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IMealPlanPdfService, MealPlanPdfService>();
         services.AddScoped<IDataExportService, DataExportService>();
         services.AddScoped<IProgressService, ProgressService>();
+        services.AddScoped<IFoodService, FoodService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IReportService, ReportService>();
         services.Configure<IntakeFormOptions>(configuration.GetSection(IntakeFormOptions.SectionName));
