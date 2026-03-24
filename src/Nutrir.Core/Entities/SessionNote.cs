@@ -1,3 +1,5 @@
+using Nutrir.Core.Enums;
+
 namespace Nutrir.Core.Entities;
 
 public class SessionNote
@@ -9,8 +11,11 @@ public class SessionNote
     public bool IsDraft { get; set; } = true;
 
     // Structured sections
+    public SessionType? SessionType { get; set; }
     public string? Notes { get; set; }
     public int? AdherenceScore { get; set; } // 0-100
+    public string? PractitionerAssessment { get; set; }
+    public string? ContextualFactors { get; set; }
     public string? MeasurementsTaken { get; set; }
     public string? PlanAdjustments { get; set; }
     public string? FollowUpActions { get; set; }

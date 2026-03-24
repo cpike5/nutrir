@@ -14,6 +14,7 @@
 @inject IClientHealthProfileService HealthProfileService
 @inject IMealPlanService MealPlanService
 @inject IProgressService ProgressService
+@inject ISessionNoteService SessionNoteService
 @inject IAuditLogService AuditLogService
 @inject ITimeZoneService TimeZoneService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -87,6 +88,19 @@
                 </div>
                 <div class="notes-body">
                     <pre class="notes-text">@_appointment.PrepNotes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Previous Follow-up Items ─────────────────── *@
+        @if (!string.IsNullOrEmpty(_previousFollowUpActions))
+        {
+            <div class="table-card section-animate" style="animation-delay: 60ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Previous Follow-up Items</span>
+                </div>
+                <div class="notes-body">
+                    <pre class="notes-text">@_previousFollowUpActions</pre>
                 </div>
             </div>
         }
@@ -323,6 +337,7 @@
     private List<MealPlanSummaryDto> _activeMealPlans = [];
     private List<ProgressEntrySummaryDto> _recentProgress = [];
     private List<AppointmentDto> _upcomingAppointments = [];
+    private string? _previousFollowUpActions;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -338,6 +353,15 @@
             _activeMealPlans = await MealPlanService.GetByClientAsync(clientId, 5);
             _recentProgress = await ProgressService.GetRecentByClientAsync(clientId, 5);
             _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(clientId, 3);
+
+            // Load follow-up actions from last finalized session note
+            var sessionNotes = await SessionNoteService.GetByClientAsync(clientId);
+            var lastFinalized = sessionNotes.FirstOrDefault(sn => !sn.IsDraft);
+            if (lastFinalized is not null)
+            {
+                var fullNote = await SessionNoteService.GetByIdAsync(lastFinalized.Id);
+                _previousFollowUpActions = fullNote?.FollowUpActions;
+            }
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";

@@ -105,8 +105,11 @@ public class SessionNoteService : ISessionNoteService
         var entity = await _dbContext.SessionNotes.FindAsync(id);
         if (entity is null) return false;
 
+        entity.SessionType = dto.SessionType;
         entity.Notes = dto.Notes;
         entity.AdherenceScore = dto.AdherenceScore;
+        entity.PractitionerAssessment = dto.PractitionerAssessment;
+        entity.ContextualFactors = dto.ContextualFactors;
         entity.MeasurementsTaken = dto.MeasurementsTaken;
         entity.PlanAdjustments = dto.PlanAdjustments;
         entity.FollowUpActions = dto.FollowUpActions;
@@ -222,7 +225,8 @@ public class SessionNoteService : ISessionNoteService
                 client?.FirstName ?? "",
                 client?.LastName ?? "",
                 true,
-                null,
+                null, // SessionType
+                null, // AdherenceScore
                 a.StartTime,
                 DateTime.MinValue);
         }).ToList();
@@ -255,8 +259,11 @@ public class SessionNoteService : ISessionNoteService
             entity.CreatedByUserId,
             createdByName,
             entity.IsDraft,
+            entity.SessionType,
             entity.Notes,
             entity.AdherenceScore,
+            entity.PractitionerAssessment,
+            entity.ContextualFactors,
             entity.MeasurementsTaken,
             entity.PlanAdjustments,
             entity.FollowUpActions,
@@ -292,6 +299,7 @@ public class SessionNoteService : ISessionNoteService
                 client?.FirstName ?? "",
                 client?.LastName ?? "",
                 e.IsDraft,
+                e.SessionType,
                 e.AdherenceScore,
                 appointmentDate == default ? null : appointmentDate,
                 e.CreatedAt);

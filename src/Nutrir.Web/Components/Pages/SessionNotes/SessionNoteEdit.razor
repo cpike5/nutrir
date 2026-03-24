@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject ISessionNoteService SessionNoteService
@@ -78,12 +79,46 @@
         <div class="table-card">
             <div class="form-body">
                 <div class="form-section">
+                    <FormGroup Label="Session Type" Id="sessionType">
+                        <FormSelect Id="sessionType" Value="@_sessionType" ValueChanged="OnSessionTypeChanged" disabled="@_isFinalized">
+                            <option value="">— Select —</option>
+                            <option value="InitialConsultation">Initial Consultation</option>
+                            <option value="FollowUp">Follow-Up</option>
+                            <option value="CheckIn">Check-In</option>
+                            <option value="GroupSession">Group Session</option>
+                        </FormSelect>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
                     <FormGroup Label="Session Notes" Id="notes">
                         <textarea id="notes"
                                   class="form-input form-textarea"
                                   rows="6"
                                   @bind="_notes"
                                   placeholder="Record observations, discussion points, and key takeaways from the session..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Clinical Assessment" Id="practitionerAssessment">
+                        <textarea id="practitionerAssessment"
+                                  class="form-input form-textarea"
+                                  rows="4"
+                                  @bind="_practitionerAssessment"
+                                  placeholder="Clinical judgment, professional assessment, and recommendations..."
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Contextual Factors" Id="contextualFactors">
+                        <textarea id="contextualFactors"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                                  @bind="_contextualFactors"
+                                  placeholder="e.g., illness, travel, stress, medication changes, growth spurt"
                                   disabled="@_isFinalized"></textarea>
                     </FormGroup>
                 </div>
@@ -203,8 +238,11 @@
     private string? _errorMessage;
 
     // Form fields
+    private string? _sessionType;
     private string? _notes;
     private int? _adherenceScore;
+    private string? _practitionerAssessment;
+    private string? _contextualFactors;
     private string? _measurementsTaken;
     private string? _planAdjustments;
     private string? _followUpActions;
@@ -219,8 +257,11 @@
 
         if (_sessionNote is not null)
         {
+            _sessionType = _sessionNote.SessionType?.ToString();
             _notes = _sessionNote.Notes;
             _adherenceScore = _sessionNote.AdherenceScore;
+            _practitionerAssessment = _sessionNote.PractitionerAssessment;
+            _contextualFactors = _sessionNote.ContextualFactors;
             _measurementsTaken = _sessionNote.MeasurementsTaken;
             _planAdjustments = _sessionNote.PlanAdjustments;
             _followUpActions = _sessionNote.FollowUpActions;
@@ -261,7 +302,7 @@
         try
         {
             var userId = await GetUserId();
-            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            var dto = new UpdateSessionNoteDto(ParseSessionType(), _notes, _adherenceScore, _practitionerAssessment, _contextualFactors, _measurementsTaken, _planAdjustments, _followUpActions);
             var result = await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
 
             if (result)
@@ -298,7 +339,7 @@
             var userId = await GetUserId();
 
             // Save current content first
-            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            var dto = new UpdateSessionNoteDto(ParseSessionType(), _notes, _adherenceScore, _practitionerAssessment, _contextualFactors, _measurementsTaken, _planAdjustments, _followUpActions);
             await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
 
             // Then finalize
@@ -325,5 +366,16 @@
             _isSaving = false;
             StateHasChanged();
         }
+    }
+
+    private void OnSessionTypeChanged(string value)
+    {
+        _sessionType = string.IsNullOrEmpty(value) ? null : value;
+    }
+
+    private SessionType? ParseSessionType()
+    {
+        if (string.IsNullOrEmpty(_sessionType)) return null;
+        return Enum.TryParse<SessionType>(_sessionType, out var result) ? result : null;
     }
 }
