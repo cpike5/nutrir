@@ -19,4 +19,6 @@ public class ApplicationUser : IdentityUser
     public string TimeZoneId { get; set; } = "America/Toronto";
 
     public int BufferTimeMinutes { get; set; } = 15;
+
+    public string ThemePreference { get; set; } = "system";
 }

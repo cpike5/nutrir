@@ -1,0 +1,114 @@
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthStateProvider
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Nutrir.Infrastructure.Data
+@using Nutrir.Core.Entities
+
+<button class="cc-theme-toggle" title="@TooltipText" @onclick="CycleTheme">
+    @if (_currentTheme == "light")
+    {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+    }
+    else if (_currentTheme == "dark")
+    {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    }
+    else
+    {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+    }
+</button>
+
+@code {
+    private string _currentTheme = "system";
+    private IJSObjectReference? _themeModule;
+    private DotNetObjectReference<ThemeToggle>? _dotNetRef;
+
+    private string TooltipText => _currentTheme switch
+    {
+        "light" => "Theme: Light (click for Dark)",
+        "dark" => "Theme: Dark (click for System)",
+        _ => "Theme: System (click for Light)"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _themeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/theme.js");
+            var stored = await _themeModule.InvokeAsync<string>("getStoredTheme");
+            if (!string.IsNullOrEmpty(stored))
+            {
+                _currentTheme = stored;
+                StateHasChanged();
+            }
+
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await _themeModule.InvokeVoidAsync("watchSystemTheme", _dotNetRef);
+        }
+    }
+
+    private async Task CycleTheme()
+    {
+        _currentTheme = _currentTheme switch
+        {
+            "light" => "dark",
+            "dark" => "system",
+            _ => "light"
+        };
+
+        if (_themeModule is not null)
+        {
+            await _themeModule.InvokeVoidAsync("setTheme", _currentTheme);
+        }
+
+        _ = PersistThemeAsync(_currentTheme);
+    }
+
+    private async Task PersistThemeAsync(string theme)
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return;
+
+            await using var db = await DbContextFactory.CreateDbContextAsync();
+            var user = await db.Users.FindAsync(userId);
+            if (user is not null)
+            {
+                user.ThemePreference = theme;
+                await db.SaveChangesAsync();
+            }
+        }
+        catch
+        {
+            // Non-critical — preference will still be in localStorage
+        }
+    }
+
+    [JSInvokable]
+    public void OnSystemThemeChanged(string resolvedTheme)
+    {
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotNetRef?.Dispose();
+        if (_themeModule is not null)
+        {
+            await _themeModule.DisposeAsync();
+        }
+    }
+}

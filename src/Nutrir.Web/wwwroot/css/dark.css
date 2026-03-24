@@ -1,0 +1,178 @@
+/* ============================================================
+   Dark Mode Overrides
+   Applied via [data-theme="dark"] on <html>
+   Loaded after design-system.css and palette CSS
+   ============================================================ */
+
+[data-theme="dark"] {
+  /* ── Base Palette ───────────────────────────────────────── */
+  --color-bg:        #0f1117;
+  --color-text:      #e4e4e7;
+  --color-primary:   #4ade80;
+  --color-secondary: #f472b6;
+  --color-accent:    #d4c8a8;
+
+  /* ── RGB channels ───────────────────────────────────────── */
+  --rgb-bg:        15, 17, 23;
+  --rgb-text:      228, 228, 231;
+  --rgb-primary:   74, 222, 128;
+  --rgb-secondary: 244, 114, 182;
+  --rgb-accent:    212, 200, 168;
+
+  /* ── Surfaces ───────────────────────────────────────────── */
+  --color-bg-alt:      #161822;
+  --color-bg-card:     #1a1d27;
+  --color-bg-elevated: #242736;
+  --color-bg-footer:   #12141c;
+  --color-bg-input:    #1e2130;
+  --color-bg-overlay:  rgba(0, 0, 0, 0.6);
+
+  /* ── Text ───────────────────────────────────────────────── */
+  --color-text-muted:        #a1a1aa;
+  --color-text-on-primary:   #052e16;
+  --color-text-on-secondary: #1a0010;
+  --color-text-link:         var(--color-primary);
+
+  /* ── Interactive states ─────────────────────────────────── */
+  --color-primary-hover:   #22c55e;
+  --color-primary-muted:   rgba(var(--rgb-primary), 0.15);
+  --color-secondary-hover: #ec4899;
+  --color-secondary-muted: rgba(var(--rgb-secondary), 0.15);
+  --color-accent-hover:    #c4b896;
+  --color-accent-muted:    rgba(var(--rgb-accent), 0.15);
+
+  /* ── Borders ────────────────────────────────────────────── */
+  --color-border:       rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(var(--rgb-primary), 0.4);
+  --color-border-input: rgba(255, 255, 255, 0.12);
+  --color-border-focus: var(--color-primary);
+
+  /* ── Shadows ────────────────────────────────────────────── */
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow-primary: 0 0 40px rgba(var(--rgb-primary), 0.15);
+  --shadow-glow-accent:  0 0 40px rgba(var(--rgb-accent), 0.10);
+
+  /* ── Feedback colors ────────────────────────────────────── */
+  --color-success:  #4ade80;
+  --color-warning:  #fbbf24;
+  --color-error:    #f87171;
+  --color-info:     #38bdf8;
+
+  color-scheme: dark;
+}
+
+/* ── System theme preference ──────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --color-bg:        #0f1117;
+    --color-text:      #e4e4e7;
+    --color-primary:   #4ade80;
+    --color-secondary: #f472b6;
+    --color-accent:    #d4c8a8;
+
+    --rgb-bg:        15, 17, 23;
+    --rgb-text:      228, 228, 231;
+    --rgb-primary:   74, 222, 128;
+    --rgb-secondary: 244, 114, 182;
+    --rgb-accent:    212, 200, 168;
+
+    --color-bg-alt:      #161822;
+    --color-bg-card:     #1a1d27;
+    --color-bg-elevated: #242736;
+    --color-bg-footer:   #12141c;
+    --color-bg-input:    #1e2130;
+    --color-bg-overlay:  rgba(0, 0, 0, 0.6);
+
+    --color-text-muted:        #a1a1aa;
+    --color-text-on-primary:   #052e16;
+    --color-text-on-secondary: #1a0010;
+    --color-text-link:         var(--color-primary);
+
+    --color-primary-hover:   #22c55e;
+    --color-primary-muted:   rgba(var(--rgb-primary), 0.15);
+    --color-secondary-hover: #ec4899;
+    --color-secondary-muted: rgba(var(--rgb-secondary), 0.15);
+    --color-accent-hover:    #c4b896;
+    --color-accent-muted:    rgba(var(--rgb-accent), 0.15);
+
+    --color-border:       rgba(255, 255, 255, 0.08);
+    --color-border-hover: rgba(var(--rgb-primary), 0.4);
+    --color-border-input: rgba(255, 255, 255, 0.12);
+    --color-border-focus: var(--color-primary);
+
+    --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.5);
+    --shadow-glow-primary: 0 0 40px rgba(var(--rgb-primary), 0.15);
+    --shadow-glow-accent:  0 0 40px rgba(var(--rgb-accent), 0.10);
+
+    --color-success:  #4ade80;
+    --color-warning:  #fbbf24;
+    --color-error:    #f87171;
+    --color-info:     #38bdf8;
+
+    color-scheme: dark;
+  }
+}
+
+/* ── Radzen component dark mode overrides ─────────────────── */
+[data-theme="dark"] .rz-datepicker,
+[data-theme="dark"] .rz-dropdown,
+[data-theme="dark"] .rz-dialog,
+[data-theme="dark"] .rz-panel,
+[data-theme="dark"] .rz-fieldset {
+  background-color: var(--color-bg-card);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .rz-textbox,
+[data-theme="dark"] .rz-spinner .rz-inputtext,
+[data-theme="dark"] .rz-textarea {
+  background-color: var(--color-bg-input);
+  color: var(--color-text);
+  border-color: var(--color-border-input);
+}
+
+[data-theme="dark"] .rz-state-highlight {
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] .rz-datepicker,
+  [data-theme="system"] .rz-dropdown,
+  [data-theme="system"] .rz-dialog,
+  [data-theme="system"] .rz-panel,
+  [data-theme="system"] .rz-fieldset {
+    background-color: var(--color-bg-card);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  [data-theme="system"] .rz-textbox,
+  [data-theme="system"] .rz-spinner .rz-inputtext,
+  [data-theme="system"] .rz-textarea {
+    background-color: var(--color-bg-input);
+    color: var(--color-text);
+    border-color: var(--color-border-input);
+  }
+
+  [data-theme="system"] .rz-state-highlight {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+  }
+}
+
+/* ── Image brightness adjustment for dark mode ────────────── */
+[data-theme="dark"] img:not([data-no-dim]) {
+  filter: brightness(0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] img:not([data-no-dim]) {
+    filter: brightness(0.9);
+  }
+}

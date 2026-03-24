@@ -1,13 +1,26 @@
 @using Microsoft.AspNetCore.Components.Endpoints
+@using Microsoft.AspNetCore.Identity
+@using Nutrir.Core.Entities
 @inject IConfiguration Configuration
+@inject UserManager<ApplicationUser> UserManager
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="@_resolvedTheme" data-theme-setting="@_themePreference">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    <script>
+        (function() {
+            var s = document.documentElement.getAttribute('data-theme-setting') || localStorage.getItem('theme-preference') || 'system';
+            var r = s === 'system'
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : s;
+            document.documentElement.setAttribute('data-theme', r);
+            document.documentElement.setAttribute('data-theme-setting', s);
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +29,7 @@
     {
         <link rel="stylesheet" href="@Assets[PaletteCssPath]" />
     }
+    <link rel="stylesheet" href="@Assets["css/dark.css"]" />
     <link rel="stylesheet" href="@Assets["css/layout.css"]" />
     <link rel="stylesheet" href="@Assets["css/error-pages.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
@@ -50,6 +64,8 @@
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     private IComponentRenderMode? pageRenderMode;
+    private string _themePreference = "system";
+    private string _resolvedTheme = "light";
 
     private static readonly HashSet<string> KnownPalettes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -67,8 +83,18 @@
         }
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         pageRenderMode = HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            var user = await UserManager.GetUserAsync(HttpContext.User);
+            if (user is not null && !string.IsNullOrEmpty(user.ThemePreference))
+            {
+                _themePreference = user.ThemePreference;
+                _resolvedTheme = _themePreference == "system" ? "light" : _themePreference;
+            }
+        }
     }
 }
