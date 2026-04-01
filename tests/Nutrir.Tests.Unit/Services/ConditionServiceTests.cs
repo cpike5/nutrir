@@ -118,6 +118,7 @@ public class ConditionServiceTests : IDisposable
         var result = await _sut.UpdateAsync(entity.Id, "New Name", "Y99", "Specific", UserId);
 
         result.Should().BeTrue();
+        _dbContext.ChangeTracker.Clear();
         var updated = await _dbContext.Conditions.FindAsync(entity.Id);
         updated!.Name.Should().Be("New Name");
         updated.IcdCode.Should().Be("Y99");
@@ -154,6 +155,7 @@ public class ConditionServiceTests : IDisposable
 
         await _sut.UpdateAsync(entity.Id, "  Trimmed  ", null, null, UserId);
 
+        _dbContext.ChangeTracker.Clear();
         var updated = await _dbContext.Conditions.FindAsync(entity.Id);
         updated!.Name.Should().Be("Trimmed");
     }
@@ -172,6 +174,7 @@ public class ConditionServiceTests : IDisposable
         var result = await _sut.DeleteAsync(entity.Id, UserId);
 
         result.Should().BeTrue();
+        _dbContext.ChangeTracker.Clear();
         var deleted = _dbContext.Conditions.IgnoreQueryFilters().First(c => c.Id == entity.Id);
         deleted.IsDeleted.Should().BeTrue();
     }

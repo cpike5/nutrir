@@ -78,6 +78,7 @@ public class RetentionTrackerTests : IDisposable
 
         await _sut.UpdateLastInteractionAsync(client.Id);
 
+        _dbContext.ChangeTracker.Clear();
         var updated = await _dbContext.Clients.FindAsync(client.Id);
         updated!.LastInteractionDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
     }
@@ -89,6 +90,7 @@ public class RetentionTrackerTests : IDisposable
 
         await _sut.UpdateLastInteractionAsync(client.Id);
 
+        _dbContext.ChangeTracker.Clear();
         var updated = await _dbContext.Clients.FindAsync(client.Id);
         updated!.RetentionExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddYears(5), TimeSpan.FromSeconds(2));
     }
@@ -100,6 +102,7 @@ public class RetentionTrackerTests : IDisposable
 
         await _sut.UpdateLastInteractionAsync(client.Id);
 
+        _dbContext.ChangeTracker.Clear();
         var updated = await _dbContext.Clients.FindAsync(client.Id);
         updated!.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
     }
