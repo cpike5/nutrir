@@ -1,0 +1,172 @@
+@rendermode InteractiveServer
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@inject IFoodService FoodService
+
+<div class="autocomplete-wrapper" @onfocusout="HandleFocusOut">
+    <input type="text"
+           class="form-input @CssClass"
+           value="@Value"
+           placeholder="@Placeholder"
+           autocomplete="off"
+           role="combobox"
+           aria-expanded="@_isOpen.ToString().ToLower()"
+           aria-autocomplete="list"
+           aria-controls="food-autocomplete-listbox"
+           @oninput="HandleInput"
+           @onkeydown="HandleKeyDown"
+           @onkeydown:preventDefault="@_preventDefaultKey" />
+
+    @if (_isLoading)
+    {
+        <div class="autocomplete-dropdown autocomplete-empty">Searching...</div>
+    }
+    else if (_isOpen && _results.Count > 0)
+    {
+        <ul class="autocomplete-dropdown" id="food-autocomplete-listbox" role="listbox" aria-label="Food search results">
+            @for (var i = 0; i < _results.Count; i++)
+            {
+                var food = _results[i];
+                var index = i;
+                var isFocused = index == _highlightedIndex;
+                <li class="autocomplete-option @(isFocused ? "focused" : "")"
+                    role="option"
+                    aria-selected="@(isFocused ? "true" : "false")"
+                    @onmousedown="() => SelectFood(food)"
+                    @onmousedown:preventDefault>
+                    <span class="food-option-name">@food.Name</span>
+                    <span class="food-option-macros">@($"{food.ProteinG:0.#}g P · {food.CarbsG:0.#}g C · {food.FatG:0.#}g F · {food.CaloriesKcal:0} kcal")</span>
+                </li>
+            }
+        </ul>
+    }
+    else if (_isOpen && !_isLoading && _hasSearched)
+    {
+        <div class="autocomplete-dropdown autocomplete-empty">No matching foods found</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public EventCallback<FoodDto> OnFoodSelected { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+
+    private List<FoodDto> _results = [];
+    private bool _isOpen;
+    private bool _isLoading;
+    private bool _hasSearched;
+    private bool _preventDefaultKey;
+    private int _highlightedIndex = -1;
+    private CancellationTokenSource? _cts;
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        var query = e.Value?.ToString() ?? string.Empty;
+        await ValueChanged.InvokeAsync(query);
+
+        _highlightedIndex = -1;
+        _preventDefaultKey = false;
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            _isOpen = false;
+            _isLoading = false;
+            _results = [];
+            _hasSearched = false;
+            return;
+        }
+
+        // Cancel any in-flight search
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        _isLoading = true;
+        _isOpen = true;
+        _hasSearched = false;
+
+        try
+        {
+            await Task.Delay(300, token);
+
+            if (!token.IsCancellationRequested)
+            {
+                _results = await FoodService.SearchAsync(query, 10);
+                _hasSearched = true;
+                _isLoading = false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Debounce cancelled — a newer search is pending
+        }
+    }
+
+    private async Task HandleFocusOut()
+    {
+        // Small delay to allow mousedown on dropdown item to register before closing
+        await Task.Delay(200);
+        _isOpen = false;
+        _highlightedIndex = -1;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!_isOpen)
+        {
+            _preventDefaultKey = false;
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (_results.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % _results.Count;
+                }
+                _preventDefaultKey = true;
+                break;
+
+            case "ArrowUp":
+                if (_results.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0
+                        ? _results.Count - 1
+                        : _highlightedIndex - 1;
+                }
+                _preventDefaultKey = true;
+                break;
+
+            case "Enter":
+                if (_isOpen && _highlightedIndex >= 0 && _highlightedIndex < _results.Count)
+                {
+                    await SelectFood(_results[_highlightedIndex]);
+                }
+                _preventDefaultKey = _isOpen;
+                break;
+
+            case "Escape":
+                _isOpen = false;
+                _highlightedIndex = -1;
+                _preventDefaultKey = false;
+                break;
+
+            default:
+                _preventDefaultKey = false;
+                break;
+        }
+    }
+
+    private async Task SelectFood(FoodDto food)
+    {
+        _isOpen = false;
+        _highlightedIndex = -1;
+        _results = [];
+
+        await ValueChanged.InvokeAsync(food.Name);
+        await OnFoodSelected.InvokeAsync(food);
+    }
+}

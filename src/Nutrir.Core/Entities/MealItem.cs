@@ -6,6 +6,10 @@ public class MealItem
 
     public int MealSlotId { get; set; }
 
+    public int? FoodId { get; set; }
+
+    public Food? Food { get; set; }
+
     public string FoodName { get; set; } = string.Empty;
 
     public decimal Quantity { get; set; }

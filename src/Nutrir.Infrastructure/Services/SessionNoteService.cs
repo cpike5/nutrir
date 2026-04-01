@@ -106,11 +106,14 @@ public class SessionNoteService : ISessionNoteService
         if (entity is null) return false;
         if (!entity.IsDraft) return false;
 
+        entity.SessionType = dto.SessionType;
         entity.Notes = dto.Notes;
         entity.AdherenceScore = dto.AdherenceScore;
         entity.MeasurementsTaken = dto.MeasurementsTaken;
         entity.PlanAdjustments = dto.PlanAdjustments;
         entity.FollowUpActions = dto.FollowUpActions;
+        entity.PractitionerAssessment = dto.PractitionerAssessment;
+        entity.ContextualFactors = dto.ContextualFactors;
         entity.UpdatedAt = DateTime.UtcNow;
 
         try
@@ -257,11 +260,14 @@ public class SessionNoteService : ISessionNoteService
             entity.CreatedByUserId,
             createdByName,
             entity.IsDraft,
+            entity.SessionType,
             entity.Notes,
             entity.AdherenceScore,
             entity.MeasurementsTaken,
             entity.PlanAdjustments,
             entity.FollowUpActions,
+            entity.PractitionerAssessment,
+            entity.ContextualFactors,
             appointment?.StartTime,
             entity.CreatedAt,
             entity.UpdatedAt);

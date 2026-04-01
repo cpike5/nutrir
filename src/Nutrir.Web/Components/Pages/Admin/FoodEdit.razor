@@ -1,0 +1,226 @@
+@page "/admin/foods/new"
+@page "/admin/foods/{Id:int}/edit"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using System.ComponentModel.DataAnnotations
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IFoodService FoodService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>@(Id > 0 ? "Edit Food" : "Add Food") — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Food Database", "/admin/foods"), new BreadcrumbItem(Id > 0 ? "Edit Food" : "Add Food") })" />
+
+<div class="users-page">
+    <div class="users-header">
+        <h1 class="users-title">@(Id > 0 ? "Edit Food" : "Add Food")</h1>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="users-loading">Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="@_model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-section">
+                    <FormGroup Label="Name" Id="food-name">
+                        <InputText id="food-name" class="form-input" @bind-Value="_model.Name" placeholder="Food name" />
+                        <ValidationMessage For="() => _model.Name" />
+                    </FormGroup>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <FormGroup Label="Serving Size" Id="food-serving-size">
+                            <InputNumber id="food-serving-size" class="form-input" @bind-Value="_model.ServingSize" />
+                            <ValidationMessage For="() => _model.ServingSize" />
+                        </FormGroup>
+
+                        <FormGroup Label="Serving Unit" Id="food-serving-unit">
+                            <InputText id="food-serving-unit" class="form-input" @bind-Value="_model.ServingSizeUnit" placeholder="e.g. g, oz, cup" />
+                            <ValidationMessage For="() => _model.ServingSizeUnit" />
+                        </FormGroup>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                        <FormGroup Label="Calories (kcal)" Id="food-calories">
+                            <InputNumber id="food-calories" class="form-input" @bind-Value="_model.CaloriesKcal" />
+                            <ValidationMessage For="() => _model.CaloriesKcal" />
+                        </FormGroup>
+
+                        <FormGroup Label="Protein (g)" Id="food-protein">
+                            <InputNumber id="food-protein" class="form-input" @bind-Value="_model.ProteinG" />
+                            <ValidationMessage For="() => _model.ProteinG" />
+                        </FormGroup>
+
+                        <FormGroup Label="Carbs (g)" Id="food-carbs">
+                            <InputNumber id="food-carbs" class="form-input" @bind-Value="_model.CarbsG" />
+                            <ValidationMessage For="() => _model.CarbsG" />
+                        </FormGroup>
+
+                        <FormGroup Label="Fat (g)" Id="food-fat">
+                            <InputNumber id="food-fat" class="form-input" @bind-Value="_model.FatG" />
+                            <ValidationMessage For="() => _model.FatG" />
+                        </FormGroup>
+                    </div>
+
+                    <FormGroup Label="Tags (comma-separated)" Id="food-tags">
+                        <InputText id="food-tags" class="form-input" @bind-Value="_model.TagsRaw" placeholder="e.g. protein, chicken, meat" />
+                    </FormGroup>
+
+                    <FormGroup Label="Notes" Id="food-notes">
+                        <InputTextArea id="food-notes" class="form-input" @bind-Value="_model.Notes" rows="3" placeholder="Optional notes" />
+                    </FormGroup>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <p class="error-msg" style="margin-top: 0.5rem;">@_errorMessage</p>
+                }
+
+                <div class="item-form-actions" style="margin-top: 1.5rem;">
+                    <Button Variant="ButtonVariant.Primary" Type="submit" Disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save Food")
+                    </Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="@(() => NavigationManager.NavigateTo("/admin/foods"))">Cancel</Button>
+                </div>
+            </EditForm>
+        }
+    </Card>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private FoodFormModel _model = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+
+        if (Id > 0)
+        {
+            var food = await FoodService.GetByIdAsync(Id);
+            if (food is not null)
+            {
+                _model = new FoodFormModel
+                {
+                    Name = food.Name,
+                    ServingSize = food.ServingSize,
+                    ServingSizeUnit = food.ServingSizeUnit,
+                    CaloriesKcal = food.CaloriesKcal,
+                    ProteinG = food.ProteinG,
+                    CarbsG = food.CarbsG,
+                    FatG = food.FatG,
+                    TagsRaw = string.Join(", ", food.Tags),
+                    Notes = food.Notes
+                };
+            }
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+            var tags = string.IsNullOrWhiteSpace(_model.TagsRaw)
+                ? Array.Empty<string>()
+                : _model.TagsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (Id > 0)
+            {
+                var updateDto = new UpdateFoodDto(
+                    Name: _model.Name,
+                    ServingSize: _model.ServingSize,
+                    ServingSizeUnit: _model.ServingSizeUnit,
+                    CaloriesKcal: _model.CaloriesKcal,
+                    ProteinG: _model.ProteinG,
+                    CarbsG: _model.CarbsG,
+                    FatG: _model.FatG,
+                    Tags: tags,
+                    Notes: _model.Notes);
+
+                var success = await FoodService.UpdateAsync(Id, updateDto, userId);
+                if (!success)
+                {
+                    _errorMessage = "Failed to update food.";
+                    return;
+                }
+            }
+            else
+            {
+                var createDto = new CreateFoodDto(
+                    Name: _model.Name,
+                    ServingSize: _model.ServingSize,
+                    ServingSizeUnit: _model.ServingSizeUnit,
+                    CaloriesKcal: _model.CaloriesKcal,
+                    ProteinG: _model.ProteinG,
+                    CarbsG: _model.CarbsG,
+                    FatG: _model.FatG,
+                    Tags: tags,
+                    Notes: _model.Notes);
+
+                await FoodService.CreateAsync(createDto, userId);
+            }
+
+            NavigationManager.NavigateTo("/admin/foods");
+        }
+        catch
+        {
+            _errorMessage = "An error occurred while saving.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private class FoodFormModel
+    {
+        [Required(ErrorMessage = "Name is required.")]
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [Range(0, double.MaxValue, ErrorMessage = "Serving size must be a positive number.")]
+        public decimal ServingSize { get; set; }
+
+        [Required(ErrorMessage = "Serving unit is required.")]
+        [MaxLength(50)]
+        public string ServingSizeUnit { get; set; } = "g";
+
+        [Range(0, double.MaxValue)]
+        public decimal CaloriesKcal { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal ProteinG { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal CarbsG { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal FatG { get; set; }
+
+        public string? TagsRaw { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}

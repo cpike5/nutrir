@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Nutrir.Core.DTOs
+@using Nutrir.Core.Enums
 @using Nutrir.Core.Interfaces
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject ISessionNoteService SessionNoteService
@@ -78,6 +79,21 @@
         <div class="table-card">
             <div class="form-body">
                 <div class="form-section">
+                    <FormGroup Label="Session Type" Id="sessionType">
+                        <select id="sessionType"
+                                class="form-input form-select"
+                                @bind="_sessionTypeStr"
+                                disabled="@_isFinalized">
+                            <option value="">— Select type —</option>
+                            <option value="InitialConsultation">Initial Consultation</option>
+                            <option value="FollowUp">Follow-Up</option>
+                            <option value="CheckIn">Check-In</option>
+                            <option value="GroupSession">Group Session</option>
+                        </select>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
                     <FormGroup Label="Session Notes" Id="notes">
                         <textarea id="notes"
                                   class="form-input form-textarea"
@@ -142,6 +158,28 @@
                                   disabled="@_isFinalized"></textarea>
                     </FormGroup>
                 </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Practitioner Assessment" Id="practitionerAssessment">
+                        <textarea id="practitionerAssessment"
+                                  class="form-input form-textarea"
+                                  rows="4"
+                                  @bind="_practitionerAssessment"
+                                  disabled="@_isFinalized"></textarea>
+                        <small class="form-hint">Clinical judgment and professional assessment — stored encrypted and confidential</small>
+                    </FormGroup>
+                </div>
+
+                <div class="form-section">
+                    <FormGroup Label="Contextual Factors" Id="contextualFactors">
+                        <textarea id="contextualFactors"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                                  @bind="_contextualFactors"
+                                  placeholder="e.g., illness, travel, stress, medication changes, growth spurt"
+                                  disabled="@_isFinalized"></textarea>
+                    </FormGroup>
+                </div>
             </div>
 
             @if (!_isFinalized)
@@ -203,11 +241,19 @@
     private string? _errorMessage;
 
     // Form fields
+    private string? _sessionTypeStr;
+    private SessionType? _sessionType
+    {
+        get => Enum.TryParse<SessionType>(_sessionTypeStr, out var val) ? val : null;
+        set => _sessionTypeStr = value?.ToString();
+    }
     private string? _notes;
     private int? _adherenceScore;
     private string? _measurementsTaken;
     private string? _planAdjustments;
     private string? _followUpActions;
+    private string? _practitionerAssessment;
+    private string? _contextualFactors;
 
     private BreadcrumbItem[] _breadcrumbs = [];
 
@@ -219,11 +265,14 @@
 
         if (_sessionNote is not null)
         {
+            _sessionType = _sessionNote.SessionType;
             _notes = _sessionNote.Notes;
             _adherenceScore = _sessionNote.AdherenceScore;
             _measurementsTaken = _sessionNote.MeasurementsTaken;
             _planAdjustments = _sessionNote.PlanAdjustments;
             _followUpActions = _sessionNote.FollowUpActions;
+            _practitionerAssessment = _sessionNote.PractitionerAssessment;
+            _contextualFactors = _sessionNote.ContextualFactors;
             _isFinalized = !_sessionNote.IsDraft;
 
             _breadcrumbs =
@@ -261,7 +310,7 @@
         try
         {
             var userId = await GetUserId();
-            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            var dto = new UpdateSessionNoteDto(_sessionType, _notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions, _practitionerAssessment, _contextualFactors);
             var result = await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
 
             if (result)
@@ -298,7 +347,7 @@
             var userId = await GetUserId();
 
             // Save current content first
-            var dto = new UpdateSessionNoteDto(_notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions);
+            var dto = new UpdateSessionNoteDto(_sessionType, _notes, _adherenceScore, _measurementsTaken, _planAdjustments, _followUpActions, _practitionerAssessment, _contextualFactors);
             await SessionNoteService.UpdateAsync(_sessionNote.Id, dto, userId);
 
             // Then finalize

@@ -326,11 +326,14 @@ public class SessionNoteServiceTests : IDisposable
         var created = await CreateDraftForCompletedAppointmentAsync();
 
         var dto = new UpdateSessionNoteDto(
+            SessionType: null,
             Notes: "Patient showed good progress.",
             AdherenceScore: 85,
             MeasurementsTaken: "Weight: 72 kg",
             PlanAdjustments: "Increased protein target.",
-            FollowUpActions: "Schedule in 4 weeks.");
+            FollowUpActions: "Schedule in 4 weeks.",
+            PractitionerAssessment: null,
+            ContextualFactors: null);
 
         var beforeUpdate = DateTime.UtcNow;
 
@@ -357,11 +360,14 @@ public class SessionNoteServiceTests : IDisposable
     {
         // Arrange
         var dto = new UpdateSessionNoteDto(
+            SessionType: null,
             Notes: "Should not persist.",
             AdherenceScore: 50,
             MeasurementsTaken: null,
             PlanAdjustments: null,
-            FollowUpActions: null);
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
 
         // Act
         var success = await _sut.UpdateAsync(99999, dto, UserId);
@@ -378,11 +384,14 @@ public class SessionNoteServiceTests : IDisposable
         _auditLogService.ClearReceivedCalls();
 
         var dto = new UpdateSessionNoteDto(
+            SessionType: null,
             Notes: "Some notes.",
             AdherenceScore: 70,
             MeasurementsTaken: null,
             PlanAdjustments: null,
-            FollowUpActions: null);
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
 
         // Act
         await _sut.UpdateAsync(created.Id, dto, UserId);
@@ -404,11 +413,14 @@ public class SessionNoteServiceTests : IDisposable
         await _sut.FinalizeAsync(created.Id, UserId);
 
         var dto = new UpdateSessionNoteDto(
+            SessionType: null,
             Notes: "Should not persist.",
             AdherenceScore: 50,
             MeasurementsTaken: null,
             PlanAdjustments: null,
-            FollowUpActions: null);
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
 
         // Act
         var success = await _sut.UpdateAsync(created.Id, dto, UserId);
@@ -598,6 +610,222 @@ public class SessionNoteServiceTests : IDisposable
 
         // Assert
         results.Should().NotContain(sn => sn.AppointmentId == _seededScheduledAppointmentId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // New field tests (SessionType, PractitionerAssessment, ContextualFactors)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateDraft_NewNote_HasNullSessionType()
+    {
+        // Act
+        var result = await CreateDraftForCompletedAppointmentAsync();
+
+        // Assert
+        result.SessionType.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SessionType_SetsCorrectly()
+    {
+        // Arrange
+        var created = await CreateDraftForCompletedAppointmentAsync();
+
+        var dto = new UpdateSessionNoteDto(
+            SessionType: Nutrir.Core.Enums.SessionType.FollowUp,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
+
+        // Act
+        await _sut.UpdateAsync(created.Id, dto, UserId);
+
+        // Assert
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.SessionType.Should().Be(Nutrir.Core.Enums.SessionType.FollowUp);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SessionType_CanBeChangedToNull()
+    {
+        // Arrange — set a session type first
+        var created = await CreateDraftForCompletedAppointmentAsync();
+
+        var setDto = new UpdateSessionNoteDto(
+            SessionType: Nutrir.Core.Enums.SessionType.CheckIn,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
+        await _sut.UpdateAsync(created.Id, setDto, UserId);
+
+        // Act — clear it
+        var clearDto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
+        await _sut.UpdateAsync(created.Id, clearDto, UserId);
+
+        // Assert
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.SessionType.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PractitionerAssessment_SetsValue()
+    {
+        // Arrange
+        var created = await CreateDraftForCompletedAppointmentAsync();
+        const string assessment = "Client is progressing well. Recommend increased caloric intake.";
+
+        var dto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: assessment,
+            ContextualFactors: null);
+
+        // Act
+        await _sut.UpdateAsync(created.Id, dto, UserId);
+
+        // Assert — stored as plain text in test DB (EncryptedStringConverter not registered in SQLite test context)
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.PractitionerAssessment.Should().Be(assessment);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PractitionerAssessment_CanBeNull()
+    {
+        // Arrange — set a value first
+        var created = await CreateDraftForCompletedAppointmentAsync();
+        var setDto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: "Some assessment",
+            ContextualFactors: null);
+        await _sut.UpdateAsync(created.Id, setDto, UserId);
+
+        // Act — clear it
+        var clearDto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
+        await _sut.UpdateAsync(created.Id, clearDto, UserId);
+
+        // Assert
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.PractitionerAssessment.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ContextualFactors_SetsValue()
+    {
+        // Arrange
+        var created = await CreateDraftForCompletedAppointmentAsync();
+        const string factors = "Client reported illness, travel this week, high stress at work.";
+
+        var dto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: factors);
+
+        // Act
+        await _sut.UpdateAsync(created.Id, dto, UserId);
+
+        // Assert
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.ContextualFactors.Should().Be(factors);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ContextualFactors_CanBeNull()
+    {
+        // Arrange — set a value first
+        var created = await CreateDraftForCompletedAppointmentAsync();
+        var setDto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: "illness, travel");
+        await _sut.UpdateAsync(created.Id, setDto, UserId);
+
+        // Act — clear it
+        var clearDto = new UpdateSessionNoteDto(
+            SessionType: null,
+            Notes: null,
+            AdherenceScore: null,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: null,
+            PractitionerAssessment: null,
+            ContextualFactors: null);
+        await _sut.UpdateAsync(created.Id, clearDto, UserId);
+
+        // Assert
+        var updated = await _sut.GetByIdAsync(created.Id);
+        updated!.ContextualFactors.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsNewFieldsInDto()
+    {
+        // Arrange
+        var created = await CreateDraftForCompletedAppointmentAsync();
+
+        var dto = new UpdateSessionNoteDto(
+            SessionType: Nutrir.Core.Enums.SessionType.InitialConsultation,
+            Notes: "General notes",
+            AdherenceScore: 90,
+            MeasurementsTaken: null,
+            PlanAdjustments: null,
+            FollowUpActions: "Follow up in 4 weeks",
+            PractitionerAssessment: "Good progress overall",
+            ContextualFactors: "Recent travel");
+
+        await _sut.UpdateAsync(created.Id, dto, UserId);
+
+        // Act
+        var result = await _sut.GetByIdAsync(created.Id);
+
+        // Assert — all new fields are surfaced through the DTO
+        result.Should().NotBeNull();
+        result!.SessionType.Should().Be(Nutrir.Core.Enums.SessionType.InitialConsultation);
+        result.PractitionerAssessment.Should().Be("Good progress overall");
+        result.ContextualFactors.Should().Be("Recent travel");
     }
 
     // ---------------------------------------------------------------------------

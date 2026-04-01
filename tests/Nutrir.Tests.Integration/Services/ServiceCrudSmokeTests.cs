@@ -710,11 +710,14 @@ public class ServiceCrudSmokeTests : IAsyncLifetime
         var created = await service.CreateDraftAsync(appointment.Id, appointment.ClientId, _testUserId);
 
         var updateDto = new UpdateSessionNoteDto(
+            SessionType: null,
             Notes: "Client is progressing well.",
             AdherenceScore: 85,
             MeasurementsTaken: "Weight: 75kg",
             PlanAdjustments: "Reduce carbs by 10%",
-            FollowUpActions: "Book next appointment");
+            FollowUpActions: "Book next appointment",
+            PractitionerAssessment: null,
+            ContextualFactors: null);
 
         var updated = await service.UpdateAsync(created.Id, updateDto, _testUserId);
 
