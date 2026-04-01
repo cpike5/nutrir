@@ -158,11 +158,9 @@
                     {
                         <div class="item-form">
                             <div class="item-form-row">
-                                <FormInput Id="@($"food-{slot.GetHashCode()}")"
-                                           Placeholder="Food name"
-                                           Value="@_newItem.FoodName"
-                                           ValueChanged="@(v => _newItem.FoodName = v)"
-                                           DebounceMs="300" />
+                                <FoodAutocomplete @bind-Value="@_newItem.FoodName"
+                                                  OnFoodSelected="@OnFoodSelected"
+                                                  Placeholder="Search food database..." />
                                 <FormInput Id="@($"qty-{slot.GetHashCode()}")"
                                            Type="number"
                                            Placeholder="Qty"
@@ -354,6 +352,7 @@
 
         slot.Items.Add(new EditItem
         {
+            FoodId = _newItem.FoodId,
             FoodName = _newItem.FoodName!,
             Quantity = qty,
             Unit = _newItem.Unit ?? "g",
@@ -407,7 +406,8 @@
                             CarbsG: i.CarbsG,
                             FatG: i.FatG,
                             Notes: i.Notes,
-                            SortOrder: i.SortOrder
+                            SortOrder: i.SortOrder,
+                            FoodId: i.FoodId
                         )).ToList()
                     )).ToList()
                 )).ToList()
@@ -505,6 +505,7 @@
 
     private class EditItem
     {
+        public int? FoodId { get; set; }
         public string FoodName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
         public string Unit { get; set; } = "g";
@@ -518,6 +519,7 @@
 
     private class NewItemModel
     {
+        public int? FoodId { get; set; }
         public string? FoodName { get; set; }
         public string? Quantity { get; set; }
         public string? Unit { get; set; } = "g";
@@ -525,5 +527,15 @@
         public string? Protein { get; set; }
         public string? Carbs { get; set; }
         public string? Fat { get; set; }
+    }
+
+    private void OnFoodSelected(FoodDto food)
+    {
+        _newItem.FoodId = food.Id;
+        _newItem.FoodName = food.Name;
+        _newItem.Calories = food.CaloriesKcal.ToString("G");
+        _newItem.Protein = food.ProteinG.ToString("G");
+        _newItem.Carbs = food.CarbsG.ToString("G");
+        _newItem.Fat = food.FatG.ToString("G");
     }
 }

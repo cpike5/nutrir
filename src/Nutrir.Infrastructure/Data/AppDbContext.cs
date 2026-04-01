@@ -25,6 +25,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<MealItem> MealItems => Set<MealItem>();
 
+    public DbSet<Food> Foods => Set<Food>();
+
     public DbSet<ProgressGoal> ProgressGoals => Set<ProgressGoal>();
 
     public DbSet<ProgressEntry> ProgressEntries => Set<ProgressEntry>();
@@ -254,6 +256,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(i => i.FatG).HasPrecision(18, 2);
             entity.Property(i => i.Notes).HasColumnType("text");
             if (converter is not null) entity.Property(i => i.Notes).HasConversion(converter);
+
+            entity.HasOne<Food>().WithMany().HasForeignKey(mi => mi.FoodId).OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+        });
+
+        builder.Entity<Food>(entity =>
+        {
+            entity.HasQueryFilter(f => !f.IsDeleted);
+            entity.HasIndex(f => f.Name).IsUnique();
+            entity.Property(f => f.Name).HasMaxLength(200).IsRequired();
+            entity.Property(f => f.ServingSizeUnit).HasMaxLength(50);
+            entity.Property(f => f.ServingSize).HasPrecision(18, 2);
+            entity.Property(f => f.CaloriesKcal).HasPrecision(18, 2);
+            entity.Property(f => f.ProteinG).HasPrecision(18, 2);
+            entity.Property(f => f.CarbsG).HasPrecision(18, 2);
+            entity.Property(f => f.FatG).HasPrecision(18, 2);
+            entity.Property(f => f.Tags).HasColumnType("text[]");
+            entity.Property(f => f.IsDeleted).HasDefaultValue(false);
         });
 
         builder.Entity<ProgressGoal>(entity =>
@@ -638,16 +657,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.Property(sn => sn.CreatedByUserId).HasMaxLength(450);
+            entity.Property(sn => sn.SessionType).HasConversion<string>().HasMaxLength(50);
             entity.Property(sn => sn.Notes).HasColumnType("text");
             entity.Property(sn => sn.MeasurementsTaken).HasColumnType("text");
             entity.Property(sn => sn.PlanAdjustments).HasColumnType("text");
             entity.Property(sn => sn.FollowUpActions).HasColumnType("text");
+            entity.Property(sn => sn.PractitionerAssessment).HasColumnType("text");
+            entity.Property(sn => sn.ContextualFactors).HasColumnType("text");
             if (converter is not null)
             {
                 entity.Property(sn => sn.Notes).HasConversion(converter);
                 entity.Property(sn => sn.MeasurementsTaken).HasConversion(converter);
                 entity.Property(sn => sn.PlanAdjustments).HasConversion(converter);
                 entity.Property(sn => sn.FollowUpActions).HasConversion(converter);
+                entity.Property(sn => sn.PractitionerAssessment).HasConversion(converter);
             }
             entity.Property(sn => sn.IsDeleted).HasDefaultValue(false);
             entity.Property(sn => sn.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");

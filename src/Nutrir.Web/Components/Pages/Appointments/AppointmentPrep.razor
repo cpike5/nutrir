@@ -10,6 +10,7 @@
 
 @attribute [Authorize(Roles = "Admin,Nutritionist,Assistant")]
 @inject IAppointmentService AppointmentService
+@inject ISessionNoteService SessionNoteService
 @inject IClientService ClientService
 @inject IClientHealthProfileService HealthProfileService
 @inject IMealPlanService MealPlanService
@@ -87,6 +88,20 @@
                 </div>
                 <div class="notes-body">
                     <pre class="notes-text">@_appointment.PrepNotes</pre>
+                </div>
+            </div>
+        }
+
+        @* ── Follow-up from Last Session ─────────────── *@
+        @if (_lastFollowUp is not null && !string.IsNullOrWhiteSpace(_lastFollowUp.FollowUpActions))
+        {
+            <div class="table-card section-animate" style="animation-delay: 60ms;">
+                <div class="section-header">
+                    <span class="section-header-label">Follow-up from Last Session</span>
+                </div>
+                <div class="notes-body">
+                    <p class="prep-detail-secondary">@_lastFollowUp.CreatedAt.ToString("MMMM d, yyyy")</p>
+                    <pre class="notes-text">@_lastFollowUp.FollowUpActions</pre>
                 </div>
             </div>
         }
@@ -323,6 +338,7 @@
     private List<MealPlanSummaryDto> _activeMealPlans = [];
     private List<ProgressEntrySummaryDto> _recentProgress = [];
     private List<AppointmentDto> _upcomingAppointments = [];
+    private SessionNoteDto? _lastFollowUp;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -338,6 +354,19 @@
             _activeMealPlans = await MealPlanService.GetByClientAsync(clientId, 5);
             _recentProgress = await ProgressService.GetRecentByClientAsync(clientId, 5);
             _upcomingAppointments = await AppointmentService.GetUpcomingByClientAsync(clientId, 3);
+
+            var allNotes = await SessionNoteService.GetByClientAsync(clientId);
+            var lastNoteWithFollowUp = allNotes
+                .Where(sn => !sn.IsDraft)
+                .OrderByDescending(sn => sn.CreatedAt)
+                .FirstOrDefault();
+
+            if (lastNoteWithFollowUp is not null)
+            {
+                var fullNote = await SessionNoteService.GetByIdAsync(lastNoteWithFollowUp.Id);
+                if (fullNote is not null && !string.IsNullOrWhiteSpace(fullNote.FollowUpActions))
+                    _lastFollowUp = fullNote;
+            }
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";

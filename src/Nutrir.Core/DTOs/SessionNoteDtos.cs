@@ -1,3 +1,5 @@
+using Nutrir.Core.Enums;
+
 namespace Nutrir.Core.DTOs;
 
 public record SessionNoteDto(
@@ -9,11 +11,14 @@ public record SessionNoteDto(
     string CreatedByUserId,
     string? CreatedByName,
     bool IsDraft,
+    SessionType? SessionType,
     string? Notes,
     int? AdherenceScore,
     string? MeasurementsTaken,
     string? PlanAdjustments,
     string? FollowUpActions,
+    string? PractitionerAssessment,
+    string? ContextualFactors,
     DateTime? AppointmentDate,
     DateTime CreatedAt,
     DateTime? UpdatedAt);
@@ -30,8 +35,11 @@ public record SessionNoteSummaryDto(
     DateTime CreatedAt);
 
 public record UpdateSessionNoteDto(
+    SessionType? SessionType,
     string? Notes,
     int? AdherenceScore,
     string? MeasurementsTaken,
     string? PlanAdjustments,
-    string? FollowUpActions);
+    string? FollowUpActions,
+    string? PractitionerAssessment,
+    string? ContextualFactors);

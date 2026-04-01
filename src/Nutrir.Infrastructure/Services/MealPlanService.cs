@@ -314,6 +314,7 @@ public class MealPlanService : IMealPlanService
                 {
                     slot.Items.Add(new MealItem
                     {
+                        FoodId = itemDto.FoodId,
                         FoodName = itemDto.FoodName,
                         Quantity = itemDto.Quantity,
                         Unit = itemDto.Unit,

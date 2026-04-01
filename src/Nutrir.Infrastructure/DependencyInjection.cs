@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IMealPlanService, MealPlanService>();
         services.AddScoped<IAllergenCheckService, AllergenCheckService>();
         services.AddScoped<IAllergenService, AllergenService>();
+        services.AddScoped<IFoodService, FoodService>();
         services.AddScoped<IMealPlanPdfService, MealPlanPdfService>();
         services.AddScoped<IDataExportService, DataExportService>();
         services.AddScoped<IProgressService, ProgressService>();

@@ -1,0 +1,117 @@
+@page "/admin/foods"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nutrir.Core.DTOs
+@using Nutrir.Core.Interfaces
+@attribute [Authorize(Roles = "Admin,Nutritionist")]
+@inject IFoodService FoodService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Food Database — Nutrir</PageTitle>
+
+<Breadcrumb Items="@(new[] { new BreadcrumbItem("Food Database") })" />
+
+<div class="users-page">
+    <div class="users-header">
+        <h1 class="users-title">Food Database</h1>
+        <p class="users-subtitle">Manage foods and their nutritional data.</p>
+    </div>
+
+    <div style="margin-bottom: 1rem;">
+        <Button Variant="ButtonVariant.Primary" OnClick="@(() => NavigationManager.NavigateTo("/admin/foods/new"))">Add Food</Button>
+    </div>
+
+    <Card>
+        @if (_isLoading)
+        {
+            <p class="users-loading">Loading foods...</p>
+        }
+        else if (_foods is null || _foods.Count == 0)
+        {
+            <div class="users-empty">
+                <p class="users-empty-title">No foods in the database</p>
+                <p class="users-empty-desc">Add a food to get started.</p>
+            </div>
+        }
+        else
+        {
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Serving</th>
+                        <th>Calories</th>
+                        <th>Protein (g)</th>
+                        <th>Carbs (g)</th>
+                        <th>Fat (g)</th>
+                        <th>Tags</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var food in _foods)
+                    {
+                        <tr>
+                            <td>@food.Name</td>
+                            <td>@food.ServingSize @food.ServingSizeUnit</td>
+                            <td>@food.CaloriesKcal.ToString("N0")</td>
+                            <td>@food.ProteinG.ToString("N1")</td>
+                            <td>@food.CarbsG.ToString("N1")</td>
+                            <td>@food.FatG.ToString("N1")</td>
+                            <td>@string.Join(", ", food.Tags)</td>
+                            <td style="white-space: nowrap;">
+                                <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small"
+                                        OnClick="@(() => NavigationManager.NavigateTo($"/admin/foods/{food.Id}/edit"))">Edit</Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                        OnClick="@(() => DeleteFood(food.Id))">Delete</Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <p class="error-msg" style="margin-top: 1rem;">@_errorMessage</p>
+        }
+    </Card>
+</div>
+
+@code {
+    private List<FoodDto>? _foods;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFoodsAsync();
+    }
+
+    private async Task LoadFoodsAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _foods = await FoodService.GetAllAsync();
+        _isLoading = false;
+    }
+
+    private async Task DeleteFood(int id)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        var success = await FoodService.DeleteAsync(id, userId);
+        if (success)
+        {
+            await LoadFoodsAsync();
+        }
+        else
+        {
+            _errorMessage = "Failed to delete food item.";
+        }
+    }
+}
